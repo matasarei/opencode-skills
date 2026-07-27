@@ -58,7 +58,7 @@ these on a 7B model and it holds up, that is a genuinely useful thing to report.
 ## Contents
 
 - [Why "for local models" is the whole point](#why-for-local-models-is-the-whole-point)
-- [Requirements](#requirements)
+- [Requirements](#requirements) · [Windows](#windows)
 - [Install](#install)
 - [Point OpenCode at a local model](#point-opencode-at-a-local-model)
 - [The skills](#the-skills)
@@ -77,12 +77,42 @@ these on a 7B model and it holds up, that is a genuinely useful thing to report.
 - **OpenCode**, recent enough to support skills (`.opencode/skills/`).
 - **git.** And **`gh`** for the two pull-request skills — `gh auth login` once, then check with
   `gh auth status`.
-- **bash.** The shared scripts are bash. On Windows that means **Git Bash**, which ships with
-  [Git for Windows](https://git-scm.com/download/win). WSL works too and behaves like Linux.
+- **bash.** The shared scripts are bash. On Windows this needs one config line — see
+  [Windows](#windows) below; it does not work out of the box.
 - **A context window of 64k or more.** This is not a nice-to-have. Below it, OpenCode's tool
   calling degrades in ways that look like the skills being broken — calls get truncated, the
   model loops, blocks of injected context go missing.
 - **Docker**, strongly recommended on every platform.
+
+### Windows
+
+**Windows works, but not by default — you must point OpenCode at Git Bash.**
+
+OpenCode picks its shell from a fixed candidate list: on Windows that is `pwsh`, `powershell`,
+Git Bash, `cmd`, in that order, and with `$SHELL` unset it takes the first. So the default is
+**PowerShell**, where the `${DEV_SKILLS_LIB:-…}` in every skill is not valid syntax and every
+pre-computed block fails. The symptom is skills that appear to run and produce nothing.
+
+`install.ps1` finds Git Bash, tells you, and offers to write the setting. To do it by hand, in
+`~/.config/opencode/opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "shell": "C:\\Program Files\\Git\\bin\\bash.exe"
+}
+```
+
+`OPENCODE_GIT_BASH_PATH` works too if your Git lives somewhere unusual.
+
+> **Do not rely on `bash` being on your PATH.** If WSL is installed, `bash` resolves to
+> `C:\Windows\System32\bash.exe` — the WSL launcher. Your scripts would then run inside a
+> different filesystem where the repository paths do not exist, and the failure looks like a
+> bug in the skills rather than a wrong interpreter. Point at `Git\bin\bash.exe` explicitly.
+
+**WSL is the other good option** and needs none of this — install with `./install.sh` inside WSL
+and it behaves exactly like Linux. If you already run Docker Desktop with the WSL2 backend, this
+is the smoother path.
 
 ### Why Docker matters here
 
@@ -545,9 +575,10 @@ bash ~/.config/opencode/dev-lib/profile.sh
 
 If that fails, set `DEV_SKILLS_LIB` to wherever `install.sh` actually put the scripts.
 
-**`bash: command not found` on Windows.**
-OpenCode is not using Git Bash. Install [Git for Windows](https://git-scm.com/download/win) and
-point OpenCode's shell at it.
+**On Windows: skills run but every injected block is empty, or `bash: command not found`.**
+OpenCode is using PowerShell, which is its Windows default. Set `"shell"` in `opencode.json` to
+your Git Bash path — see [Windows](#windows). Re-running `install.ps1` will detect it and offer
+to write it for you.
 
 **Tool calls get truncated, or the model loops.**
 Context window below 64k. Fix it at the server — `OLLAMA_CONTEXT_LENGTH=65536 ollama serve`, or
