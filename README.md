@@ -243,7 +243,7 @@ Since the design deliberately strips out the reasoning-heavy stages, that is the
                                                     │
                                   ┌─────────────────┴──────────────────┐
                                   ▼                                    ▼
-                            /dev-pr-review                       /dev-pr-resolve
+                            /dev-pr-review                       /dev-pr-comment
                         (someone else's PR)                    (comments on yours)
                                   │                                    │
                                   └─────────────▶ /dev-verify ◀────────┘
@@ -256,7 +256,7 @@ Since the design deliberately strips out the reasoning-heavy stages, that is the
 | `/dev-implement` | Builds the plan, one step per run, ticking off progress | **Yes** |
 | `/dev-review` | Checks your own changes before you push them | No |
 | `/dev-pr-review` | Reviews someone else's pull request against a checklist | No |
-| `/dev-pr-resolve` | Works through the review comments on *your* pull request | **Yes** |
+| `/dev-pr-comment` | Addresses **one** review comment on *your* pull request, per run | **Yes** (local commit only) |
 | `/dev-verify` | Runs the tests and drives the real thing to prove it works | No |
 
 You do not have to use all of them, or use them in order. **`/dev-review` on its own, before
@@ -335,11 +335,22 @@ checks the effect. Says plainly what it could not check and why.
 **6. Deal with review comments.**
 
 ```
-/dev-pr-resolve 42
+/dev-pr-comment 42
 ```
 
-Every comment gets a verdict — agree, disagree with evidence, or ask you — **before any code is
-touched**. Then one commit per fix, and one reply per thread.
+It takes the **first unaddressed comment**, restates the claim, checks it against the code, and
+gives a verdict — agree, disagree with evidence, or ask you — **before touching anything**. Only
+on `agree` does it make a change, and only the smallest one that resolves the comment, as a local
+commit.
+
+Then it stops. Run it again for the next comment.
+
+It **never pushes and never posts a reply.** It prints the exact commands and you send them. An
+automated reviewer is confident and regularly wrong about this codebase in particular; fixing a
+well-worded false positive is how you introduce a real bug, so that judgement gets a whole
+context each time rather than a twelfth of one — and the outward-facing part stays yours.
+
+Progress lives in `.devskills/pr-42.md`, so a comment you have already settled is never reopened.
 
 ---
 
@@ -466,6 +477,22 @@ BLOCKER | db/upgrade.php:12 | invented, line does not exist         | EVIDENCE: 
 This is the hallucination filter, and it is the part that does not depend on model quality. It
 gets better as the format gets stricter, not as the model gets bigger.
 
+### One unit of work per run
+
+The queue from [`lib/changed.sh`](lib/changed.sh) is risk-ranked in shell, so the model never
+picks what to read — it reads top-down, one file at a time. `/dev-implement` does **one step per
+invocation** and ticks it off in the task file. `/dev-pr-comment` does **one review comment per
+invocation** and records the verdict in `.devskills/pr-<n>.md`.
+
+A long run in a single context drifts. By the eighth review comment the verdicts are grounded in
+the previous seven rather than in the code, and one bad fix in a batch of twelve is invisible
+until much later. Resuming costs nothing, so there is nothing to gain by batching.
+
+That is also why **`/dev-pr-comment` never pushes and never posts a reply** — it prints the
+commands and you send them. A confident, well-worded false positive from an automated reviewer is
+the most likely way this toolkit could put a real bug into your code, so the step where that gets
+caught stays with a person.
+
 ### Nothing reports success it did not earn
 
 `lint.sh` distinguishes `lint: clean across 4 changed file(s)`, `lint: no lintable files among
@@ -569,6 +596,7 @@ lib/                  shared scripts — installed to <config>/dev-lib/
   diff.sh             capped diff against the base branch, truncation announced
   lint.sh             lint changed files through exec.prefix, honest about not running
   findings-check.sh   delete findings whose evidence is not in the code
+  pr-comments.sh      flatten a PR's review comments into a stable ledger
 skills/dev-*/         one directory per skill, SKILL.md inside
   dev-init/templates/ family rule blocks (moodle-plugin, php-app, cms, python-app)
 agents/               optional subagents (read-only, temperature 0)

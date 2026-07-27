@@ -50,7 +50,7 @@ fi
 
 echo
 echo "Done. Type '/' in OpenCode to see:"
-echo "  /dev-init /dev-plan /dev-implement /dev-review /dev-pr-review /dev-pr-resolve /dev-verify"
+echo "  /dev-init /dev-plan /dev-implement /dev-review /dev-pr-review /dev-pr-comment /dev-verify"
 echo
 # The skills hard-code $HOME/.config/opencode/dev-lib as their fallback, because a
 # SKILL.md cannot know where it was installed. Any other location — a --project

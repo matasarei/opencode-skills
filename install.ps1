@@ -46,7 +46,7 @@ Pop-Location
 
 Write-Host ""
 Write-Host "Done. Type '/' in OpenCode to see:"
-Write-Host "  /dev-init /dev-plan /dev-implement /dev-review /dev-pr-review /dev-pr-resolve /dev-verify"
+Write-Host "  /dev-init /dev-plan /dev-implement /dev-review /dev-pr-review /dev-pr-comment /dev-verify"
 # The skills fall back to $HOME/.config/opencode/dev-lib, because a SKILL.md cannot
 # know where it was installed. Any other target needs the override or every skill
 # calls a path that is not there. Same check as install.sh.
