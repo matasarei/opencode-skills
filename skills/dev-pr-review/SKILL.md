@@ -63,6 +63,9 @@ One file at a time. Answer yes or no.
 
 There is no NIT here. Nits are the bot's job.
 
+Empty `.devskills/findings.md` first (`: > .devskills/findings.md`) — it is appended to, and a
+leftover file from an earlier run would be reported as belonging to this pull request.
+
 Write findings to `.devskills/findings.md` in the shared line format, then run
 `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/findings-check.sh .devskills/findings.md` and report only what survives.
 

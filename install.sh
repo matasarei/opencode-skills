@@ -52,9 +52,18 @@ echo
 echo "Done. Type '/' in OpenCode to see:"
 echo "  /dev-init /dev-plan /dev-implement /dev-review /dev-pr-review /dev-pr-resolve /dev-verify"
 echo
-if [ "${1:-}" != "--project" ]; then
-  echo "The skills call scripts at \$HOME/.config/opencode/dev-lib. If your config lives"
-  echo "elsewhere, export DEV_SKILLS_LIB=$LIB in your shell profile."
+# The skills hard-code $HOME/.config/opencode/dev-lib as their fallback, because a
+# SKILL.md cannot know where it was installed. Any other location — a --project
+# install, or a non-default XDG_CONFIG_HOME — needs the override, or every skill
+# calls a path that does not exist. Say so exactly when it applies.
+if [ "$LIB" != "$HOME/.config/opencode/dev-lib" ]; then
+  echo "This is not the default location, so the skills will not find the scripts"
+  echo "unless you export the override:"
+  echo
+  echo "    export DEV_SKILLS_LIB=$LIB"
+  echo
+  echo "Put that in your shell profile."
+  [ "${1:-}" = "--project" ] && echo "Or re-run without --project to install globally instead."
 fi
 
 # Non-zero context is a hard requirement for local models, and the single most common

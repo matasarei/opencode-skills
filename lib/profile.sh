@@ -101,7 +101,9 @@ case "$FAMILY" in
     [ -n "$PHPREQ" ] && LANGUAGE="PHP $PHPREQ" || LANGUAGE="PHP"
     ;;
   python-app)
-    PYREQ="$(grep -os 'requires-python[[:space:]]*=[[:space:]]*"[^"]*"' pyproject.toml 2>/dev/null | head -1 | sed 's/.*"//; s/"$//')"
+    # Anchor on the opening quote of the value. A bare `s/.*"//` is greedy and eats
+    # through the closing quote instead, leaving nothing.
+    PYREQ="$(grep -os 'requires-python[[:space:]]*=[[:space:]]*"[^"]*"' pyproject.toml 2>/dev/null | head -1 | sed 's/.*=[[:space:]]*"//; s/"$//')"
     [ -n "$PYREQ" ] && LANGUAGE="Python $PYREQ" || LANGUAGE="Python"
     ;;
   node) LANGUAGE="Node" ;;

@@ -9,7 +9,10 @@ Review only. Never edit, commit, push, or post a comment. You list; the develope
 
 ## How to run this
 
-Work the queue at the bottom **one file per step**. Do not batch, do not skim ahead.
+**First, empty `.devskills/findings.md`** (`: > .devskills/findings.md`). It is appended to
+below, so a leftover file from an earlier run would be reported as if it were this one's.
+
+Then work the queue at the bottom **one file per step**. Do not batch, do not skim ahead.
 
 For each file, in queue order:
 

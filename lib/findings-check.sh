@@ -44,15 +44,20 @@ while IFS= read -r line; do
     dropped=$((dropped+1)); continue
   fi
 
-  # The quoted text must appear in the file. Whitespace is normalised, because a
-  # model reproducing indentation exactly is not something worth requiring.
-  needle="$(printf '%s' "$ev" | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//')"
+  # The quoted text must appear in the file. Indentation is normalised, because a
+  # model reproducing it exactly is not something worth requiring.
+  #
+  # [:blank:] and not [:space:]: the latter includes newlines, which would collapse
+  # the whole file onto one line. Presence still matched, but every line number came
+  # back as 1, so any correct finding past line 11 was "corrected" to the top of the
+  # file. Squeeze spaces and tabs; leave the line structure alone.
+  needle="$(printf '%s' "$ev" | tr -s '[:blank:]' ' ' | sed 's/^ //; s/ $//')"
   [ -z "$needle" ] && { dropped=$((dropped+1)); continue; }
 
-  if tr -s '[:space:]' ' ' < "$path" | grep -qF -- "$needle"; then
+  if tr -s '[:blank:]' ' ' < "$path" | grep -qF -- "$needle"; then
     # Present, but is it near the line claimed? Off by a lot usually means the
     # model matched a different occurrence, which changes what the finding means.
-    actual="$(grep -nF -- "$needle" <(tr -s '[:space:]' ' ' < "$path") 2>/dev/null | head -1 | cut -d: -f1)"
+    actual="$(tr -s '[:blank:]' ' ' < "$path" | grep -nF -- "$needle" 2>/dev/null | head -1 | cut -d: -f1)"
     if [ -n "$actual" ] && [ -n "$lineno" ] && [ "$lineno" -eq "$lineno" ] 2>/dev/null; then
       diff=$(( actual > lineno ? actual - lineno : lineno - actual ))
       if [ "$diff" -gt 10 ]; then
