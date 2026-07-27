@@ -2,14 +2,14 @@
 
 <p>
   <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-1B1B1B?style=for-the-badge" alt="OpenCode" /></a>
-  <img src="https://img.shields.io/badge/Local_models-30B_and_under-6E56CF?style=for-the-badge&logo=ollama&logoColor=white" alt="Local models: 30B and under" />
+  <img src="https://img.shields.io/badge/Local_models-6E56CF?style=for-the-badge&logo=ollama&logoColor=white" alt="Local models" />
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-3DA639?style=for-the-badge" alt="License: MIT" /></a>
 </p>
 
-> **Built for locally-hosted models — 30B and under.** Not for frontier models that happen to
-> run locally: for the ones you can actually keep loaded on your own GPU. Every design decision
-> here follows from that constraint.
+> **Built for locally-hosted models, like Qwen Coder 30B.** Not for frontier models that happen
+> to run locally: for the ones you can actually keep loaded on your own GPU. Every design
+> decision here follows from that constraint.
 
 Skills for [OpenCode](https://opencode.ai) covering an ordinary development day: work out what
 to build, build it, check your own work, review a colleague's pull request, deal with the
@@ -49,8 +49,8 @@ of them.
 | **Realistic floor** | Untested below ~14B. Expect tool calling and instruction-following to degrade first |
 | **Hard requirement** | A 64k+ context window and `temperature: 0` — see [configuration](#point-opencode-at-a-local-model) |
 
-"30B and under" is the design ceiling, not a promise that anything smaller works. If you run
-these on a 7B model and it holds up, that is a genuinely useful thing to report.
+~30B is the design ceiling, not a promise that anything smaller works. If you run these on a 7B
+model and it holds up, that is a genuinely useful thing to report.
 
 ---
 
