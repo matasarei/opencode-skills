@@ -1,5 +1,13 @@
 # opencode-skills
 
+<p>
+  <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-1B1B1B?style=for-the-badge" alt="OpenCode" /></a>
+  <img src="https://img.shields.io/badge/Local_models-30B_and_under-6E56CF?style=for-the-badge&logo=ollama&logoColor=white" alt="Local models: 30B and under" />
+  <img src="https://img.shields.io/badge/macOS_%7C_Linux_%7C_Windows-4A4A4A?style=for-the-badge" alt="macOS | Linux | Windows" />
+  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-3DA639?style=for-the-badge" alt="License: MIT" /></a>
+</p>
+
 > **Built for locally-hosted models — 30B and under.** Not for frontier models that happen to
 > run locally: for the ones you can actually keep loaded on your own GPU. Every design decision
 > here follows from that constraint.
@@ -44,8 +52,6 @@ of them.
 
 "30B and under" is the design ceiling, not a promise that anything smaller works. If you run
 these on a 7B model and it holds up, that is a genuinely useful thing to report.
-
-MIT licensed.
 
 ---
 
