@@ -35,9 +35,19 @@ fi
 
 # Committed changes plus anything not yet committed. Reviewing only what is
 # committed misses the half you were about to commit.
+# A rename reaches us in two different shapes, and both used to yield a string that
+# is not a path — "old.php -> new.php". Everything downstream then quietly skipped
+# it: lint.sh tests [ -f "$file" ], and the model was told to read a file that does
+# not exist. Moving a class is precisely the change that most needs reviewing, so
+# both shapes are normalised to the destination path here.
+#
+#   git diff --name-status   R100 <tab> old <tab> new
+#   git status --porcelain   "R  old -> new"
 {
-  git diff --name-status "$BASE"...HEAD 2>/dev/null
-  git status --porcelain 2>/dev/null | sed 's/^ *//; s/^\([A-Z?]*\)[[:space:]]*/\1\t/'
+  git diff --name-status "$BASE"...HEAD 2>/dev/null \
+    | awk -F'\t' '{ if ($1 ~ /^[RC]/ && NF >= 3) print substr($1,1,1) "\t" $3; else if (NF >= 2) print $1 "\t" $2 }'
+  git status --porcelain 2>/dev/null \
+    | sed 's/^ *//; s/^\([A-Z?]*\)[[:space:]]*/\1\t/; s/^\([A-Z?]*\)\t.* -> /\1\t/'
 } | awk -F'\t' 'NF>=2 && $2!="" {print $1"\t"$2}' | sort -u -k2 > /tmp/devskills-changed.$$
 
 if [ ! -s /tmp/devskills-changed.$$ ]; then
