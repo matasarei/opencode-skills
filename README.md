@@ -1,5 +1,9 @@
 # opencode-skills
 
+> **Built for locally-hosted models — 30B and under.** Not for frontier models that happen to
+> run locally: for the ones you can actually keep loaded on your own GPU. Every design decision
+> here follows from that constraint.
+
 Skills for [OpenCode](https://opencode.ai) covering an ordinary development day: work out what
 to build, build it, check your own work, review a colleague's pull request, deal with the
 comments on yours, and prove the result actually works.
@@ -7,10 +11,39 @@ comments on yours, and prove the result actually works.
 They work in any repository — nothing here is tied to a particular project, language or
 framework.
 
-**These are tuned for local models.** They assume a 30B-class model running on your own
-hardware, and they spend their instructions on *not needing judgement* — facts are computed by
-scripts before the model is asked anything, and its output is verified mechanically afterwards.
-That is a different design from the frontier-model versions, not a translation of them.
+## Why "for local models" is the whole point
+
+A 30B-class model can read a diff and spot a null dereference. What it cannot do is hold eight
+severity criteria, seven blocker categories, a file budget and a retry cap in its head and then
+*decide well*. Prompts written for a frontier model assume that judgement and quietly fall apart
+without it — not by failing, but by producing confident, plausible, wrong output.
+
+So these skills are built to **not need judgement**:
+
+- **Facts are computed before the model is asked anything.** Which files changed, in what risk
+  order, what the test and lint commands are, what the container prefix is — all resolved by
+  shell scripts and injected as data, not derived by the model.
+- **Judgement calls are replaced by yes/no checks**, with severity derived from *which* check
+  fired rather than chosen.
+- **Everything the model claims about the code is verified against the code** by a script, and
+  discarded if the evidence is not there.
+- **Nothing reports success it did not earn** — a step that could not run says so, instead of
+  reading as a step that passed.
+
+That is a different design from the frontier-model versions of these skills, not a translation
+of them.
+
+### Which models, concretely
+
+| | |
+|---|---|
+| **Reference model** | Qwen3-Coder-30B — what these were written and tuned against |
+| **Designed ceiling** | ~30B. Larger or cloud models work fine; they just do not need this design |
+| **Realistic floor** | Untested below ~14B. Expect tool calling and instruction-following to degrade first |
+| **Hard requirement** | A 64k+ context window and `temperature: 0` — see [configuration](#point-opencode-at-a-local-model) |
+
+"30B and under" is the design ceiling, not a promise that anything smaller works. If you run
+these on a 7B model and it holds up, that is a genuinely useful thing to report.
 
 MIT licensed.
 
@@ -18,6 +51,7 @@ MIT licensed.
 
 ## Contents
 
+- [Why "for local models" is the whole point](#why-for-local-models-is-the-whole-point)
 - [Requirements](#requirements)
 - [Install](#install)
 - [Point OpenCode at a local model](#point-opencode-at-a-local-model)
@@ -381,9 +415,8 @@ Keep them in `.tasks/`. `/dev-plan` writes there and `/dev-implement` reads and 
 
 ## How this differs from the frontier-model versions
 
-A 30B-class model can read a diff and spot a null dereference. What it cannot do is hold "here
-are eight severity criteria, seven blocker categories, a five-file budget and a three-round retry
-cap — now decide." Every design choice here follows from that.
+The reasoning is [at the top](#why-for-local-models-is-the-whole-point). This is what it actually
+looks like in the code.
 
 ### Facts are computed, not derived
 
