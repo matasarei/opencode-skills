@@ -21,13 +21,26 @@ EXCLUDE=". :(exclude)vendor :(exclude)node_modules :(exclude)*.lock :(exclude).d
 
 # Committed on this branch, then staged, then unstaged. Reviewing only what is
 # committed misses the half you were about to commit.
-total="$(git diff "$BASE"...HEAD -- $EXCLUDE 2>/dev/null | wc -l | tr -d ' ')"
+#
+# All three are measured together. Capping each separately and counting only the
+# committed range meant an entirely uncommitted change — the ordinary case when
+# reviewing before a commit — was truncated with nothing said about it.
+ALL="$( { git diff "$BASE"...HEAD -- $EXCLUDE
+          git diff --cached -- $EXCLUDE
+          git diff -- $EXCLUDE
+        } 2>/dev/null )"
 
-git diff "$BASE"...HEAD -- $EXCLUDE 2>/dev/null | head -n "$MAX"
-git diff --cached -- $EXCLUDE 2>/dev/null | head -n 200
-git diff -- $EXCLUDE 2>/dev/null | head -n 200
+if [ -z "$ALL" ]; then
+  echo "[no diff against $BASE, staged or unstaged]"
+  exit 0
+fi
+
+total="$(printf '%s\n' "$ALL" | wc -l | tr -d ' ')"
+printf '%s\n' "$ALL" | head -n "$MAX"
 
 if [ "$total" -gt "$MAX" ]; then
   echo ""
-  echo "[TRUNCATED: showed $MAX of $total diff lines. Read the remaining files individually.]"
+  echo "[TRUNCATED: showed $MAX of $total diff lines. $(( total - MAX )) not shown —"
+  echo " read the remaining files from the queue individually, and say in the review"
+  echo " which ones were judged from a partial diff.]"
 fi

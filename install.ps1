@@ -47,6 +47,21 @@ Pop-Location
 Write-Host ""
 Write-Host "Done. Type '/' in OpenCode to see:"
 Write-Host "  /dev-init /dev-plan /dev-implement /dev-review /dev-pr-review /dev-pr-resolve /dev-verify"
+# The skills fall back to $HOME/.config/opencode/dev-lib, because a SKILL.md cannot
+# know where it was installed. Any other target needs the override or every skill
+# calls a path that is not there. Same check as install.sh.
+$defaultLib = Join-Path $HOME ".config\opencode\dev-lib"
+if ($lib -ne $defaultLib) {
+    Write-Host ""
+    Write-Host "This is not the default location, so the skills will not find the scripts"
+    Write-Host "unless you set the override:"
+    Write-Host ""
+    Write-Host "    `$env:DEV_SKILLS_LIB = `"$lib`""
+    Write-Host ""
+    Write-Host "Add it to your PowerShell profile."
+    if ($Project) { Write-Host "Or re-run without -Project to install globally instead." }
+}
+
 Write-Host ""
 Write-Host "The scripts are bash. On Windows they need Git Bash, which ships with Git for"
 Write-Host "Windows. Set OpenCode's shell to Git Bash if tool calls fail with 'bash: not found'."

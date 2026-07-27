@@ -21,7 +21,20 @@ if [ -z "$LINT" ] || [ "$LINT" = "null" ]; then
   exit 2
 fi
 
+# Get the file list first, and keep changed.sh's exit status. Reading it straight
+# into the loop would swallow a failure: on the base branch, or with no diff,
+# changed.sh exits non-zero and prints nothing, the loop body never runs, and a
+# report of "clean" would mean "nothing was linted" while reading as "nothing was
+# wrong". That is the one thing a lint step must never do.
+QUEUE="$(bash "$HERE/changed.sh" "${1:-}" 2>&1)"
+if [ $? -ne 0 ]; then
+  echo "LINT NOT RUN — could not determine what changed:"
+  printf '%s\n' "$QUEUE" | head -3
+  exit 2
+fi
+
 failed=0
+linted=0
 while read -r rank status file; do
   [ -z "${file:-}" ] && continue
   [ "$status" = "D" ] && continue
@@ -29,13 +42,22 @@ while read -r rank status file; do
   case "$file" in *.php|*.py|*.js|*.ts) ;; *) continue ;; esac
 
   cmd="${LINT//\{file\}/$file}"
-  out="$(eval "$cmd" 2>&1)"
-  if [ $? -ne 0 ]; then
+  if ! out="$(eval "$cmd" 2>&1)"; then
     echo "LINT FAIL $file"
-    echo "$out" | head -5
+    printf '%s\n' "$out" | head -5
     failed=1
   fi
-done < <(bash "$HERE/changed.sh" "${1:-}" 2>/dev/null)
+  linted=$((linted+1))
+done <<EOF
+$QUEUE
+EOF
 
-[ "$failed" -eq 0 ] && echo "lint: clean across all changed files"
-exit "$failed"
+if [ "$failed" -ne 0 ]; then
+  exit 1
+elif [ "$linted" -eq 0 ]; then
+  # Also not a pass. Say which it is rather than implying the linter approved.
+  echo "lint: no lintable files among the changes — nothing was checked"
+else
+  echo "lint: clean across $linted changed file(s)"
+fi
+exit 0
