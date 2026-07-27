@@ -86,14 +86,46 @@ these on a 7B model and it holds up, that is a genuinely useful thing to report.
 
 ### Windows
 
-**Windows works, but not by default — you must point OpenCode at Git Bash.**
+Everything here is bash. Windows has two ways to provide that, and **the scripts are identical
+either way** — this is a choice about where you run OpenCode, not about the code.
 
-OpenCode picks its shell from a fixed candidate list: on Windows that is `pwsh`, `powershell`,
-Git Bash, `cmd`, in that order, and with `$SHELL` unset it takes the first. So the default is
-**PowerShell**, where the `${DEV_SKILLS_LIB:-…}` in every skill is not valid syntax and every
-pre-computed block fails. The symptom is skills that appear to run and produce nothing.
+#### Recommended: WSL
 
-`install.ps1` finds Git Bash, tells you, and offers to write the setting. To do it by hand, in
+Install OpenCode *inside* WSL and run `./install.sh` there. Everything behaves exactly as it
+does on Linux: no translation layer, no path rewriting, none of the special cases below. If you
+already run Docker Desktop on the WSL2 backend, this is also where Docker is fastest.
+
+One thing to get right: **keep your repositories in the WSL filesystem** (`~/projects/...`), not
+under `/mnt/c/`. Windows drives are reachable from WSL but go through a network-style filesystem,
+and git operations on a large repo there are slow enough to notice on every skill invocation.
+
+#### Supported: native Windows with Git Bash
+
+Works, and `install.ps1` sets it up. Worth knowing what you are standing on:
+
+**Git Bash is not Linux.** It is [MSYS2](https://www.msys2.org/), a fork of Cygwin — a POSIX
+*translation layer* that maps POSIX calls onto Win32. The programs are native Windows processes
+and paths get rewritten between `/c/...` and `C:\...`. WSL2, by contrast, is a real Linux kernel
+in a lightweight VM.
+
+That distinction causes two real problems here. Both are already handled, and both are worth
+knowing about because they fail *silently*:
+
+- **`timeout` on Windows is not GNU `timeout`.** `C:\Windows\System32\timeout.exe` is a sleep
+  that ignores the command you give it, so a `command -v timeout` check finds it and produces
+  checks that run nothing and report success. `profile.sh` tests it by *behaviour* — running
+  `timeout 1 true` and checking it exits promptly — and records `null` if that fails.
+- **Docker volume mounts get path-mangled.** Git Bash rewrites the container-side `/app` into a
+  Windows path, so the mount lands somewhere wrong or empty. `profile.sh` stores the prefix with
+  `MSYS_NO_PATHCONV=1` and proves the mount can see a known file before trusting it.
+
+**You must point OpenCode at Git Bash.** It will not find it on its own: OpenCode's shell
+candidates on Windows are `pwsh`, `powershell`, Git Bash, `cmd`, in that order, and with `$SHELL`
+unset it takes the first. The default is therefore **PowerShell**, where the
+`${DEV_SKILLS_LIB:-…}` in every skill is not valid syntax and every pre-computed block fails —
+producing skills that appear to run and return nothing.
+
+`install.ps1` finds Git Bash and offers to write the setting. By hand, in
 `~/.config/opencode/opencode.json`:
 
 ```json
@@ -105,14 +137,10 @@ pre-computed block fails. The symptom is skills that appear to run and produce n
 
 `OPENCODE_GIT_BASH_PATH` works too if your Git lives somewhere unusual.
 
-> **Do not rely on `bash` being on your PATH.** If WSL is installed, `bash` resolves to
-> `C:\Windows\System32\bash.exe` — the WSL launcher. Your scripts would then run inside a
-> different filesystem where the repository paths do not exist, and the failure looks like a
-> bug in the skills rather than a wrong interpreter. Point at `Git\bin\bash.exe` explicitly.
-
-**WSL is the other good option** and needs none of this — install with `./install.sh` inside WSL
-and it behaves exactly like Linux. If you already run Docker Desktop with the WSL2 backend, this
-is the smoother path.
+> **Never rely on `bash` being on your PATH.** With WSL installed, `bash` resolves to
+> `C:\Windows\System32\bash.exe` — the WSL launcher. Your scripts would run in a different
+> filesystem where the repository paths do not exist, and it fails looking like a bug in the
+> skills rather than a wrong interpreter. Point at `Git\bin\bash.exe` explicitly.
 
 ### Why Docker matters here
 

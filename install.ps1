@@ -93,6 +93,9 @@ if (Test-Path $cfgPath) {
 }
 
 Write-Host ""
+Write-Host "Note: running OpenCode inside WSL avoids all of the below — no translation layer,"
+Write-Host "no path rewriting. Native Windows with Git Bash is supported, but WSL is smoother."
+Write-Host ""
 if (-not $bash) {
     Write-Host "WARNING: Git Bash was not found." -ForegroundColor Red
     Write-Host "These skills are bash scripts. Without it nothing here will run."
