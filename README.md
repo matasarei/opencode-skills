@@ -3,7 +3,6 @@
 <p>
   <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-1B1B1B?style=for-the-badge" alt="OpenCode" /></a>
   <img src="https://img.shields.io/badge/Local_models-30B_and_under-6E56CF?style=for-the-badge&logo=ollama&logoColor=white" alt="Local models: 30B and under" />
-  <img src="https://img.shields.io/badge/macOS_%7C_Linux_%7C_Windows-4A4A4A?style=for-the-badge" alt="macOS | Linux | Windows" />
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-3DA639?style=for-the-badge" alt="License: MIT" /></a>
 </p>
@@ -58,7 +57,7 @@ these on a 7B model and it holds up, that is a genuinely useful thing to report.
 ## Contents
 
 - [Why "for local models" is the whole point](#why-for-local-models-is-the-whole-point)
-- [Requirements](#requirements) · [Windows](#windows)
+- [Requirements](#requirements)
 - [Install](#install)
 - [Point OpenCode at a local model](#point-opencode-at-a-local-model)
 - [The skills](#the-skills)
@@ -77,8 +76,8 @@ these on a 7B model and it holds up, that is a genuinely useful thing to report.
 - **OpenCode**, recent enough to support skills (`.opencode/skills/`).
 - **git.** And **`gh`** for the two pull-request skills — `gh auth login` once, then check with
   `gh auth status`.
-- **bash.** The shared scripts are bash. On Windows this needs one config line — see
-  [Windows](#windows) below; it does not work out of the box.
+- **bash**, and a Unix-like environment. macOS, Linux and WSL. Native Windows is not
+  supported — see [Windows](#windows).
 - **A context window of 64k or more.** This is not a nice-to-have. Below it, OpenCode's tool
   calling degrades in ways that look like the skills being broken — calls get truncated, the
   model loops, blocks of injected context go missing.
@@ -86,61 +85,19 @@ these on a 7B model and it holds up, that is a genuinely useful thing to report.
 
 ### Windows
 
-Everything here is bash. Windows has two ways to provide that, and **the scripts are identical
-either way** — this is a choice about where you run OpenCode, not about the code.
+**Use WSL.** Install OpenCode inside WSL and run `./install.sh` there; everything behaves exactly
+as it does on Linux.
 
-#### Recommended: WSL
+Native Windows — Git Bash, MSYS, Cygwin — is deliberately unsupported, and `profile.sh` stops
+with a message rather than trying. Those are POSIX *translation layers*, not Linux: programs run
+as native Windows processes and paths are rewritten between `/c/...` and `C:\...`. The scripts
+would mostly work, and "mostly" is the problem — container mounts land somewhere empty and a
+false pass is indistinguishable from a real one. Carrying that risk plus its workarounds, for an
+environment WSL already covers properly, is not worth it.
 
-Install OpenCode *inside* WSL and run `./install.sh` there. Everything behaves exactly as it
-does on Linux: no translation layer, no path rewriting, none of the special cases below. If you
-already run Docker Desktop on the WSL2 backend, this is also where Docker is fastest.
-
-One thing to get right: **keep your repositories in the WSL filesystem** (`~/projects/...`), not
-under `/mnt/c/`. Windows drives are reachable from WSL but go through a network-style filesystem,
-and git operations on a large repo there are slow enough to notice on every skill invocation.
-
-#### Supported: native Windows with Git Bash
-
-Works, and `install.ps1` sets it up. Worth knowing what you are standing on:
-
-**Git Bash is not Linux.** It is [MSYS2](https://www.msys2.org/), a fork of Cygwin — a POSIX
-*translation layer* that maps POSIX calls onto Win32. The programs are native Windows processes
-and paths get rewritten between `/c/...` and `C:\...`. WSL2, by contrast, is a real Linux kernel
-in a lightweight VM.
-
-That distinction causes two real problems here. Both are already handled, and both are worth
-knowing about because they fail *silently*:
-
-- **`timeout` on Windows is not GNU `timeout`.** `C:\Windows\System32\timeout.exe` is a sleep
-  that ignores the command you give it, so a `command -v timeout` check finds it and produces
-  checks that run nothing and report success. `profile.sh` tests it by *behaviour* — running
-  `timeout 1 true` and checking it exits promptly — and records `null` if that fails.
-- **Docker volume mounts get path-mangled.** Git Bash rewrites the container-side `/app` into a
-  Windows path, so the mount lands somewhere wrong or empty. `profile.sh` stores the prefix with
-  `MSYS_NO_PATHCONV=1` and proves the mount can see a known file before trusting it.
-
-**You must point OpenCode at Git Bash.** It will not find it on its own: OpenCode's shell
-candidates on Windows are `pwsh`, `powershell`, Git Bash, `cmd`, in that order, and with `$SHELL`
-unset it takes the first. The default is therefore **PowerShell**, where the
-`${DEV_SKILLS_LIB:-…}` in every skill is not valid syntax and every pre-computed block fails —
-producing skills that appear to run and return nothing.
-
-`install.ps1` finds Git Bash and offers to write the setting. By hand, in
-`~/.config/opencode/opencode.json`:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "shell": "C:\\Program Files\\Git\\bin\\bash.exe"
-}
-```
-
-`OPENCODE_GIT_BASH_PATH` works too if your Git lives somewhere unusual.
-
-> **Never rely on `bash` being on your PATH.** With WSL installed, `bash` resolves to
-> `C:\Windows\System32\bash.exe` — the WSL launcher. Your scripts would run in a different
-> filesystem where the repository paths do not exist, and it fails looking like a bug in the
-> skills rather than a wrong interpreter. Point at `Git\bin\bash.exe` explicitly.
+One thing to get right in WSL: **keep repositories in the WSL filesystem** (`~/projects/...`),
+not under `/mnt/c/`. Windows drives are reachable but go through a network-style filesystem, and
+git operations on a large repo there are slow enough to notice on every skill invocation.
 
 ### Why Docker matters here
 
@@ -150,7 +107,7 @@ will happily accept syntax that breaks in production, and a suite that passes ag
 runtime has proven nothing.
 
 It also means you do not need PHP, Composer, Python or Node on the host at all, and the same
-commands work on macOS, Linux, WSL and Windows.
+commands work on macOS, Linux and WSL.
 
 Without Docker the skills still work — they fall back to the host toolchain and **say so in the
 report**, with the version mismatch named. Treat a green run in that state with suspicion.
@@ -165,7 +122,7 @@ cd opencode-skills
 ./install.sh
 ```
 
-On Windows, from PowerShell: `.\install.ps1`
+On Windows, run this inside WSL.
 
 This installs:
 
@@ -603,10 +560,9 @@ bash ~/.config/opencode/dev-lib/profile.sh
 
 If that fails, set `DEV_SKILLS_LIB` to wherever `install.sh` actually put the scripts.
 
-**On Windows: skills run but every injected block is empty, or `bash: command not found`.**
-OpenCode is using PowerShell, which is its Windows default. Set `"shell"` in `opencode.json` to
-your Git Bash path — see [Windows](#windows). Re-running `install.ps1` will detect it and offer
-to write it for you.
+**On Windows: `Native Windows (Git Bash / MSYS / Cygwin) is not supported`.**
+That message is deliberate, not a bug. Run OpenCode inside WSL and install there — see
+[Windows](#windows).
 
 **Tool calls get truncated, or the model loops.**
 Context window below 64k. Fix it at the server — `OLLAMA_CONTEXT_LENGTH=65536 ollama serve`, or
@@ -660,7 +616,6 @@ skills/dev-*/         one directory per skill, SKILL.md inside
   dev-init/templates/ family rule blocks (moodle-plugin, php-app, cms, python-app)
 agents/               optional subagents (read-only, temperature 0)
 install.sh            global, or --project
-install.ps1           the same for Windows PowerShell
 ```
 
 The rule that keeps this working on small models:

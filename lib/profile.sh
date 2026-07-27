@@ -44,15 +44,20 @@ have() { command -v "$1" >/dev/null 2>&1; }
 # ------------------------------------------------------------- 0 platform ---
 
 case "$(uname -s 2>/dev/null || echo unknown)" in
-  Darwin) PLATFORM=macos; SHELLKIND=bash ;;
-  Linux)  PLATFORM=linux; SHELLKIND=bash ;;
-  MINGW*|MSYS*|CYGWIN*) PLATFORM=windows; SHELLKIND=git-bash ;;
-  *) PLATFORM=unknown; SHELLKIND=bash ;;
+  Darwin) PLATFORM=macos ;;
+  Linux)  PLATFORM=linux ;;
+  MINGW*|MSYS*|CYGWIN*)
+    # Native Windows is not supported. Refusing here is deliberate: under a POSIX
+    # translation layer these scripts mostly work, and "mostly" is the problem —
+    # container mounts land in the wrong place and a false pass reads like a real
+    # one. WSL is a real Linux kernel and needs none of the special cases.
+    echo "Native Windows (Git Bash / MSYS / Cygwin) is not supported." >&2
+    echo "Run OpenCode inside WSL and install there — everything works as on Linux." >&2
+    echo "Keep repositories in the WSL filesystem, not under /mnt/c, or git will be slow." >&2
+    exit 78
+    ;;
+  *) PLATFORM=unknown ;;
 esac
-
-# Git Bash mangles container-side paths in -v mounts. Solved once, here.
-PATHFIX=""
-[ "$PLATFORM" = "windows" ] && PATHFIX="MSYS_NO_PATHCONV=1 "
 
 # ---------------------------------------------------------- 1 base branch ---
 
@@ -164,10 +169,10 @@ if [ "$EXEC_KIND" = "host" ] && docker_up && [ -z "$COMPOSE_FILE" ]; then
   done
 
   if [ -n "$IMAGE" ] && [ -n "$PROBE" ]; then
-    if env ${PATHFIX:+MSYS_NO_PATHCONV=1} docker run --rm -v "${PWD}":/app -w /app "$IMAGE" \
+    if docker run --rm -v "${PWD}":/app -w /app "$IMAGE" \
          ls "/app/$PROBE" >/dev/null 2>&1; then
       EXEC_KIND=image
-      EXEC_PREFIX="${PATHFIX}docker run --rm -v \"\${PWD}\":/app -w /app $IMAGE"
+      EXEC_PREFIX="docker run --rm -v \"\${PWD}\":/app -w /app $IMAGE"
     else
       EXEC_NOTE="Bind mount into $IMAGE could not see /app/$PROBE — the daemon is probably remote. Using the host."
     fi
@@ -268,9 +273,9 @@ fi
 
 # ------------------------------------------------------------ 7 timeoutTool ---
 #
-# Verify by behaviour, never by presence. Windows ships a timeout.exe in System32
-# that is a sleep and ignores the command it is given — a `command -v` check finds
-# it and would silently produce checks that run nothing and report success.
+# Verify by behaviour, never by presence. macOS has no `timeout` at all unless
+# coreutils is installed, where it is `gtimeout`. A presence check that guesses
+# wrong produces checks that run nothing and report success, so run the thing.
 
 TIMEOUT=null
 if timeout 1 true >/dev/null 2>&1; then
@@ -311,7 +316,6 @@ mkdir -p .devskills
 {
   printf '{\n'
   kv platform     "$PLATFORM";     printf ',\n'
-  kv shell        "$SHELLKIND";    printf ',\n'
   kv family       "$FAMILY";       printf ',\n'
   kv language     "$LANGUAGE";     printf ',\n'
   kv baseBranch   "$BASE";         printf ',\n'
