@@ -58,7 +58,7 @@ fi
 
 echo
 echo "Done. Type '/' in OpenCode to see:"
-echo "  /dev-init /dev-plan /dev-implement /dev-review /dev-pr-review /dev-pr-comment /dev-verify"
+echo "  /dev-init /dev-plan /dev-implement /dev-review /dev-fix /dev-pr-review /dev-pr-comment /dev-verify"
 echo
 echo "The guard is at $TARGET/plugins/dev-guard.js. It refuses, before they run:"
 echo "  git push --force, git commit --amend, --no-verify, a push to the base branch,"
