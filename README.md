@@ -124,16 +124,17 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 ### The Step Cycle
 
 ```
-/dev-plan ──▶ /dev-implement ──▶ /dev-review ──▶ /dev-fix ──▶ /dev-pr
-                 │                                               │
-                 └─────────────── (next step: /compact or /new) ─┘
+   /dev-init ──▶ /dev-plan ──▶ /dev-implement ──▶ /dev-review ──▶ /dev-fix ──▶ /dev-pr
+(once per repo)                       │                                           │
+                                      └─────────── (next step: /compact or /new) ─┘
 ```
 
-1. **Plan**: `/dev-plan` resolves input via `plan-input.sh`, validates referenced paths with `plan-check.sh`, and sizes each step using `step-budget.sh` against `contextTokens` (default 100k, overridden by `DEV_SKILLS_CONTEXT`). Shared parsing is handled by `steps.awk`.
-2. **Build**: `/dev-implement` injects exactly one step via `task-step.sh` onto a stacked branch named `step/<slug>-<n>`.
-3. **Review & Fix**: `/dev-review` finds blockers/warnings, and `/dev-fix` applies verified findings.
-4. **Push & PR**: `/dev-pr` pushes the branch and opens the PR (annotated with `Depends on #` for stacked dependencies).
-5. **Next Step**: Proceed to the next step. For closely-coupled steps, continue in the same session or run `/compact` to prune raw bash/diff outputs while preserving conversational context and architectural decisions. When context balloons (>60k–80k tokens) or when switching to an unrelated task, use `/new` for a clean slate. Inter-step repository discoveries persist in `.devskills/learned.md`.
+1. **Initialize (once per repo)**: `/dev-init` inspects the project, writes build/test/lint commands and stack conventions to `AGENTS.md`.
+2. **Plan**: `/dev-plan` resolves input via `plan-input.sh`, validates referenced paths with `plan-check.sh`, and sizes each step using `step-budget.sh` against `contextTokens` (default 100k, overridden by `DEV_SKILLS_CONTEXT`). Shared parsing is handled by `steps.awk`.
+3. **Build**: `/dev-implement` injects exactly one step via `task-step.sh` onto a stacked branch named `step/<slug>-<n>`.
+4. **Review & Fix**: `/dev-review` finds blockers/warnings, and `/dev-fix` applies verified findings.
+5. **Push & PR**: `/dev-pr` pushes the branch and opens the PR (annotated with `Depends on #` for stacked dependencies).
+6. **Next Step**: Proceed to the next step. For closely-coupled steps, continue in the same session or run `/compact` to prune raw bash/diff outputs while preserving conversational context and architectural decisions. When context balloons (>60k–80k tokens) or when switching to an unrelated task, use `/new` for a clean slate. Inter-step repository discoveries persist in `.devskills/learned.md`.
 
 ---
 
