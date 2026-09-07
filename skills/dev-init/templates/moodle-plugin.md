@@ -22,6 +22,7 @@ path.
 - New code carries **type hints and return types**, and a docblock with `@param` / `@return` in
   lowercase type names.
 - Prefer `$var ?? $default` over long ternaries.
+- **Searching namespaces**: PHP namespaces contain backslashes (`\`). When searching with regex, double-escape (`\\`) or prefer exact literal matches (`rg -F` or `grep -F`) to avoid ripgrep parse errors.
 
 ### SQL
 
