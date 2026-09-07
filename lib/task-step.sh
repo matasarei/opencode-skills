@@ -7,13 +7,14 @@
 # what landed"; the lines indented under a step (Create:, Modify:, Test:,
 # Check:, Budget:) travel with it. What counts as a step is lib/steps.awk.
 #
-#   task-step.sh <task-file> --next        the first unticked step
-#   task-step.sh <task-file> <n>           step n, ticked or not
+#   task-step.sh <task-file> [--next|--continue]   the first unticked step (also with no mode at all)
+#   task-step.sh <task-file> <n> | --step <n>       step n, ticked or not
 #   task-step.sh <task-file> --count       "k of N done"
 #   task-step.sh <task-file> --paths <n>   the Create:/Modify:/Test: paths of step n, one per line
 #
 # A step is printed as: the title line, the Type line, ## Acceptance criteria,
-# ## Do not touch, then "## Step n of N" and the step's block.
+# ## Do not touch, then "## Step n of N (k done)" and the step's block. The
+# arguments are what /dev-implement's $ARGUMENTS carries, verbatim.
 # Exit 0; 3 when the file has no steps at all; 4 on --next when every step is
 # ticked (prints "PLAN DONE — N of N steps ticked"); 64 usage; 66 no such file or step.
 
@@ -21,8 +22,9 @@ set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 FILE="${1:-}"; MODE="${2:-}"; ARG="${3:-}"
-usage() { echo "usage: task-step.sh <task-file> --next | <n> | --count | --paths <n>" >&2; exit 64; }
-[ -n "$FILE" ] && [ -n "$MODE" ] || usage
+usage() { echo "usage: task-step.sh <task-file> [--next|--continue] | <n> | --step <n> | --count | --paths <n>" >&2; exit 64; }
+[ -n "$FILE" ] || usage
+case "$MODE" in ''|--continue) MODE=--next ;; --step) MODE="$ARG" ;; esac
 [ -f "$FILE" ] || { echo "no such file: $FILE" >&2; exit 66; }
 
 ANY=0; grep -q '^## Steps' "$FILE" || ANY=1
