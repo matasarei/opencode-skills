@@ -81,9 +81,15 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 * **Why reasoning OFF?** In agent loops, local models spend 30–90 seconds generating `<think>` tokens before *every single tool call*, often simulating imaginary tool output instead of calling the tool. Disabling reasoning reduces tool call latency to 1–3 seconds, allowing real tool output (compilers, linters, tests) to ground the model.
 * **On-the-Fly Toggle**: The `variants` block lets you switch reasoning `on` whenever you need deep architectural planning (switch via `/variant` or `Ctrl+M` / `Cmd+M` in the OpenCode TUI).
 
-### 2. Agent Configuration
+### 2. Permissions & Agent Configuration
 
 ```jsonc
+"permission": {
+  "external_directory": {
+    "/tmp/**": "allow",
+    "/private/tmp/**": "allow"
+  }
+},
 "agent": {
   "build": {
     "temperature": 0
@@ -102,6 +108,7 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 }
 ```
 
+* **Scratch Permissions (`/tmp`)**: OpenCode defaults `external_directory` to `ask`. Allowing `/tmp/**` and `/private/tmp/**` lets models write temporary scripts, diffs, and test outputs without stalling autonomous runs, while keeping sensitive paths outside the workspace protected.
 * **`temperature: 0`**: OpenCode defaults Qwen models to `0.55`. Zero temperature is required for deterministic code reviews and consistent tool use.
 * **Plan Mode Permissions**: OpenCode's native `plan` agent blocks file edits by default. Adding permissions for `.tasks/**` and `*.md` allows `/dev-plan` to write and update actionable task files.
 
