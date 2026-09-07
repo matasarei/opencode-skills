@@ -126,14 +126,14 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 ```
 /dev-plan ──▶ /dev-implement ──▶ /dev-review ──▶ /dev-fix ──▶ /dev-pr
                  │                                               │
-                 └─────────────── (next step via /new) ──────────┘
+                 └─────────────── (next step: /compact or /new) ─┘
 ```
 
 1. **Plan**: `/dev-plan` resolves input via `plan-input.sh`, validates referenced paths with `plan-check.sh`, and sizes each step using `step-budget.sh` against `contextTokens` (default 100k, overridden by `DEV_SKILLS_CONTEXT`). Shared parsing is handled by `steps.awk`.
 2. **Build**: `/dev-implement` injects exactly one step via `task-step.sh` onto a stacked branch named `step/<slug>-<n>`.
 3. **Review & Fix**: `/dev-review` finds blockers/warnings, and `/dev-fix` applies verified findings.
 4. **Push & PR**: `/dev-pr` pushes the branch and opens the PR (annotated with `Depends on #` for stacked dependencies).
-5. **Fresh Session**: Start each subsequent step in a clean session via `/new`. Inter-step repository discoveries persist in `.devskills/learned.md`.
+5. **Next Step**: Proceed to the next step. For closely-coupled steps, continue in the same session or run `/compact` to prune raw bash/diff outputs while preserving conversational context and architectural decisions. When context balloons (>60k–80k tokens) or when switching to an unrelated task, use `/new` for a clean slate. Inter-step repository discoveries persist in `.devskills/learned.md`.
 
 ---
 
