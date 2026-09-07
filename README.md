@@ -43,6 +43,8 @@ cd opencode-skills
 * **GitHub CLI (`gh`)** for pull request skills (`gh auth login`).
 * **Docker** (recommended — skills run tests inside project containers by default).
 
+> **Invoking Skills**: In OpenCode, skills installed in `skills/` are accessed via the **`/skills`** picker (type `/skills` in the prompt or use the TUI picker), or loaded as agent tools. They do not autocomplete directly on the root `/` slash (which OpenCode reserves for custom commands).
+
 ---
 
 ## Configuration
@@ -146,7 +148,7 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 
 ## Troubleshooting
 
-* **Commands not showing up**: Check `ls ~/.config/opencode/skills/`. Verify each directory has a valid `SKILL.md`.
+* **Skills not showing up on `/`**: In OpenCode, skills are accessed via the **`/skills`** picker, not root `/` command autocomplete. Type `/skills` in OpenCode to select a skill. If `/skills` is empty, check `ls ~/.config/opencode/skills/` and verify each directory has a valid `SKILL.md`.
 * **Tool calls truncate or loop**: Server context window is below 64k. Increase context length in LM Studio or set `OLLAMA_CONTEXT_LENGTH=65536`.
 * **Plan mode refuses to write to `.tasks/`**: Ensure `agent.plan.permission.edit` allows `.tasks/**` in `opencode.jsonc`.
 * **Guard blocked a command**: The guard refused a destructive git command (force-push, commit amend, or base branch push). Commit changes normally and use `/dev-pr`.
