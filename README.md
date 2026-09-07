@@ -9,7 +9,7 @@
 
 Development skills for [OpenCode](https://opencode.ai) engineered specifically for **local ~30B models** (such as **Qwen3 Coder 30B** and **Prism Bonsai 27B**).
 
-Instead of relying on fragile multi-variable reasoning and prompt guesswork, these skills use deterministic shell scripts to compute facts before prompts run, replace subjective scoring with binary yes/no checks, verify code quotes mechanically, and advance work one discrete step at a time.
+Instead of relying on fragile multi-variable reasoning and prompt guesswork, these skills compute facts before prompts run, replace subjective scoring with binary yes/no checks, verify code quotes mechanically, and advance work one discrete step at a time.
 
 ---
 
@@ -17,14 +17,14 @@ Instead of relying on fragile multi-variable reasoning and prompt guesswork, the
 
 These skills are optimized for ~30B parameter local coding models:
 
-1. **[Prism Bonsai 27B](https://huggingface.co/prism-ml/bonsai-27b)** (`prism-ml/bonsai-27b`) — Excellent general coding, reasoning, and instruction-following.
+1. **[Prism Bonsai 27B](https://huggingface.co/prism-ml/bonsai-27b)** (`prism-ml/bonsai-27b`) — Strong general coding, reasoning, and instruction-following.
 2. **[Qwen3 Coder 30B](https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct)** (`qwen/qwen3-coder-30b`) — Tuned specifically for code generation, diff analysis, and fast tool calling.
 
 > **Crucial Server Requirement**: Set your model server's context window (LM Studio, Ollama, or llama.cpp) to **64k or 128k**. Local tool calling will degrade or loop if the context window is left at the default 4k/8k.
 
 ---
 
-## Installation
+## Installation & Setup
 
 ```bash
 git clone https://github.com/matasarei/opencode-skills.git
@@ -37,11 +37,11 @@ cd opencode-skills
 ./install.sh --project
 ```
 
-### Prerequisites
+### Requirements
 * **OpenCode** with skills support.
 * **Git** and **Bash** (macOS, Linux, or WSL on Windows. Native Windows Git Bash is unsupported).
-* **Docker** (recommended — skills run tests inside project containers by default).
 * **GitHub CLI (`gh`)** for pull request skills (`gh auth login`).
+* **Docker** (recommended — skills run tests inside project containers by default).
 
 ---
 
@@ -51,7 +51,7 @@ A complete, recommended configuration is provided in [**`opencode.jsonc`**](open
 
 ### 1. Model Configuration
 
-Local models perform best in agentic loops when **reasoning is turned OFF by default** and **output ceiling is capped at 16k tokens**:
+Local models perform best in agentic loops when **reasoning is turned OFF by default** and the **output ceiling is capped at 16k tokens**:
 
 ```jsonc
 "models": {
@@ -105,50 +105,52 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 
 ---
 
-## Available Skills
+## The Skills & The Step Cycle
 
 | Command | Purpose | Code Modified? |
 |---|---|---|
 | `/dev-init` | Detects project stack and writes repo conventions to `AGENTS.md` | Yes (`AGENTS.md`) |
-| `/dev-plan <request>` | Investigates code, checks database/environment, writes `.tasks/*.md` | No |
+| `/dev-plan <request>` | Investigates code, sizes steps against budget, writes `.tasks/*.md` | No |
 | `/dev-implement <task>` | Builds one discrete step from the task file, ticks it off, and stops | Yes |
 | `/dev-review` | Runs 12 yes/no checks on changed files with mechanical quote verification | No |
+| `/dev-fix` | Applies verified findings from `/dev-review`, landing one commit each | Yes |
+| `/dev-pr` | Pushes the step branch, opens stacked PR with `Depends on #` | No |
 | `/dev-verify` | Runs test suites and exercises runtime behaviour inside Docker containers | No |
 | `/dev-pr-review <pr>` | Reviews an external PR against a structured checklist | No |
 | `/dev-pr-comment <pr>` | Addresses one review comment on your PR as a verified local commit | Yes (local commit) |
 
-### The Standard Workflow
+### The Step Cycle
 
 ```
-   /dev-init ──▶ /dev-plan ──▶ /dev-implement ──▶ /dev-review ──▶ open PR
-(once per repo)                       │
-                                      ▼
-                                 /dev-verify
+/dev-plan ──▶ /dev-implement ──▶ /dev-review ──▶ /dev-fix ──▶ /dev-pr
+                 │                                               │
+                 └─────────────── (next step via /new) ──────────┘
 ```
 
-1. **Plan first**: Run `/dev-plan <feature or bug>`. It writes a structured task file to `.tasks/`.
-2. **One step at a time**: Run `/dev-implement .tasks/<task>.md`. Let it finish a step, inspect the diff, and resume with `--continue`.
-3. **Review before push**: Run `/dev-review`. Findings are verified against the real code—hallucinated findings are automatically discarded.
-4. **Verify**: Run `/dev-verify` to ensure tests pass inside Docker.
+1. **Plan**: `/dev-plan` resolves input via `plan-input.sh`, validates referenced paths with `plan-check.sh`, and sizes each step using `step-budget.sh` against `contextTokens` (default 100k, overridden by `DEV_SKILLS_CONTEXT`). Shared parsing is handled by `steps.awk`.
+2. **Build**: `/dev-implement` injects exactly one step via `task-step.sh` onto a stacked branch named `step/<slug>-<n>`.
+3. **Review & Fix**: `/dev-review` finds blockers/warnings, and `/dev-fix` applies verified findings.
+4. **Push & PR**: `/dev-pr` pushes the branch and opens the PR (annotated with `Depends on #` for stacked dependencies).
+5. **Fresh Session**: Start each subsequent step in a clean session via `/new`. Inter-step repository discoveries persist in `.devskills/learned.md`.
 
 ---
 
-## Best Practices
+## Mechanics & Guardrails
 
-1. **Context Window at 64k–128k**: Set this in your server (LM Studio / Ollama / llama.cpp).
-2. **Temperature 0**: Essential for consistent review findings and non-drifting tool calls.
-3. **Start Fresh Sessions**: Start a new OpenCode session between unrelated tasks. Long conversation history degrades 30B model precision.
-4. **Run Docker**: Start the Docker daemon so `/dev-verify` and `/dev-review` can execute commands in the project's true runtime environment.
-5. **One step per `/dev-implement` run**: Let the command stop after each step. Resuming is free and prevents context drift.
+* **The Guard (`lib/dev-guard.js`)**: An OpenCode plugin that intercepts bash commands and blocks dangerous actions: force pushes, amended commits, skipped git hooks, pushes to `main`/`master`, and unauthorized `gh pr merge`. Verified against 43 test cases in `evals/guard/cases.sh`.
+* **Mechanical Evidence Verification**: `lib/findings-check.sh` validates quoted code against current files on disk, discarding hallucinated findings.
+* **Size Cap**: Each `SKILL.md` is strictly capped at 90 lines and `4,500 bytes` (enforced by `evals/skills/size.sh`) to prevent context bloat.
+* **Testing & Evals**: The entire toolkit is covered by fixture suites. Run `bash evals/run-all.sh` to execute all 16 test suites.
 
 ---
 
 ## Troubleshooting
 
-* **Commands not showing up**: Check `ls ~/.config/opencode/skills/`. Verify each folder has a `SKILL.md`.
+* **Commands not showing up**: Check `ls ~/.config/opencode/skills/`. Verify each directory has a valid `SKILL.md`.
 * **Tool calls truncate or loop**: Server context window is below 64k. Increase context length in LM Studio or set `OLLAMA_CONTEXT_LENGTH=65536`.
 * **Plan mode refuses to write to `.tasks/`**: Ensure `agent.plan.permission.edit` allows `.tasks/**` in `opencode.jsonc`.
-* **Findings dropped as unverifiable**: The hallucination filter deleted a finding because the quoted code didn't exist in the file. Ensure `temperature: 0`.
+* **Guard blocked a command**: The guard refused a destructive git command (force-push, commit amend, or base branch push). Commit changes normally and use `/dev-pr`.
+* **Findings dropped as unverifiable**: The model quoted code that did not exist in the file. Ensure `temperature: 0`.
 
 ---
 

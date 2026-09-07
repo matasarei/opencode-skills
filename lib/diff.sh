@@ -8,7 +8,6 @@
 #   diff.sh [base] [max-lines]     default max: 600
 
 set -u
-HERE="$(cd "$(dirname "$0")" && pwd)"
 
 BASE="${1:-}"
 [ -z "$BASE" ] && BASE="$(sed -n 's/.*"baseBranch"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .devskills/profile.json 2>/dev/null)"

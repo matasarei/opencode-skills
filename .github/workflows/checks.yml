@@ -1,0 +1,34 @@
+name: checks
+
+# The toolkit is markdown and shell, so the checks are: do the scripts still do
+# what their fixtures say, and does the shell parse cleanly.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  evals:
+    name: eval suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # The guard suite loads the OpenCode plugin under node; ubuntu-latest ships one.
+      - run: node --version
+      - run: bash evals/run-all.sh
+
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # ubuntu-latest ships shellcheck, so there is nothing to install.
+      # severity=warning: the info-level notices on these files are deliberate,
+      # and a newer shellcheck than the runner's would otherwise fail a build by
+      # adding notices nobody changed code for.
+      - run: shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh
