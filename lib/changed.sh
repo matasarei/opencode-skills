@@ -61,13 +61,13 @@ rank_of() {
   case "$file" in
     .devskills/*|.devskills) echo 99; return ;;   # our own cache, never part of the change
     vendor/*|node_modules/*|*/vendor/*|*/node_modules/*|*.min.js|*.min.css|amd/build/*) echo 9; return ;;
-    *.lock|composer.lock|package-lock.json|yarn.lock) echo 6; return ;;
+    *.lock) echo 6; return ;;
     *.md|*.txt|*.json|*.yml|*.yaml|lang/*) echo 7; return ;;
   esac
 
   # 1 — schema, money, grades, auth, downloads. Failures here are not recoverable.
   case "$file" in
-    db/install.xml|db/upgrade.php|db/*.php|*migrations/*|*schema.sql|*/migrations/*) echo 1; return ;;
+    db/install.xml|db/upgrade.php|db/*.php|*migrations/*|*schema.sql) echo 1; return ;;
     *auth*|*permission*|*capabilit*|*login*|*password*|*token*) echo 1; return ;;
     *grade*|*payment*|*invoice*|*money*|*export*|*download*) echo 1; return ;;
   esac

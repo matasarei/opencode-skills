@@ -35,7 +35,7 @@ fi
 
 failed=0
 linted=0
-while read -r rank status file; do
+while read -r _ status file; do
   [ -z "${file:-}" ] && continue
   [ "$status" = "D" ] && continue
   [ -f "$file" ] || continue
