@@ -1,67 +1,39 @@
 ---
 name: dev-init
-description: Write this repository's AGENTS.md — the detected build, test and run commands plus the conventions and security rules for its family (Moodle plugin, PHP app, CMS, Python). Leaves CLAUDE.md as an import stub so Claude Code reads the same file. Writes those two files and nothing else.
+description: Write this repository's AGENTS.md — the detected commands plus its family's conventions and security rules — and leave CLAUDE.md as an @AGENTS.md stub. Writes those two files and nothing else.
 ---
 
 # Give this repository an AGENTS.md
 
-`AGENTS.md` is loaded at the start of every session. It is where the build and test commands and the handful of rules that actually get broken here belong.
+`AGENTS.md` is loaded at the start of every session: the build and test commands, and the handful of rules that actually get broken here.
 
-## AGENTS.md is the real file. CLAUDE.md is a stub.
-
-This direction is not a preference — it is required:
-
-- OpenCode reads `AGENTS.md`, and falls back to `CLAUDE.md` **only when `AGENTS.md` is absent**. First match wins. A stub `AGENTS.md` pointing at a real `CLAUDE.md` means OpenCode reads the stub and **stops** — every rule silently invisible, with no error.
-- OpenCode does not resolve file references inside `AGENTS.md`. A markdown link is not followed.
-
-So: content in `AGENTS.md`, and `CLAUDE.md` containing exactly this, which Claude Code *does* resolve as an import:
-
-```markdown
-@AGENTS.md
-```
-
-One copy, both tools, no drift. If the repository already has content in `CLAUDE.md` and none in `AGENTS.md`, **move** it rather than duplicating.
+**Content goes in `AGENTS.md`; `CLAUDE.md` is exactly `@AGENTS.md`.** OpenCode reads `AGENTS.md` and falls back to `CLAUDE.md` only when it is absent, and follows no links inside it — a stub `AGENTS.md` pointing elsewhere makes every rule invisible. Claude Code resolves the `@` import, so both tools read one file. Content in `CLAUDE.md` and none in `AGENTS.md` → **move** it.
 
 ## Step 1 — Map the family to a template
 
-Take `family` from the profile below:
+From `family` in the profile below; `--family <name>` overrides it with a template name. Templates live in `templates/` beside this file.
 
 | Profile family | Template | Note |
 |---|---|---|
 | `moodle-plugin` | `moodle-plugin` | |
 | `cms` | `cms` | |
 | `php-app` | `php-app` | |
-| `php-library` | `php-app` | Skip its request-handling sections; style and bulk-write rules still apply |
+| `php-library` | `php-app` | skip its request-handling sections |
 | `python-app` | `python-app` | |
-| `node`, `other` | — | No template. Write the commands section, skip the family block, and say so |
-
-`--family <name>` in the arguments overrides this and takes a **template** name.
-
-Templates live in `templates/` beside this file.
+| `node`, `other` | — | commands section only; say the family block was skipped |
 
 ## Step 2 — Read what is there first
 
-**No `AGENTS.md` → go to step 3.** Otherwise read it and judge it. Someone wrote it, and it may already be right.
+No `AGENTS.md` → step 3. Otherwise judge it: are the commands still true against the profile (a stale command will be tried); is anything contradicted by the code (an escaping claim the templates do not back is worse than nothing); is the family block present?
 
-- **Are the commands still true?** Compare each against the profile. A command that no longer exists is the most damaging kind of staleness, because it will be tried.
-- **Is anything contradicted by the code?** A rule saying output is escaped automatically, in a project whose templates do not escape, is worse than no file at all.
-- **Is the family block present and current?**
-
-Report one of three outcomes, and **do not write without saying which**:
-
-- **Already fine** — one line, nothing written. This is a real and common result.
-- **Needs a refresh** — show what would change, and ask. `--refresh` means the answer is already yes.
-- **Needs attention you should not apply yourself** — a stale command, or a claim the code contradicts. List these for the developer. Correcting a factual claim about the project is not a mechanical edit.
-
-**A hand-written `AGENTS.md` is never overwritten.** Show the family block and ask whether to insert it, and where.
+Report one of three, and **do not write without saying which**: **Already fine** — one line, nothing written; **Needs a refresh** — show what would change and ask (`--refresh` is already yes); **Needs attention you should not apply** — a stale command or a claim the code contradicts, listed for the developer. **A hand-written `AGENTS.md` is never overwritten** — show the family block and ask where to insert it.
 
 ## Step 3 — Write it
 
 ```markdown
 # <Repository name>
 
-<One or two sentences: what this project is, and anything structural a newcomer would get
-wrong. For a Moodle plugin, that the repo root is the plugin root and it cannot run standalone.>
+<One or two sentences: what this is, and the structural thing a newcomer gets wrong.>
 
 ## Commands
 
@@ -73,56 +45,30 @@ wrong. For a Moodle plugin, that the repo root is the plugin root and it cannot 
 | Build | `<profile.build>` |
 | Run | `<profile.runtime.how>` |
 
-<If exec.kind is compose or image: say these run inside the container, and why — the project
-targets a specific version and the host's may differ. If it fell back to host, say that, and
-name the version mismatch if there is one.>
+<exec.kind compose or image: these run inside the container, and why. Host fallback: say so, name the version mismatch.>
 
 <the family template, verbatim>
 
 ## This project specifically
 
-<Anything true here and nowhere else — see step 4.>
+<step 4>
 ```
 
-**A `null` command is written as "none" with a word of why** — "no test command: this repository has no test suite". Never invented. A made-up command is worse than an absent one, because the next reader will try it.
+**A `null` command is written as "none" with the reason.** Never invented — the next reader will try it. **Do not pad**: the file is loaded into every session.
 
-**Do not pad.** This file is loaded into every session; length is a running cost. If a rule is generic enough that any competent developer already follows it, leave it out.
+## Step 4 — What only this repository knows
 
-## Step 4 — Fill in what only this repository knows
+Look, then write what you find — never assume: does the template layer escape automatically (read a view and the render path; cannot tell → say so and mark it); is there a CSRF helper — name it or record none; how authorisation is checked — middleware, base controller, per-action; which files hold credentials and whether they are ignored — where, **never their contents**; what is generated and must not be hand-edited; what breaks only in production — a cache, a version bump, a migration.
 
-The template cannot know these, and they are the highest-value lines in the file. **Look, then write what you find** — do not assume:
+## Step 5 — The stub, and the report
 
-- **Does the template layer escape automatically?** Read a view and the render path before writing the rule. Stating it backwards is worse than omitting it, because a reviewer will trust it. Cannot tell → say so in the file and mark it to be confirmed.
-- **Is there a CSRF helper?** Name it, or record that there is none.
-- **How is authorisation actually checked** — middleware, base controller, per-action call?
-- **Which files hold credentials**, and are they git-ignored? Say where they live; **never quote their contents.**
-- **What is generated** and must not be hand-edited.
-- **What breaks only in production** — a cache to clear, a version to bump, a migration to run.
-
-## Step 5 — The CLAUDE.md stub
-
-Write `CLAUDE.md` containing only `@AGENTS.md`, unless it already holds real content — in which case that is the step 2 conflict and needs the developer's decision first. An existing stub is left alone.
-
-## Step 6 — Report
-
-Which family was detected and why, the absolute paths written, whether `CLAUDE.md` was created or left alone, and which commands came out `null`. Anything step 4 left unresolved is listed as a question, not a guess.
-
-`--dry-run` prints the file and writes nothing.
+`CLAUDE.md` containing only `@AGENTS.md`, unless it already holds real content — the step 2 conflict, the developer decides. Then report: the family and why, the absolute paths written, whether `CLAUDE.md` was created or left, which commands came out `null`, and what step 4 left as a question. `--dry-run` prints and writes nothing.
 
 ## Rules
 
-- **Only ever write `AGENTS.md` and a stub `CLAUDE.md`.** No source files, no config, no commits.
-- **Never invent a command.** Detected, or "none" with the reason.
-- **Never copy secrets into the file** — describe where configuration lives, never what is in it.
-- **Under ~120 lines** including the family block. Past that, the surplus belongs in the repository's own documentation, read on demand rather than every session.
-- English or Ukrainian, matching the repository's existing documentation.
-
-## Edge cases
-
-- **Monorepo** — write for the root, and note which sub-directory each command applies to. Not one file per package.
-- **A good `CONTRIBUTING.md` exists** — do not restate it. Link it.
-- **Family detected but the template does not fit** — write the commands, include the block, and flag the mismatch rather than silently trimming rules.
-- **Already correct** — say so and stop. Do not reformat, reorder, or rewrite prose to match the template's phrasing; none of that is an improvement and all of it produces a diff someone has to read.
+- **Only `AGENTS.md` and the stub.** No source, no config, no commits. Never invent a command. Never copy a secret into the file.
+- **Under ~120 lines** including the family block; the surplus belongs in the repository's own documentation.
+- English or Ukrainian, matching the repository. A monorepo gets one file at the root, noting which directory each command applies to. Already correct → say so and stop; no reformatting.
 
 ---
 

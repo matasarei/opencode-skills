@@ -22,7 +22,7 @@ skills="$root/skills"
 MAX_LINES=90
 MAX_BYTES=4500
 MAX_DESC=200
-SIZE_TODO="dev-review dev-verify dev-init dev-pr-review dev-pr-comment"
+SIZE_TODO="dev-pr-review dev-pr-comment"
 
 fails=0
 checked=0
