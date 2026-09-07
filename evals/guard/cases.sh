@@ -117,6 +117,16 @@ if (grepArgs.pattern !== "Company::class|models\\\\company\\.Company") {
   fails++
   console.log(`FAIL  ${label} grep pattern was not sanitized: ${grepArgs.pattern}`)
 }
+// Repeated identical edit call on an already-updated file is refused on retry
+const dummyFile = `${dir}/dummy.php`
+const { writeFileSync } = await import("node:fs")
+writeFileSync(dummyFile, "use CompanyBundle\\Entity\\Company;\n")
+const editArgs = { filePath: dummyFile, oldString: "use models\\company\\Company;", newString: "use CompanyBundle\\Entity\\Company;" }
+await hook({ tool: "edit" }, { args: editArgs })
+let editRefused = false
+try { await hook({ tool: "edit" }, { args: editArgs }) }
+catch (e) { if (e.message.includes("is already present")) editRefused = true }
+if (!editRefused) { fails++; console.log(`FAIL  ${label} repeated edit on already-updated file was not refused`) }
 process.exit(fails ? 1 : 0)
 JS
 
