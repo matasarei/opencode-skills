@@ -1,27 +1,19 @@
 ---
 name: dev-review
-description: Review your own changes before you push — risk-ranked, one file at a time, with every finding backed by a line quoted from the file and verified against it. Runs the project's linter over what changed. Review only; never edits, commits or pushes.
+description: Review your own changes before /dev-pr — twelve yes/no checks per file, worst-risk first, every finding a quoted line verified by a script. Review only; never edits, commits or pushes.
 ---
 
 # Review your own work
 
-Review only. Never edit, commit, push, or post a comment. You list; the developer decides.
+Review only. Never edit, commit, push, or post. You list; `/dev-fix` applies.
 
 ## How to run this
 
-**First, empty `.devskills/findings.md`** (`: > .devskills/findings.md`). It is appended to
-below, so a leftover file from an earlier run would be reported as if it were this one's.
+**First, empty `.devskills/findings.md`** (`: > .devskills/findings.md`) — it is appended to, and a leftover file would be reported as this run's.
 
-Then work the queue at the bottom **one file per step**. Do not batch, do not skim ahead.
+Then work the queue at the bottom **one file per step**. Do not batch, do not skim ahead. For each file, in queue order: read it; answer the checks below, yes or no, about that file only; for every YES append one line to `.devskills/findings.md`; next file.
 
-For each file, in queue order:
-
-1. Read the file.
-2. Answer the checks below, yes or no, about that file only.
-3. For every YES, append one line to `.devskills/findings.md`.
-4. Next file.
-
-Read at most the **top 3 files** of the queue in full. Judge the rest from the diff, and name them in the report as judged-from-diff.
+Read at most the **top 3 files** in full. Judge the rest from the diff, and name them in the report as judged-from-diff.
 
 ## The checks
 
@@ -49,13 +41,13 @@ Answer yes or no. Do not weigh, rank, or reconsider — just answer.
 
 ## C5 is grep, not judgement
 
-For every renamed or removed symbol:
+For every renamed or removed symbol, grep the files the current step names first — `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/task-step.sh <task-file> --paths <n>` lists them — then the tree:
 
 ```
 grep -rn "<oldname>" --exclude-dir=vendor --exclude-dir=node_modules .
 ```
 
-Any surviving caller is a BLOCKER. Do not reason about whether it is still reachable — grep it and report what grep found.
+Any surviving caller is a BLOCKER. Do not reason about whether it is still reachable — report what grep found.
 
 ## The output line
 
@@ -65,35 +57,24 @@ One line per finding in `.devskills/findings.md`, exactly this shape:
 SEVERITY | path:line | one sentence on what breaks | EVIDENCE: <the exact line from the file>
 ```
 
-- **EVIDENCE is copied, character for character.** Never paraphrase it.
-- **If you cannot copy a line that proves the finding, do not write the finding.**
-- One sentence. No diff dumps.
-
-Findings whose evidence is not found in the file are deleted automatically in step 2 below, so an invented one costs you the finding rather than the review.
+**EVIDENCE is copied, character for character.** If you cannot copy a line that proves the finding, do not write the finding — an unverifiable one is deleted below. One sentence; no diff dumps.
 
 ## Finish
 
-1. Lint: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh` — a failure is a BLOCKER, quoted verbatim. If it says there is no lint command, report the review as **unlinted**.
+1. Lint: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh` — a failure is a BLOCKER, quoted verbatim. `NO LINT COMMAND` → report the review as **unlinted**.
 2. Verify: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/findings-check.sh .devskills/findings.md`
-3. **Report only what step 2 printed.** Nothing that it dropped.
+3. **Report only what step 2 printed.**
 
-Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N warnings` — then the surviving findings, blockers first. Close with the files you judged from the diff alone, and whether lint ran.
-
-Write `REVIEW.md` only when there is a blocker, or when the arguments asked for it.
+Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N warnings` — then the surviving findings, blockers first, the files judged from the diff alone, and whether lint ran. A report file only on a blocker, or when asked: `.devskills/reports/review-<branch-slug>-<UTC timestamp>.md`, path printed. Then: `Next: /dev-fix` when anything survived; `Next: /dev-pr` when nothing did.
 
 ## Rules
 
-- Absolute paths, so they are clickable.
-- Never suggest `--no-verify`, `--force`, or `git push --force`.
-- English or Ukrainian, matching the developer. Quote code in its original language.
-- If the repository has no tests at all, say it once — never once per file, and never as "tests pass".
+- Absolute paths. English or Ukrainian; quote code in its original language.
+- No tests in the repository at all → say it once, never per file, never as "tests pass".
 
 ---
 
 ## This repository
-
-If the two blocks below are empty, you were loaded as a skill rather than run as
-`/dev-review`; run those two scripts yourself before continuing.
 
 Profile:
 
