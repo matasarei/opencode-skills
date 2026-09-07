@@ -48,6 +48,7 @@ of them.
 | **Designed ceiling** | ~30B. Larger or cloud models work fine; they just do not need this design |
 | **Realistic floor** | Untested below ~14B. Expect tool calling and instruction-following to degrade first |
 | **Hard requirement** | A 64k+ context window and `temperature: 0` — see [configuration](#point-opencode-at-a-local-model) |
+| **Step sizing** | assumes a 100k window — `contextTokens` in the profile, `DEV_SKILLS_CONTEXT` overrides it. A recommendation the planner follows, not a limit anything enforces — see [One step, one context](#one-step-one-context) |
 
 ~30B is the design ceiling, not a promise that anything smaller works. If you run these on a 7B
 model and it holds up, that is a genuinely useful thing to report.
@@ -74,8 +75,10 @@ model and it holds up, that is a genuinely useful thing to report.
 ## Requirements
 
 - **OpenCode**, recent enough to support skills (`.opencode/skills/`).
-- **git.** And **`gh`** for the two pull-request skills — `gh auth login` once, then check with
-  `gh auth status`.
+- **git.** And **`gh`** for the three pull-request skills (`/dev-pr`, `/dev-pr-review`,
+  `/dev-pr-comment`) — `gh auth login` once, then check with `gh auth status`.
+- **node** only to run the eval suite: `evals/guard/cases.sh` loads the guard plugin under node.
+  OpenCode runs the plugin itself.
 - **bash**, and a Unix-like environment. macOS, Linux and WSL. Native Windows is not
   supported — see [Windows](#windows).
 - **A context window of 64k or more.** This is not a nice-to-have. Below it, OpenCode's tool
@@ -131,10 +134,11 @@ This installs:
 | Skills | `~/.config/opencode/skills/dev-*/` |
 | Shared scripts | `~/.config/opencode/dev-lib/` |
 | Optional subagent | `~/.config/opencode/agents/dev-check.md` |
+| The guard | `~/.config/opencode/plugins/dev-guard.js` — see [The guard](#the-guard) |
 
 ### Check it worked
 
-Start OpenCode in any git repository, type `/`, and you should see the seven `dev-` commands.
+Start OpenCode in any git repository, type `/`, and you should see the nine `dev-` commands.
 
 To confirm the scripts are reachable, run this from inside a repository:
 
@@ -237,7 +241,8 @@ setting the same diff produces different findings on different runs, which makes
 useless — you cannot tell a fixed problem from a problem that was not re-rolled this time.
 
 **Set the context window to 64k or more**, at the *server*, not just in the config. This is the
-single most common cause of "the skills don't work".
+single most common cause of "the skills don't work". 100k+ is what the step sizing assumes;
+tell the profile your real window with `DEV_SKILLS_CONTEXT` and steps are sized to it.
 
 ### Which model
 
@@ -253,8 +258,9 @@ Since the design deliberately strips out the reasoning-heavy stages, that is the
 ## The skills
 
 ```
-   /dev-init ──▶ /dev-plan ──▶ /dev-implement ──▶ /dev-review ──▶ open a pull request
-(once per repo)
+                              ┌─ one step, one context ───────────────────────────────┐
+   /dev-init ──▶ /dev-plan ──▶│ /dev-implement ──▶ /dev-review ──▶ /dev-fix ──▶ /dev-pr │──▶ /new, then --continue
+(once per repo)               └───────────────────────────────────────────────────────┘
                                                     │
                                   ┌─────────────────┴──────────────────┐
                                   ▼                                    ▼
@@ -267,9 +273,11 @@ Since the design deliberately strips out the reasoning-heavy stages, that is the
 | Command | What it does | Changes your code? |
 |---|---|---|
 | `/dev-init` | Writes this repository's `AGENTS.md` — commands plus its family's rules | **Yes** (two files) |
-| `/dev-plan` | Turns a request into a concrete plan, checked against the real code | No |
-| `/dev-implement` | Builds the plan, one step per run, ticking off progress | **Yes** |
-| `/dev-review` | Checks your own changes before you push them | No |
+| `/dev-plan` | Turns a request, a task file or a GitHub issue into measured, PR-sized steps, checked against the real code | No |
+| `/dev-implement` | Builds one step per run, on its own stacked branch, ticking it off | **Yes** |
+| `/dev-review` | Checks your own changes before they go anywhere | No |
+| `/dev-fix` | Applies the verified findings from `/dev-review`, one commit each | **Yes** (local commits) |
+| `/dev-pr` | Pushes the step's branch and opens its pull request, stacked on the previous step's | **Pushes** — never merges |
 | `/dev-pr-review` | Reviews someone else's pull request against a checklist | No |
 | `/dev-pr-comment` | Addresses **one** review comment on *your* pull request, per run | **Yes** (local commit only) |
 | `/dev-verify` | Runs the tests and drives the real thing to prove it works | No |
@@ -308,7 +316,10 @@ reads the same file. OpenCode loads `AGENTS.md` at the start of every session fr
 It asks you to confirm whether this is a bug, a feature, a question or a data fix — that one
 answer drives everything downstream, and it is cheaper to ask than to guess. Then it finds the
 export code, reads it, checks the database to see whether same-named departments really exist,
-and writes `.tasks/export-department-collision.md`.
+and writes `.tasks/export-department-collision.md`. Every step in it carries five lines scripts
+read — `Create`, `Modify`, `Test`, `Check`, `Budget` — and two scripts check the plan before it
+is handed over: `plan-check.sh` that every path it names exists, `step-budget.sh` that each
+step fits the context window.
 
 **Read the plan.** If it is wrong, say so now — fixing a plan costs far less than fixing a
 half-built change.
@@ -319,8 +330,9 @@ half-built change.
 /dev-implement .tasks/export-department-collision.md
 ```
 
-It creates a branch, does **one step**, ticks it off in the task file, and stops. Run it again
-for the next step. When you come back tomorrow:
+It cuts `step/export-department-collision-1` from `main`, does **one step** — the step arrives
+injected, not the whole plan — ticks it off in the task file, commits, and stops with
+`Next: /dev-review`. When you come back tomorrow:
 
 ```
 /dev-implement .tasks/export-department-collision.md --continue
@@ -337,6 +349,25 @@ It resumes at the first unticked step. Nothing is rebuilt.
 Twelve yes/no checks per file, worst-risk file first, every finding carrying a line quoted from
 the code — then a script deletes any finding whose quote is not actually there. You get
 blockers, warnings and nits, and an explicit note of which files were judged from the diff alone.
+
+**4b. Apply what it found, then open the pull request.**
+
+```
+/dev-fix
+/dev-pr
+```
+
+`/dev-fix` applies each surviving BLOCKER and WARNING as its own smallest commit and proves it
+by running the filter again — a finding whose evidence is gone is fixed. `/dev-pr` pushes the
+branch and opens the pull request, stacked on the previous step's with `Depends on #n` first,
+and ends with the two commands that start the next step in a fresh context:
+
+```
+/new
+/dev-implement .tasks/export-department-collision.md --continue
+```
+
+Step 2 is cut from step 1's branch, so nothing waits for a merge. Merge them in step order.
 
 **5. Prove it works.**
 
@@ -380,13 +411,17 @@ these are wrong. See [above](#two-settings-that-matter-more-than-the-model-choic
 project's conventions. Without it they fall back to whatever documentation exists, or nothing.
 This is the cheapest quality improvement available.
 
-**3. Start a fresh session between unrelated tasks.** Context accumulates and is re-sent with
-every message. An unrelated hour of history does not just cost tokens — it actively degrades a
-30B model's instruction-following. New task, new session.
+**3. `/new` after every step's pull request.** Context accumulates and is re-sent with every
+message, and an hour of history actively degrades a 30B model's instruction-following. The task
+file and the branch are the state, so a fresh session loses nothing; a small model's `/compact`
+summary loses instructions, so keep it for one case — a step that overruns mid-cycle.
 
-**4. One step per `/dev-implement` run — let it stop.** This is deliberate. A long build in a
-single context drifts, and a drifting build is worse than a slow one. Resuming is free, so let
-it finish a step, read what it did, and run it again.
+**4. One step per `/dev-implement` run — let it stop.** A long build in a single context drifts,
+and a drifting build is worse than a slow one. A step is sized to its whole cycle — build,
+review, fix, pull request — by `step-budget.sh` against `contextTokens`: 12 lines of source per
+1k tokens of window, about 1,200 lines at 100k. That is a recommendation, not a gate:
+`/dev-plan` splits when a split exists, and a step it cannot split is kept and labelled
+`OVER — kept`. Set `DEV_SKILLS_CONTEXT` to your real window.
 
 **5. Write a task file for anything bigger than a sentence.** A written brief gets it right the
 first time far more often, and a redo costs more than the five minutes of writing.
@@ -508,6 +543,51 @@ commands and you send them. A confident, well-worded false positive from an auto
 the most likely way this toolkit could put a real bug into your code, so the step where that gets
 caught stays with a person.
 
+### One step, one context
+
+A plan step is what one `/dev-implement` run builds and one pull request carries, and its whole
+cycle — build, `/dev-review`, `/dev-fix`, `/dev-pr` — has to fit one context. Measured on this
+repository a source line is about 10 tokens; with the prompt, the profile, the diff and the
+review's re-read taken out, the rule is **12 lines of source per 1k tokens of window**.
+`profile.sh` records the window as `contextTokens` (100000 by default), `step-budget.sh` sums
+`wc -l` over the files a step's `Modify:` and `Test:` lines name, and `/dev-plan` pastes the
+verdict into the step. Three more scripts take the reading out of the model's hands:
+`plan-input.sh` decides whether the argument was a file, an issue or a sentence; `task-step.sh`
+hands `/dev-implement` exactly the step it is on; `plan-check.sh` refuses a plan that names a
+path that is not there — the plan-side twin of `findings-check.sh`. All four share
+`lib/steps.awk`, so they agree on what a step is.
+
+Each step gets its own branch, `step/<slug>-<n>`, cut from the previous step's, and its own pull
+request targeting that branch — nothing waits for a merge, and they merge in step order. Between
+steps the context is cleared with `/new`, not compacted: the state is on disk. One more file
+carries over: `.devskills/learned.md`, where `/dev-implement` and `/dev-fix` append at most one
+dated line per run — a trap of the repository, not of the change — and `/dev-plan` and
+`/dev-implement` read the last twenty back.
+
+### The guard
+
+`/dev-pr` is the one skill that pushes, and it can only because a plugin refuses everything past
+that point. `lib/dev-guard.js` runs before every bash tool call in OpenCode and throws on a
+forced push in any spelling, an amended commit, a skipped hook, a push to `main`, `master` or the
+profile's base branch in every ref shape, `gh pr merge`, `gh pr review --approve`, `gh release`,
+`gh workflow run` and `gh api …/merge`. Quoted text is blanked first, so a commit message may
+mention a flag. `install.sh` puts it in `~/.config/opencode/plugins/`; OpenCode has no per-skill
+hook, so it is on for every session, and `evals/guard/cases.sh` holds it to a 43-case table.
+
+A second, optional layer is OpenCode's own permission rules in `opencode.json` — the docs do not
+say whether flags are visible to these globs, so the plugin is the layer that is tested:
+
+```json
+"permission": {
+  "bash": {
+    "git push --force*": "deny",
+    "git push -f *": "deny",
+    "git commit --amend*": "deny",
+    "gh pr merge*": "deny"
+  }
+}
+```
+
 ### Nothing reports success it did not earn
 
 `lint.sh` distinguishes `lint: clean across 4 changed file(s)`, `lint: no lintable files among
@@ -517,9 +597,12 @@ checked is worse than one that checks less.
 
 ### Rationale lives here, not in the prompts
 
-Each `SKILL.md` is roughly a third the size of its frontier-model counterpart. What was cut is
+Each `SKILL.md` is capped: **at most 90 lines and 4,500 bytes** (about 1,100 tokens) and a
+one-sentence description, and `evals/skills/size.sh` fails the build past it. What was cut is
 the *why* — paragraphs that make a large model exercise better judgement and make a 30B pay
-tokens for nothing. It is in this README instead, for you.
+tokens for nothing. It is in this README instead, for you. So are two flags the frontier
+versions carry: `--review` (judging a proposal is judgement work) and `--all` (it contradicts
+one step per run).
 
 ---
 
@@ -537,9 +620,15 @@ tokens for nothing. It is in this README instead, for you.
 - **`profile.sh` infers an image** for repositories with no compose file. It proves the bind
   mount works before trusting one and falls back to the host with a recorded reason — but the
   image choice itself is a guess.
-- **Not yet validated against a real local model.** Every script here is tested against fixtures.
+- **`/dev-plan` may split more finely than a person would.** The budget is a line count, not a
+  judgement of cohesion; a step it cannot split it keeps and labels `OVER — kept`.
+- **The guard is a set of patterns, not a policy engine.** It refuses the shapes in its table; a
+  new way to spell a forced push is a new case for `evals/guard/cases.sh`.
+- **Not yet validated against a real local model.** Every script is fixture-tested —
+  `bash evals/run-all.sh`, fifteen suites, run in CI — and the guard against its case table.
   Whether the binary-check design holds up on Qwen3-Coder-30B in practice is still an open
-  question, and feedback on that is the most useful thing you could send.
+  question, and the 12-lines-per-1k step coefficient is the first number a real run should
+  correct. Feedback on either is the most useful thing you could send.
 
 ---
 
@@ -596,6 +685,11 @@ Worth doing: on the host you are testing against whatever versions your machine 
 Expected on a large branch — it tells you how many lines it withheld. Review the remaining files
 individually, or split the branch.
 
+**The guard refused a command.**
+Working as intended: a forced push, an amended commit, a skipped hook, a push to the base branch
+or a merge. Make a new commit and push that; open the pull request with `/dev-pr`. To turn it
+off, remove `~/.config/opencode/plugins/dev-guard.js`.
+
 **A skill name collides with another toolkit.**
 OpenCode also loads skills from `~/.claude/skills/` and `~/.agents/skills/`. Names must be unique
 across all of them. Rename or remove the duplicate.
@@ -606,15 +700,27 @@ across all of them. Rename or remove the duplicate.
 
 ```
 lib/                  shared scripts — installed to <config>/dev-lib/
-  profile.sh          detect and cache the repo's toolchain
+  profile.sh          detect and cache the repo's toolchain, contextTokens included
   changed.sh          risk-ranked queue of changed files
   diff.sh             capped diff against the base branch, truncation announced
   lint.sh             lint changed files through exec.prefix, honest about not running
   findings-check.sh   delete findings whose evidence is not in the code
   pr-comments.sh      flatten a PR's review comments into a stable ledger
-skills/dev-*/         one directory per skill, SKILL.md inside
+  steps.awk           what a task-file step is — shared by the four below
+  plan-input.sh       resolve /dev-plan's argument: a file, an issue, a sentence, or missing
+  task-step.sh        hand /dev-implement exactly one step
+  plan-check.sh       refuse a plan that names a path that is not there
+  step-budget.sh      size a step against contextTokens
+  pr-info.sh          the base, the pull request and the unplanned paths for /dev-pr
+  dev-guard.js        the guard — installed to <config>/plugins/, not dev-lib
+skills/dev-*/         one directory per skill, SKILL.md inside, capped by evals/skills/size.sh
   dev-init/templates/ family rule blocks (moodle-plugin, php-app, cms, python-app)
 agents/               optional subagents (read-only, temperature 0)
+evals/                fixture suites — run-all.sh runs every one; CI runs exactly that
+  lib/                one suite per script in lib/
+  skills/             frontmatter, size, the step template's shape, the hand-offs between skills
+  guard/              the 43-case table the guard is held to
+  docs/               this README against the mechanics it describes
 install.sh            global, or --project
 ```
 
@@ -627,7 +733,12 @@ Corollaries worth keeping:
 - Prefer a yes/no question over a judgement call; derive severity from which check fired.
 - Anything the model asserts about the code must be verifiable against the code by a script.
 - Never let a step that did not run report as a step that passed.
-- Keep each `SKILL.md` short. Rationale belongs in this README; the prompt gets instructions.
+- Keep each `SKILL.md` under 90 lines and 4,500 bytes. Rationale belongs in this README; the
+  prompt gets instructions.
+- Shell before reading: `wc -l` before a file, `sed -n` for a range, `grep -rn` for a symbol,
+  `gh … --json … -q` for GitHub. The same words in every skill.
+- Every suite prints one line and exits non-zero when its rule no longer holds; a new script
+  lands with its suite.
 
 ## Licence
 
