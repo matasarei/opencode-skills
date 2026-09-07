@@ -19,12 +19,20 @@ skills="$root/skills"
 fails=0
 note() { printf 'FAIL  %s\n' "$1"; fails=$((fails + 1)); }
 # Prose wrapped at the file's width: match against a flattened copy.
-flat() { tr '\n' ' ' < "$skills/$1/SKILL.md" | tr -s ' '; }
+flat() { tr '\n' ' ' < "$skills/$1/SKILL.md" | tr -d '`' | tr -s ' '; }
 has() { flat "$1" | grep -qF -- "$2" || note "$1: does not mention '$2' — $3"; }
 
 has dev-plan      '/dev-implement'   'a plan that names no next command is a plan nobody runs'
 has dev-implement '/dev-review'      'a built step must be reviewed before it goes anywhere'
 has dev-implement '--continue'       'an interrupted build has to say how to resume'
+has dev-implement 'task-step.sh $ARGUMENTS' 'the step must arrive injected, not be picked from the whole plan'
+has dev-implement 'Modify: paths first' 'the build starts from the step file list, not a search'
+has dev-implement 'step/<slug>-<n>'   'one branch per step, stacked'
+has dev-implement '/new'              'the context is cleared between steps'
+has dev-implement 'learned.md'        'the next run inherits what this one found out'
+has dev-implement 'tail -20'          'the learned notes are capped'
+has dev-implement 'step-budget.sh'    'an OVER step is said, not refused'
+grep -q -- '--all' "$skills/dev-implement/SKILL.md" && note 'dev-implement: --all is back, and it contradicts one step per run'
 has dev-review    'Ready to push'    'the first line of the report is the verdict'
 has dev-pr-review '/dev-review'      'own changes go to dev-review, not here'
 has dev-pr-comment '/dev-pr-review'  'the pull request of another author goes to dev-pr-review'

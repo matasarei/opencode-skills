@@ -91,6 +91,15 @@ printf '%s\n' "$out" | grep -q 'NIT'                        && note '--next: ste
 printf '%s\n' "$out" | grep -q 'template'                   && note '--next: the template step in the design section leaked in'
 printf '%s\n' "$out" | grep -q 'How to check'               && note '--next: a later section leaked in'
 
+# What $ARGUMENTS carries: no mode and --continue mean --next; --step n means n.
+run plan.md
+printf '%s\n' "$out" | grep -q '^## Step 2 of 3' || note 'no mode: should behave as --next'
+run plan.md --continue
+printf '%s\n' "$out" | grep -q '^## Step 2 of 3' || note '--continue: should behave as --next'
+run plan.md --step 1
+printf '%s\n' "$out" | grep -q '^## Step 1 of 3' || note '--step 1: should print step 1'
+run plan.md --step x;  [ "$rc" -eq 64 ] || note "--step x: exit $rc, want 64"
+
 # A number picks that step, ticked or not.
 run plan.md 1
 [ "$(printf '%s\n' "$out" | grep -c '^1\. \[x\] Add the generator')" -eq 1 ] || note 'step 1: not printed'
@@ -106,7 +115,6 @@ run plan.md --paths 1
 # Errors: no such step, no such file, bad arguments.
 run plan.md 7;         [ "$rc" -eq 66 ] || note "no such step: exit $rc, want 66"
 run nope.md --next;    [ "$rc" -eq 66 ] || note "no such file: exit $rc, want 66"
-run plan.md;           [ "$rc" -eq 64 ] || note "no mode: exit $rc, want 64"
 run plan.md --paths x; [ "$rc" -eq 64 ] || note "--paths x: exit $rc, want 64"
 
 # Every step ticked: PLAN DONE, exit 4.
