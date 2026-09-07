@@ -29,6 +29,10 @@ fi
 ANY=0; grep -q '^## Steps' "$FILE" || ANY=1
 steps() { awk -v mode="$1" -v n="${2:-}" -v kinds="${3:-}" -v anywhere="$ANY" -f "$HERE/steps.awk" "$FILE"; }
 
+LIST="$(steps list)"
+total="$(printf '%s\n' "$LIST" | grep -c '^[0-9]')"
+[ "$total" -gt 0 ] || { echo "NO STEPS in $FILE — steps are numbered lines under ## Steps: N. [ ] title" >&2; exit 3; }
+
 problems=0
 checked=0
 problem() { printf 'STEP %s | %s | %s\n' "$1" "$2" "$3"; problems=$((problems + 1)); }

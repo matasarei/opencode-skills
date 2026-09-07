@@ -23,6 +23,14 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 
 FILE="${1:-}"; MODE="${2:-}"; ARG="${3:-}"
 usage() { echo "usage: task-step.sh <task-file> [--next|--continue] | <n> | --step <n> | --count | --paths <n>" >&2; exit 64; }
+if [ "$FILE" = "--continue" ] || [ "$FILE" = "--next" ] || [ -z "$FILE" ]; then
+  latest="$(ls -t .tasks/*.md 2>/dev/null | head -1)"
+  if [ -n "$latest" ] && [ -f "$latest" ]; then
+    [ -n "$FILE" ] && MODE="$FILE"
+    FILE="$latest"
+  fi
+fi
+
 [ -n "$FILE" ] || usage
 case "$MODE" in ''|--continue) MODE=--next ;; --step) MODE="$ARG" ;; esac
 [ -f "$FILE" ] || { echo "no such file: $FILE" >&2; exit 66; }
@@ -66,3 +74,27 @@ section 'Do not touch'
 echo
 echo "## Step $N of $total ($done_ done)"
 steps block "$N"
+
+paths="$(steps paths "$N" | cut -d'|' -f2 | sort -u)"
+if [ -n "$paths" ]; then
+  echo
+  echo "### Step paths status (disk / git):"
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    status="untouched"
+    if [ -f "$p" ]; then
+      if git status --porcelain "$p" 2>/dev/null | grep -q '^[ MADRCU?!]'; then
+        status="modified in working tree"
+      elif git log -1 --name-only 2>/dev/null | grep -q "^$p$"; then
+        status="committed on current branch"
+      else
+        status="exists on disk"
+      fi
+    elif [ ! -e "$p" ]; then
+      status="does not exist yet"
+    fi
+    printf '  - %s: %s\n' "$p" "$status"
+  done <<EOF
+$paths
+EOF
+fi

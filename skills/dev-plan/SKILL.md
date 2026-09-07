@@ -9,34 +9,31 @@ Writes **no production code** — only `.tasks/<slug>.md` and at most one read-o
 
 ## Step 0 — Classify
 
-| Type | Signals | You owe |
-|---|---|---|
-| **bug** | "wrong", "broken" | the cause, proven, then the fix |
-| **feature** | "add", "support" | where it hooks in, what it touches, in what order |
-| **question** | "how many", "why" | the answer, with evidence — often no change |
-| **data fix** | "records are wrong" | how many rows, why, a safe strategy |
-
+- **bug**: proven root cause, then the fix.
+- **feature**: where it hooks in, exact files touched, in order.
+- **question**: answer with code evidence — usually no edits.
+- **data fix**: count rows, cause, bounded safe migration.
 Not obvious → ask now.
 
 ## Step 1 — Find the code
 
 **Shell before reading.** `wc -l` before opening a file; `sed -n 'a,bp'` for a range, never a whole file when you know the lines; `grep -rn` to locate a symbol, `gh … --json … -q` for GitHub. Read a whole file only when `wc -l` is under 300. Copy tool output; never retype it.
-
-Grep two to four distinctive terms. Read the entry points and the tests covering the area. **Already done?** Point at the existing thing and stop. Read the profile's `standardsDoc` for conventions.
+Grep 2–4 distinctive terms. Read entry points and tests. **Already done?** Point at it and stop. Read profile's `standardsDoc`.
 
 ## Step 2 — Check the facts
 
-An unverified cause is a hypothesis; say so. Data claims are checked through `exec.prefix`, local data only, read-only. Tag every fact: `[from the code]`, `[local database]`, `[needs a production run: <script>]`, `[assumed]`.
+An unverified cause is a hypothesis; say so. Local read-only checks via `exec.prefix`. Tag every fact: `[from the code]`, `[local database]`, `[needs a production run: <script>]`, `[assumed]`.
 
 ## Step 3 — Pick the approach, then ask once
 
-**Follow a pattern that already exists here and cite its file.** Nothing comparable → two options, one line of trade-off each, a recommendation.
-
-Then ask **once, here in the chat** — at most four questions, each with options and the answer you recommend — only what the code cannot settle: a design or scope choice, a policy, a fact only the developer knows. No answer → take your recommendation, tag it `[assumed]`.
+**Follow a pattern that already exists here and cite its file.** Nothing comparable → two options with trade-offs and a recommendation.
+Ask **once in chat** (max 4 questions with recommended answers) only what code cannot settle: design choices, scope, policy. No answer → take your recommendation, tag `[assumed]`.
 
 ## Step 4 — Write it
 
-**A step is what one `/dev-implement` run builds and one pull request carries** — build, `/dev-review`, `/dev-fix`, `/dev-pr`, in one context. Numbered `N. [ ]`, never `- [ ]` — scripts parse it:
+**One step = one PR-sized build for `/dev-implement`** (build, review, fix, PR).
+- **Step size**: Max 3–5 files per step. Never write vague summaries like "flip 20 consumers" — list every single file. Split large tasks into sequential slices (3–5 files each).
+- **Format**: Strictly `N. [ ] <title>` (e.g. `1. [ ] ...`). Numbered `N. [ ]`, never `- [ ]`, never bold numbers like `1. **...**` (scripts parse it):
 
 ```markdown
 3. [ ] <what the step does, one line>
@@ -47,9 +44,7 @@ Then ask **once, here in the chat** — at most four questions, each with option
    - Budget: <the line step-budget.sh printed>
 ```
 
-Save to `.tasks/<slug>.md` (git-ignored), sections: `# <title>`; `**Type:**`, `**Asked:**` verbatim; `## Summary` — finding, what to do, biggest risk; `## Cause`|`Design`|`Answer`|`Strategy`; `## Acceptance criteria` — `- [ ]` lines, checkable; `## Steps`; `## How to check it` — exact commands; `## Do not touch` — what stays, and why; `## Evidence` — **Code**, **Data** (tagged), **Decided in the chat** (`[answered]`|`[assumed]`), **Still open** (who can answer).
-
-A pure question: the answer is the deliverable, no steps. A one-liner: say so, skip the ceremony.
+Save to `.tasks/<slug>.md` (git-ignored), sections: `# <title>`; `**Type:**`, `**Asked:**` verbatim; `## Summary` — finding, what to do, risk; `## Cause`|`Design`|`Answer`|`Strategy`; `## Acceptance criteria` — `- [ ]` lines; `## Steps`; `## How to check it` — exact commands; `## Do not touch` — what stays, and why; `## Evidence` — **Code**, **Data** (tagged), **Decided in the chat** (`[answered]`|`[assumed]`), **Still open**. Pure question: answer is deliverable, no steps.
 
 ## Step 5 — Check the plan, then hand off
 
@@ -58,9 +53,9 @@ bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/plan-check.sh .tasks/<slu
 bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh .tasks/<slug>.md <n>   # every step
 ```
 
-Each `plan-check` line is a path to fix. Paste each step's `Budget:` line in. OVER → split when a split exists; otherwise keep it and write `OVER — kept: <reason>` — the cap is a recommendation.
+`plan-check.sh` must exit 0; fix any missing steps or bad paths. Paste each step's `Budget:` line in. OVER → split when a split exists; otherwise keep it and write `OVER — kept: <reason>` — the cap is a recommendation.
 
-In chat: the absolute path, the summary verbatim, what was `[assumed]`, and `/dev-implement .tasks/<slug>.md` — one step per context: after each `/dev-pr`, `/new`, then `--continue`.
+In chat: absolute path, summary verbatim, what was `[assumed]`, and `/dev-implement .tasks/<slug>.md` — one step per context: after each `/dev-pr`, `/new`, then `--continue`.
 
 ## Rules
 
