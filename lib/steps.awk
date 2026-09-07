@@ -23,6 +23,7 @@ BEGIN {
   if (mode == "") mode = "list"
   if (kinds == "") kinds = "Create Modify Test"
   nk = split(kinds, kind_list, " ")
+  for (k = 1; k <= nk; k++) is_kind[kind_list[k]] = 1
   insteps = anywhere + 0
 }
 
@@ -57,26 +58,75 @@ function emit(kind, line,   parts, np, i, chunk, tok, sym) {
   }
 }
 
+function is_step_header(line) {
+  if (line ~ /^[0-9]+\. \[[ xX]\]/) return 1
+  if (line ~ /^[0-9]+\.[[:space:]]/) return 2
+  if (line ~ /^###[[:space:]]+(Step[[:space:]]+)?[0-9]+/) return 3
+  return 0
+}
+
 /^## / { insteps = (anywhere + 0) || ($0 == "## Steps"); on = 0; next }
 /^```/ { if (insteps) fence = !fence; next }
 !insteps || fence { next }
 
-/^[0-9]+\. \[[ x]\]/ {
-  num = $1; sub(/\.$/, "", num)
-  if (mode == "list") {
-    title = $0; sub(/^[0-9]+\. \[[ x]\][[:space:]]*/, "", title)
-    print num "|" (($0 ~ /^[0-9]+\. \[x\]/) ? "x" : " ") "|" title
-    next
+{
+  m = is_step_header($0)
+  if (m > 0) {
+    if (m == 1) {
+      match($0, /^[0-9]+/)
+      num = substr($0, RSTART, RLENGTH)
+      status = ($0 ~ /^[0-9]+\. \[[xX]\]/) ? "x" : " "
+      title = $0; sub(/^[0-9]+\. \[[ xX]\][[:space:]]*/, "", title)
+    } else if (m == 2) {
+      match($0, /^[0-9]+/)
+      num = substr($0, RSTART, RLENGTH)
+      status = ($0 ~ /\[[xX]\]/) ? "x" : " "
+      title = $0; sub(/^[0-9]+\.[[:space:]]+/, "", title)
+      sub(/^\[[ xX]\][[:space:]]*/, "", title)
+      sub(/^\*\*[[:space:]]*/, "", title); sub(/[[:space:]]*\*\*$/, "", title)
+    } else if (m == 3) {
+      line = $0; sub(/^###[[:space:]]+(Step[[:space:]]+)?/, "", line)
+      match(line, /^[0-9]+/)
+      num = substr(line, RSTART, RLENGTH)
+      status = ($0 ~ /\[[xX]\]/) ? "x" : " "
+      title = line; sub(/^[0-9]+[[:space:]]*[:.—–-][[:space:]]*/, "", title)
+      sub(/^\[[ xX]\][[:space:]]*/, "", title)
+      sub(/^\*\*[[:space:]]*/, "", title); sub(/[[:space:]]*\*\*$/, "", title)
+    }
+    if (mode == "list") {
+      print num "|" status "|" title
+      next
+    }
+    on = (num == n)
+    cur_kind = ""
+    if (num != n) next
   }
-  on = (num == n)
 }
 /^<!--/ { on = 0 }
 !on { next }
 
 mode == "block" { print; next }
 mode == "paths" {
-  for (k = 1; k <= nk; k++) {
-    pre = "^[[:space:]]+- " kind_list[k] ":"
-    if ($0 ~ pre) { line = $0; sub(pre "[[:space:]]*", "", line); emit(kind_list[k], line) }
+  line = $0
+  # Check if line has a label like - Create:, - **Create:**, - Test:, etc.
+  if (match(line, /^[[:space:]]*-?[[:space:]]*(\*{2})?([A-Za-z]+)(\*{2})?:/)) {
+    label = substr(line, RSTART, RLENGTH)
+    sub(/^[[:space:]]*-?[[:space:]]*(\*{2})?/, "", label)
+    sub(/(\*{2})?:.*/, "", label)
+    if (is_kind[label]) {
+      cur_kind = label
+      sub(/^[[:space:]]*-?[[:space:]]*(\*{2})?[A-Za-z]+(\*{2})?:[[:space:]]*/, "", line)
+      if (line ~ /[^[:space:]]/) emit(cur_kind, line)
+    } else {
+      cur_kind = ""
+    }
+    next
+  }
+  # Sub-bullet under active kind (e.g. "  - `path`")
+  if (cur_kind != "" && line ~ /^[[:space:]]+-[[:space:]]+/) {
+    sub(/^[[:space:]]+-[[:space:]]+/, "", line)
+    emit(cur_kind, line)
+  } else if (line !~ /^[[:space:]]*$/) {
+    cur_kind = ""
   }
 }
