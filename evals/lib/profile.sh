@@ -100,6 +100,13 @@ want test '"pytest"' 'python'
 want install '"pip install -e ."' 'python'
 want_runtime '"cli"' 'python'
 want how '"python main.py"' 'python'
+want contextTokens '100000' 'python'
+
+# contextTokens: the default, and the DEV_SKILLS_CONTEXT override (a number, unquoted).
+out="$(cd "$py" && PATH="$stub:$PATH" DEV_SKILLS_CONTEXT=64000 bash "$profile" --reprofile 2>&1)"
+want contextTokens '64000' 'override'
+out="$(cd "$py" && PATH="$stub:$PATH" DEV_SKILLS_CONTEXT=lots bash "$profile" --reprofile 2>&1)"
+want contextTokens '100000' 'non-numeric override falls back'
 
 if [ "$fails" -eq 0 ]; then
   printf 'profile: every field follows its fixture, null included\n'

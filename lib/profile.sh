@@ -284,6 +284,16 @@ elif gtimeout 1 true >/dev/null 2>&1; then
   TIMEOUT=gtimeout
 fi
 
+# ---------------------------------------------------------- 7b contextTokens ---
+#
+# The context window the step sizing assumes. step-budget.sh turns it into a
+# per-step line cap. It is a recommendation the planner follows when a split
+# exists, not a limit anything refuses on. DEV_SKILLS_CONTEXT overrides it for a
+# machine whose window is bigger or smaller than the default.
+
+CONTEXT="${DEV_SKILLS_CONTEXT:-100000}"
+case "$CONTEXT" in ''|*[!0-9]*) CONTEXT=100000 ;; esac
+
 # ----------------------------------------------------------- 8 hasDatabase ---
 #
 # Gates the data-safety rules, so a wrong `false` silently disables them. When
@@ -336,6 +346,7 @@ mkdir -p .devskills
   printf '  },\n'
   kv hasDatabase "$HASDB";  printf ',\n'
   kv timeoutTool "$TIMEOUT"; printf ',\n'
+  printf '  "contextTokens": %s,\n' "$CONTEXT"   # a number, so kv's quoting does not apply
   kv notes       "$NOTES";   printf '\n'
   printf '}\n'
 } > "$CACHE"
