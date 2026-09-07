@@ -16,6 +16,7 @@
 - Comments explain **why**, never what. A comment restating the code is noise that goes stale.
 - Prefer composition over inheritance. Keep models thin — business logic belongs in services,
   and services should not hold request-scoped state.
+- **Searching namespaces**: PHP namespaces contain backslashes (`\`). When searching with regex, double-escape (`\\`) or prefer exact literal matches (`rg -F` or `grep -F`) to avoid ripgrep parse errors.
 
 ### Database
 

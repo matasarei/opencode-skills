@@ -110,6 +110,13 @@ for (const line of readFileSync(casesPath, "utf8").split("\n")) {
 // Another tool's arguments are never read: an edit whose text mentions a push is not a push.
 try { await hook({ tool: "edit" }, { args: { command: "git push --force" } }) }
 catch { fails++; console.log(`FAIL  ${label} a non-bash tool was refused`) }
+// Grep patterns with unescaped backslashes (e.g. PHP namespaces) are sanitized
+const grepArgs = { pattern: "Company::class|models\\company\\.Company" }
+await hook({ tool: "grep" }, { args: grepArgs })
+if (grepArgs.pattern !== "Company::class|models\\\\company\\.Company") {
+  fails++
+  console.log(`FAIL  ${label} grep pattern was not sanitized: ${grepArgs.pattern}`)
+}
 process.exit(fails ? 1 : 0)
 JS
 
