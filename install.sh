@@ -27,7 +27,8 @@ echo "Installing to $TARGET"
 mkdir -p "$SKILLS" "$LIB"
 
 # Shared scripts. Every skill calls these; they are the reason the skills are short.
-cp "$SRC"/lib/*.sh "$LIB/"
+# The .awk beside them is what the task-file scripts share.
+cp "$SRC"/lib/*.sh "$SRC"/lib/*.awk "$LIB/"
 chmod +x "$LIB"/*.sh
 
 # Skills. Removed first so a renamed or deleted file does not linger.
