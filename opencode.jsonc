@@ -1,0 +1,75 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "lmstudio/prism-ml/bonsai-27b",
+  "provider": {
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LM Studio (local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:1234/v1"
+      },
+      "models": {
+        // Recommended Model 1: Prism Bonsai 27B
+        "prism-ml/bonsai-27b": {
+          "name": "Prism Bonsai 27B",
+          "attachment": false,
+          "reasoning": false,
+          "tool_calling": true,
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          },
+          "options": {
+            "reasoning_effort": "none"
+          },
+          "variants": {
+            "off": {
+              "reasoning_effort": "none"
+            },
+            "on": {
+              "reasoning_effort": "medium"
+            }
+          }
+        },
+        // Recommended Model 2: Qwen3 Coder 30B
+        "qwen/qwen3-coder-30b": {
+          "name": "Qwen3 Coder 30B",
+          "attachment": false,
+          "reasoning": false,
+          "tool_calling": true,
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          },
+          "options": {
+            "reasoning_effort": "none"
+          },
+          "variants": {
+            "off": {
+              "reasoning_effort": "none"
+            },
+            "on": {
+              "reasoning_effort": "medium"
+            }
+          }
+        }
+      }
+    }
+  },
+  "agent": {
+    "build": {
+      "temperature": 0
+    },
+    "plan": {
+      "temperature": 0,
+      "permission": {
+        "edit": {
+          "*.md": "allow",
+          "**/*.md": "allow",
+          ".tasks/**": "allow",
+          "plans/**": "allow"
+        }
+      }
+    }
+  }
+}
