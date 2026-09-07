@@ -56,6 +56,12 @@
       }
     }
   },
+  "permission": {
+    "external_directory": {
+      "/tmp/**": "allow",
+      "/private/tmp/**": "allow"
+    }
+  },
   "agent": {
     "build": {
       "temperature": 0
