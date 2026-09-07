@@ -27,7 +27,7 @@ has dev-implement '/dev-review'      'a built step must be reviewed before it go
 has dev-implement '--continue'       'an interrupted build has to say how to resume'
 has dev-review    'Ready to push'    'the first line of the report is the verdict'
 has dev-pr-review '/dev-review'      'own changes go to dev-review, not here'
-has dev-pr-comment '/dev-pr-review'  'another author\'s pull request goes to dev-pr-review'
+has dev-pr-comment '/dev-pr-review'  'the pull request of another author goes to dev-pr-review'
 has dev-pr-comment 'git push origin' 'the push is printed for a person, never run'
 
 if [ "$fails" -eq 0 ]; then
