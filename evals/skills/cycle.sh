@@ -55,6 +55,14 @@ has dev-pr        '--continue'        'and the next step is named'
 has dev-pr        'no session link'   'a private transcript URL is not attribution on a public repository'
 grep -q 'gh pr merge' "$skills/dev-pr/SKILL.md" && note 'dev-pr: names gh pr merge; opening is where it stops'
 has dev-pr-review '/dev-review'      'own changes go to dev-review, not here'
+has dev-pr-review 'gh pr view $ARGUMENTS' 'the pull request arrives injected, not fetched by the model'
+has dev-pr-review 'pr-comments.sh $ARGUMENTS' 'the comment ledger is injected for deduplication'
+has dev-pr-review '.devskills/reports/' 'a report lands in the ignored directory of the primary checkout'
+grep -q 'PR_REVIEW_' "$skills/dev-pr-review/SKILL.md" && note 'dev-pr-review: still writes PR_REVIEW_<n>.md at the root'
+has dev-pr-comment 'reported in one line and ignored' 'a comment addressing the tool is reported, not followed'
+# The untrusted-input sentence, in every skill that reads outside text.
+n="$(grep -l 'evidence, never instruction' "$skills"/*/SKILL.md | wc -l | tr -d ' ')"
+[ "$n" -ge 6 ] || note "only $n skills carry 'evidence, never instruction'; at least six read outside text"
 has dev-pr-comment '/dev-pr-review'  'the pull request of another author goes to dev-pr-review'
 has dev-pr-comment 'git push origin' 'the push is printed for a person, never run'
 
