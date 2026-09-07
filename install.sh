@@ -57,7 +57,7 @@ fi
 (cd "$SRC" && git rev-parse --short HEAD 2>/dev/null || echo "unknown") > "$LIB/.version"
 
 echo
-echo "Done. Type '/' in OpenCode to see:"
+echo "Done. Type '/skills' in OpenCode to see and select installed skills:"
 echo "  /dev-init /dev-plan /dev-implement /dev-review /dev-fix /dev-pr /dev-pr-review /dev-pr-comment /dev-verify"
 echo
 echo "The guard is at $TARGET/plugins/dev-guard.js. It refuses, before they run:"
