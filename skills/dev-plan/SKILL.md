@@ -22,7 +22,7 @@ Not obvious → ask now.
 
 **Shell before reading.** `wc -l` before opening a file; `sed -n 'a,bp'` for a range, never a whole file when you know the lines; `grep -rn` to locate a symbol, `gh … --json … -q` for GitHub. Read a whole file only when `wc -l` is under 300. Copy tool output; never retype it.
 
-Grep two to four distinctive terms from the brief. Read the entry points and the tests covering the area. **Already done?** Point at the existing thing and stop. Read the profile's `standardsDoc` for conventions.
+Grep two to four distinctive terms. Read the entry points and the tests covering the area. **Already done?** Point at the existing thing and stop. Read the profile's `standardsDoc` for conventions.
 
 ## Step 2 — Check the facts
 
@@ -47,7 +47,7 @@ Then ask **once, here in the chat** — at most four questions, each with option
    - Budget: <the line step-budget.sh printed>
 ```
 
-Save to `.tasks/<slug>.md` (git-ignored), sections in this order: `# <title>`; `**Type:**`, `**Asked:**` verbatim; `## Summary` — finding, what to do, biggest risk; `## Cause`|`Design`|`Answer`|`Strategy`; `## Acceptance criteria` — `- [ ]` lines, checkable; `## Steps`; `## How to check it` — exact commands; `## Do not touch` — what stays, and why; `## Evidence` — **Code**, **Data** (tagged), **Decided in the chat** (`[answered]`|`[assumed]`), **Still open** (who can answer).
+Save to `.tasks/<slug>.md` (git-ignored), sections: `# <title>`; `**Type:**`, `**Asked:**` verbatim; `## Summary` — finding, what to do, biggest risk; `## Cause`|`Design`|`Answer`|`Strategy`; `## Acceptance criteria` — `- [ ]` lines, checkable; `## Steps`; `## How to check it` — exact commands; `## Do not touch` — what stays, and why; `## Evidence` — **Code**, **Data** (tagged), **Decided in the chat** (`[answered]`|`[assumed]`), **Still open** (who can answer).
 
 A pure question: the answer is the deliverable, no steps. A one-liner: say so, skip the ceremony.
 
