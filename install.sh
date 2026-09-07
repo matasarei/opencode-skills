@@ -39,6 +39,13 @@ for dir in "$SRC"/skills/*/; do
   echo "  $name"
 done
 
+# The guard is an OpenCode plugin, so it goes where OpenCode loads plugins from,
+# not into dev-lib. It refuses the commands every skill's rules forbid — force
+# pushes, --amend, --no-verify, a push to the base branch, gh pr merge — before
+# they run. OpenCode has no per-skill hook, so it is on for every session.
+mkdir -p "$TARGET/plugins"
+cp "$SRC/lib/dev-guard.js" "$TARGET/plugins/dev-guard.js"
+
 # Agents are optional — only copied if the user has an agents directory or asks for one.
 if [ -d "$SRC/agents" ]; then
   mkdir -p "$TARGET/agents"
@@ -52,6 +59,10 @@ fi
 echo
 echo "Done. Type '/' in OpenCode to see:"
 echo "  /dev-init /dev-plan /dev-implement /dev-review /dev-pr-review /dev-pr-comment /dev-verify"
+echo
+echo "The guard is at $TARGET/plugins/dev-guard.js. It refuses, before they run:"
+echo "  git push --force, git commit --amend, --no-verify, a push to the base branch,"
+echo "  gh pr merge, gh pr review --approve, gh release, gh workflow run."
 echo
 # The skills hard-code $HOME/.config/opencode/dev-lib as their fallback, because a
 # SKILL.md cannot know where it was installed. Any other location — a --project

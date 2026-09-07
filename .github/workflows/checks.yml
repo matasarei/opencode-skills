@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # The guard suite loads the OpenCode plugin under node; ubuntu-latest ships one.
+      - run: node --version
       - run: bash evals/run-all.sh
 
   shellcheck:
