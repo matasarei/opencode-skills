@@ -49,6 +49,7 @@
   `Markup(...)` and `mark_safe(...)` disable escaping for that value; each use needs a reason
   that survives review.
 - Authorisation is checked in the route handler, not only in the template that draws the link.
+- **Endpoint verification**: When checking routes, verify HTTP status code and scan for tracebacks or unhandled exceptions (via `http-check.sh`). Never use a pipe like `curl | grep` that masks connection drops.
 
 ### Changing data in bulk
 

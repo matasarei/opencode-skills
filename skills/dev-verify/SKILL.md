@@ -42,7 +42,7 @@ The profile's `test`, wrapped in `timeoutTool` if there is one; `testScoped` fir
 By `runtime.kind`:
 
 - **`cli`** — run it twice. Once with bad input: a clear error **and** a non-zero exit code, checked directly (a pipe hides it). Once for real, then check the effect — the row written, the file produced.
-- **`http`** — request the route from the **host** at the published port, not through `exec`. Status, then effect. Say the check was request-level, not user-level.
+- **`http`** — verify route via `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/http-check.sh <url>` from the **host** (checks connection, status code, 0-byte bodies, cross-stack crash signatures). Check effect. Say request-level, not user-level.
 - **`library`** — call the public API with ordinary and edge inputs.
 - **`hosted`** — record `HOSTED`. Lint every changed file, confirm `version.php` was bumped if `classes/` or `db/` changed, confirm new classes sit where their namespace says. **Say that behaviour was not verified.**
 

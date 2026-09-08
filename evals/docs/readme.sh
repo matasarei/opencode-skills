@@ -36,6 +36,7 @@ for token in \
   '/new' \
   'step/<slug>-<n>' \
   'Depends on #' \
+  'http-check.sh' \
   '4,500 bytes'
 do
   grep -qF -- "$token" "$readme" || note "README never mentions $token"
