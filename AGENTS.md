@@ -42,6 +42,10 @@ When developing, updating, or debugging skills in this repository:
    - Clean up any generated files (`.tasks/`, `plans/`, stray `.md` files) before creating or updating PRs.
    - Always open PRs as draft (`--draft`) using `/dev-pr` or `gh pr create --draft`.
 
+## Adding support for a stack
+
+`lib/profile.sh` decides every command the skills run. CI wins, then the manifest table, then the language branch, then `null` — and `null` is a real answer, never replaced by a guess. A new stack needs a branch in the manifest block, a `manifest_case` fixture in `evals/lib/profile.sh`, and its extensions in `lib/lint.sh` if the linter is per-file. See **Supported Stacks** in the README.
+
 ## This project specifically
 
 - **Skills picker**: In OpenCode, skills load via the `/skills` picker (not the root slash autocomplete).
