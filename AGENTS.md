@@ -8,18 +8,38 @@ Development skills for OpenCode, engineered for local ~30B models. These scripts
 |---|---|
 | Install | `./install.sh` or `./install.sh --project` |
 | Test | `bash evals/run-all.sh` |
-| Lint | none — this is a script library, not built code |
+| Test Scoped | `bash evals/lib/<script>.sh` (e.g. `bash evals/lib/http-check.sh`) |
+| Lint | `shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh` |
+| Size Check | `bash evals/skills/size.sh` |
 | Build | none — no build system; just shell scripts and SKILL.md files |
 | Run | none — not a runtime application; skills load via OpenCode |
 
 Commands run on the host system (no container). Ensure you have `gh`, Docker, and an OpenCode model server at 128k context.
 
+## Skill Development & Testing Workflow
+
+When developing, updating, or debugging skills in this repository:
+
+1. **Prompt & Script Edits**:
+   - Skills live in `skills/<skill-name>/SKILL.md`.
+   - Reusable scripts live in `lib/<script>.sh`, plugin in `lib/dev-guard.js`, templates in `skills/dev-init/templates/`.
+2. **Invariants to Check**:
+   - **Size cap**: Run `bash evals/skills/size.sh` — every `SKILL.md` must remain under 90 lines and 4,500 bytes (description under 200 chars).
+   - **Lint**: Run `shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh` — 0 warnings allowed.
+   - **Cycles & Frontmatter**: Run `bash evals/skills/cycle.sh` and `bash evals/skills/frontmatter.sh` to confirm skill handoffs hold.
+3. **Evals**:
+   - Every `lib/*.sh` script must have corresponding test cases in `evals/lib/<script>.sh`.
+   - Run the target test during iteration (`bash evals/lib/<script>.sh`), then run the full suite: `bash evals/run-all.sh` (all 18 suites must pass).
+4. **Sync Local Installation (Dogfooding)**:
+   - **Crucial step**: Always run `./install.sh` after editing skills or scripts so `~/.config/opencode/` is updated. OpenCode executes installed files, not the working repo directly.
+5. **PR & Guard Rules**:
+   - The guard (`lib/dev-guard.js`) forbids `git push --force`, `git commit --amend`, `--no-verify`, and pushing to `main`/`master`. Make new commits instead.
+   - Clean up any generated files (`.tasks/`, `plans/`, stray `.md` files) before creating or updating PRs.
+   - Always open PRs as draft (`--draft`) using `/dev-pr` or `gh pr create --draft`.
+
 ## This project specifically
 
-- **Skills are in `skills/`** — each subdirectory holds a `SKILL.md` (capped at 90 lines / 4,500 bytes). OpenCode loads them via the `/skills` picker.
-- **The guard** (`lib/dev-guard.js`) blocks force-pushes, amended commits, skipped hooks, and unauthorized `gh pr merge`. Verified against 43 test cases in `evals/guard/cases.sh`.
+- **Skills picker**: In OpenCode, skills load via the `/skills` picker (not the root slash autocomplete).
 - **Step cycle:** `/dev-init` → `/dev-plan` → `/dev-implement` → `/dev-review` → `/dev-pr`. Each step runs on a stacked branch (`step/<slug>-<n>`).
 - **Learned facts** persist across sessions in `.devskills/learned.md`.
-- **Credentials:** none. The `opencode.jsonc` config uses LM Studio at `127.0.0.1:1234/v1` (local). `.gitignore` covers no secrets since there are none.
 - **Model config:** `opencode.jsonc` sets reasoning OFF by default (`reasoning_effort: none`) to avoid local model latency in agent loops. Toggle via `/variant on`.
-- **Generated files:** none — all content is hand-written. `.tasks/` and `plans/` are runtime artifacts tracked via git branch commits.
