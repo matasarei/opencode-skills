@@ -96,6 +96,21 @@ if [ -x "$nogh/sed" ]; then
   printf '%s\n' "$out" | grep -q 'gh is not installed' || note "no gh: got '$out'"
 fi
 
+# A file of review findings is named FINDINGS, not FILE, and its content is not
+# reprinted: /dev-fix injects this script and findings-check.sh with the same
+# arguments, so printing it here made the same list arrive twice — once as a
+# brief to plan from, once as the verified list to apply.
+printf 'BLOCKER | src/a.php:12 | it breaks | EVIDENCE: $x = 1;\n' > "$work/findings.md"
+printf 'WARNING | src/b.php:3 | it might | EVIDENCE: $y = 2;\n' >> "$work/findings.md"
+run findings.md
+[ "$(first)" = "FINDINGS findings.md" ] || note "a findings file: first line is '$(first)', want FINDINGS"
+printf '%s\n' "$out" | grep -q 'EVIDENCE:' && note 'a findings file: its lines were reprinted as a brief'
+
+# A brief that merely mentions a severity word is still a brief.
+printf '# Fix the BLOCKER in the export\n\nIt is wrong.\n' > "$work/brief.md"
+run brief.md
+[ "$(first)" = "FILE brief.md" ] || note "a prose brief: first line is '$(first)', want FILE"
+
 if [ "$fails" -eq 0 ]; then
   printf 'plan-input: file, issue, sentence, missing and empty each get their first line\n'
 else
