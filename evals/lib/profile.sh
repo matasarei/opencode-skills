@@ -202,6 +202,14 @@ ctx_case picks '{ "model": "lmstudio/c/d", "provider": { "lmstudio": { "models":
   "c/d": { "limit": { "context": 131072 } } } } } }' \
   131072 'the selected model wins, not the first one listed'
 
+# The case every other fixture here missed: each of them declares a window for
+# every model, so an unbounded scan looked correct. A model that declares none
+# must fall back, not inherit the next model's.
+ctx_case nowindow '{ "model": "lmstudio/a/b", "provider": { "lmstudio": { "models": {
+  "a/b": { "name": "A" },
+  "c/d": { "limit": { "context": 131072 } } } } } }' \
+  100000 'a model declaring no window does not inherit the next one'
+
 ctx_case none '' 100000 'no config falls back'
 ctx_case bad '{ "model": "x/y", "provider": { "p": { "models": { "y": { "limit": { "context": "nope" } } } } } }' \
   100000 'a malformed value falls back rather than propagating'

@@ -472,11 +472,23 @@ context_from_config() { # the selected model's limit.context, or nothing
     sel="$(sed -n 's/.*"model"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$cfg" | head -1)"
     key="${sel#*/}"
     [ -n "$key" ] && [ "$key" != "$sel" ] || continue
-    # From that model's block, the first "context" belongs to it.
+    # The first "context" inside *that model's own block*, bounded by brace depth.
+    # Without the bound the scan runs to end of file, so a model declaring no
+    # window silently reports the next model's — which is the same wrong answer
+    # this whole detection exists to prevent, reached a different way.
     n="$(awk -v k="\"$key\":" '
-      index($0, k) { inblock = 1 }
-      inblock && match($0, /"context"[[:space:]]*:[[:space:]]*[0-9]+/) {
-        v = substr($0, RSTART, RLENGTH); sub(/.*[^0-9]/, "", v); print v; exit
+      function braces(s, c,   n, i) {
+        n = 0
+        for (i = 1; i <= length(s); i++) if (substr(s, i, 1) == c) n++
+        return n
+      }
+      !inblock && index($0, k) { inblock = 1 }
+      inblock {
+        if (match($0, /"context"[[:space:]]*:[[:space:]]*[0-9]+/)) {
+          v = substr($0, RSTART, RLENGTH); sub(/.*[^0-9]/, "", v); print v; exit
+        }
+        depth += braces($0, "{") - braces($0, "}")
+        if (depth <= 0) exit   # the block closed and never declared one
       }
     ' "$cfg")"
     case "$n" in ''|*[!0-9]*) continue ;; esac
