@@ -126,7 +126,6 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 | `/dev-pr` | Pushes the step branch, opens stacked PR with `Depends on #` | No |
 | `/dev-verify` | Runs test suites and exercises runtime behaviour inside Docker containers | No |
 | `/dev-pr-review <pr>` | Reviews an external PR against a structured checklist | No |
-| `/dev-pr-comment <pr>` | Addresses one review comment on your PR as a verified local commit | Yes (local commit) |
 
 ### The Step Cycle
 

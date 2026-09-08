@@ -31,7 +31,14 @@ mkdir -p "$SKILLS" "$LIB"
 cp "$SRC"/lib/*.sh "$SRC"/lib/*.awk "$LIB/"
 chmod +x "$LIB"/*.sh
 
-# Skills. Removed first so a renamed or deleted file does not linger.
+# Skills. Clean up obsolete dev-* skills first so deleted skills do not linger.
+for installed in "$SKILLS"/dev-*/; do
+  [ -d "$installed" ] || continue
+  sname="$(basename "$installed")"
+  if [ ! -d "$SRC/skills/$sname" ]; then
+    rm -rf "$installed"
+  fi
+done
 for dir in "$SRC"/skills/*/; do
   name="$(basename "$dir")"
   rm -rf "${SKILLS:?}/$name"
@@ -58,7 +65,7 @@ fi
 
 echo
 echo "Done. Type '/skills' in OpenCode to see and select installed skills:"
-echo "  /dev-init /dev-plan /dev-implement /dev-review /dev-fix /dev-pr /dev-pr-review /dev-pr-comment /dev-verify"
+echo "  /dev-init /dev-plan /dev-implement /dev-review /dev-fix /dev-pr /dev-pr-review /dev-verify"
 echo
 echo "The guard is at $TARGET/plugins/dev-guard.js. It refuses, before they run:"
 echo "  git push --force, git commit --amend, --no-verify, a push to the base branch,"

@@ -29,7 +29,7 @@ Already on it → stay. Then `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-
 
 1. Open `Modify:` paths first, at lines named. **Check before edit**: if path status or `git diff` shows file is already modified with required change, do not re-edit.
 2. Make change. Match file naming, structure, comment style, CRLF/LF line endings. Imports (`use`/`import`) strictly at file root under namespace, never in method/function bodies. Namespace splits require explicit `use` imports for cross-class callers.
-3. Check now: lint changed file through `exec.prefix`; run scoped test if one covers it. Syntax errors must be resolved before committing.
+3. Check now: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh <file>`; run scoped test if one covers it. Syntax errors must be resolved before committing.
 
 **A file no step line names is the signal to stop.** A **blocker** (error or failing test) → fix first, own commit, say so. Plan cannot reach goal → stop, write new steps into task file, wait. Note anything else in report; never edit. The one test: does an criterion fail without it?
 

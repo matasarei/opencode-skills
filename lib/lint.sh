@@ -21,16 +21,20 @@ if [ -z "$LINT" ] || [ "$LINT" = "null" ]; then
   exit 2
 fi
 
-# Get the file list first, and keep changed.sh's exit status. Reading it straight
-# into the loop would swallow a failure: on the base branch, or with no diff,
-# changed.sh exits non-zero and prints nothing, the loop body never runs, and a
-# report of "clean" would mean "nothing was linted" while reading as "nothing was
-# wrong". That is the one thing a lint step must never do.
-QUEUE="$(bash "$HERE/changed.sh" "${1:-}" 2>&1)"
-if [ $? -ne 0 ]; then
-  echo "LINT NOT RUN — could not determine what changed:"
-  printf '%s\n' "$QUEUE" | head -3
-  exit 2
+# If specific files are given, lint them directly. Otherwise, inspect
+# what changed against the base branch using changed.sh.
+if [ "$#" -gt 0 ] && [ -f "$1" ]; then
+  QUEUE=""
+  for f in "$@"; do
+    [ -f "$f" ] && QUEUE="${QUEUE:+${QUEUE}
+}1 M $f"
+  done
+else
+  if ! QUEUE="$(bash "$HERE/changed.sh" "${1:-}" 2>&1)"; then
+    echo "LINT NOT RUN — could not determine what changed:"
+    printf '%s\n' "$QUEUE" | head -3
+    exit 2
+  fi
 fi
 
 failed=0
