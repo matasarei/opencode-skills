@@ -45,7 +45,7 @@ Tick step in task file: `N. [x] <title> — <what landed>`. One commit per step,
 
 What landed, criteria met or not, files changed, quoted test line, what was left alone. One line at most for next run appended to `.devskills/learned.md`, then `tail -20` it back into place.
 
-Then: `Next: /dev-review`. After `/dev-pr` has opened this step's pull request: `/new`, then `/dev-implement <task-file> --continue` — the task file and the branch are the state. `/compact` only when this context is already long.
+Then: `Next: /dev-review`. When ready for the next step after `/dev-pr`: `/dev-implement <task-file> --continue` (pre-step: `/new` or `/compact` to manage context; the task file and branch are the state).
 
 ## Rules
 

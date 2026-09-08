@@ -131,8 +131,9 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 
 ```
    /dev-init ──▶ /dev-plan ──▶ /dev-implement ──▶ /dev-review ──▶ /dev-fix ──▶ /dev-pr
-(once per repo)                       │                                           │
-                                      └─────────── (next step: /compact or /new) ─┘
+(once per repo)                       ▲                                           │
+                                      └── (next: /dev-implement --continue) ──────┘
+                                          (pre-step: /compact or /new)
 ```
 
 1. **Initialize (once per repo)**: `/dev-init` inspects the project, writes build/test/lint commands and stack conventions to `AGENTS.md`.
@@ -140,7 +141,7 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 3. **Build**: `/dev-implement` injects exactly one step via `task-step.sh` onto a stacked branch named `step/<slug>-<n>`.
 4. **Review & Fix**: `/dev-review` finds blockers/warnings, and `/dev-fix` applies verified findings.
 5. **Push & PR**: `/dev-pr` pushes the branch and opens the PR (annotated with `Depends on #` for stacked dependencies).
-6. **Next Step**: Proceed to the next step. For closely-coupled steps, continue in the same session or run `/compact` to prune raw bash/diff outputs while preserving conversational context and architectural decisions. When context balloons (>60k–80k tokens) or when switching to an unrelated task, use `/new` for a clean slate. Inter-step repository discoveries persist in `.devskills/learned.md`.
+6. **Next Step**: Continue to the next step with `/dev-implement <task-file> --continue`. Choose a context management pre-step based on your session: run `/compact` (or stay in the session) to keep conversational context while pruning raw tool outputs, or run `/new` for a fresh session when context has ballooned (>60k–80k tokens) or when starting fresh. Inter-step repository discoveries persist in `.devskills/learned.md`.
 
 ---
 

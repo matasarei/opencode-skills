@@ -44,7 +44,7 @@ Always pass `--draft` — every pull request is opened as a draft. `pr:` already
 
 ## Step 5 — Report
 
-The URL, **created** or **updated**, `<base>` ← `<branch>`, commits, draft, what the body claims about testing. Then: `Next: /new, then /dev-implement <task-file> --continue` — or, when the step header says the last step is done, "the plan is done: merge in step order; merging is yours."
+The URL, **created** or **updated**, `<base>` ← `<branch>`, commits, draft, what the body claims about testing. Then: `Next: /dev-implement <task-file> --continue (pre-step: /new for a fresh session, or /compact if staying in this context)` — or, when the step header says the last step is done, "the plan is done: merge in step order; merging is yours."
 
 ## Rules
 
