@@ -65,11 +65,17 @@ TIMEOUT="$(field timeoutTool)"
 
 CMD="${CMD//\{name\}/\"\$1\"}"
 
+# $0 for the runner shell. It was "test.sh", so an absent toolchain came back as
+# "test.sh: go: command not found" — which reads as this script being broken
+# rather than the project's runner being missing. Deriving the runner's own name
+# gives "go: go: ...", so say plainly whose command it is.
+RUNNER="project test command"
+
 out="$(
   if [ -n "$TIMEOUT" ]; then
-    "$TIMEOUT" "$SECS" bash -c "$CMD" test.sh "$SCOPED" 2>&1
+    "$TIMEOUT" "$SECS" bash -c "$CMD" "$RUNNER" "$SCOPED" 2>&1
   else
-    bash -c "$CMD" test.sh "$SCOPED" 2>&1
+    bash -c "$CMD" "$RUNNER" "$SCOPED" 2>&1
   fi
 )"
 rc=$?

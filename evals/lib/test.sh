@@ -114,6 +114,16 @@ if command -v git >/dev/null 2>&1; then
   [ -f "$work/.devskills/test-result" ] && note 'receipt: TEST MISSING wrote a receipt'
 fi
 
+# An absent toolchain must read as the project's runner missing, not as this
+# script being broken. $0 was "test.sh", so `go test` with no go installed came
+# back as "test.sh: go: command not found".
+profile '"definitely-not-a-real-command --run"' null
+run
+[ "$rc" -eq 1 ] || note "absent runner: exit $rc, want 1"
+printf '%s\n' "$out" | grep -q '^TEST FAIL' || note "absent runner: '$(first)'"
+printf '%s\n' "$out" | grep -q 'test\.sh:' && note 'absent runner: the error names test.sh, as if the toolkit were broken'
+printf '%s\n' "$out" | grep -q 'project test command' || note "absent runner: the error does not say whose command it is: '$(first)'"
+
 if [ "$fails" -eq 0 ]; then
   printf 'test: pass, fail, missing, scoped and timeout each get their verdict line\n'
 else
