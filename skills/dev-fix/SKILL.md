@@ -33,7 +33,7 @@ When the brief said `FINDINGS` or `EMPTY` — the verified list is injected belo
 1. **Which to take**: BLOCKER and WARNING in file order; NIT and SMELL listed and left.
 2. **Fix**: smallest change per finding; `sed -n '<line-15>,<line+15>p' <path>`. Lint with `lint.sh <path>` and run `testScoped`.
 3. **Commit**: `git commit -m "Fix: <the finding's sentence>"`. Hook failure skips finding. Never `--no-verify`.
-4. **Prove it**: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/findings-check.sh <findings-file>` and run profile's `test` (wrapped in timeout). Quote runner line.
+4. **Prove it**: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/findings-check.sh <findings-file>`, then `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/test.sh` — quote its verdict line.
 5. **Report**: row per finding (fixed `<sha>` | resolved | skipped | left). Append repo trap to `.devskills/learned.md`, then `tail -20` back into place.
 6. **Next**: `Next: /dev-review` when a BLOCKER was fixed; otherwise `Next: /dev-pr`.
 

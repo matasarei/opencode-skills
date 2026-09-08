@@ -30,10 +30,10 @@ One row per acceptance criterion, per command or page the change touches, and pe
 
 ## Step 3 — Run the tests
 
-The profile's `test`, wrapped in `timeoutTool` if there is one; `testScoped` first, then widen.
+`bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/test.sh` — or `--scoped <name>` first, then widen.
 
-- **Quote the runner's actual line.** `OK (43 tests, 118 assertions)` is evidence; "tests pass" is not.
-- A timeout is a **failure**; say what it was doing when it hung.
+- **Quote its verdict line.** `TEST PASS | OK (43 tests, 118 assertions)` is evidence; "tests pass" is not.
+- `TEST TIMEOUT` is a **failure**; say what it was doing when it hung.
 - Fails on the base branch too → `PRE-EXISTING`; run the same command there before blaming this change.
 - No tests → `MISSING`. Never report an absence of tests as tests passing.
 

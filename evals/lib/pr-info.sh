@@ -135,6 +135,39 @@ want on-base 'yes' 'on main'
 want step 'none' 'on main'
 printf '%s\n' "$out" | grep -q '^unplanned: (no task file' || note "on main: unplanned = '$(row unplanned)'"
 
+# tested:, the line /dev-pr stops on. Three states have to be distinguishable:
+# nothing was run, something was run for this code, and something was run for
+# code that is no longer what this branch proposes.
+say_tested() { printf '%s\n' "$out" | sed -n 's/^tested: //p'; }
+
+rm -f "$repo/.devskills/test-result"
+run
+[ "$(say_tested)" = "none" ] || note "tested with no receipt: '$(say_tested)'"
+
+printf '%s TEST PASS | OK (3 tests)\n' "$(g rev-parse HEAD)" > "$repo/.devskills/test-result"
+run
+case "$(say_tested)" in
+  "TEST PASS | OK (3 tests) (this HEAD)") ;;
+  *) note "tested at HEAD: '$(say_tested)'" ;;
+esac
+
+# A commit after the run: still evidence, but it must say which commit it was.
+printf 'later\n' > "$repo/later.txt"; g add -A; g commit -qm later
+run
+case "$(say_tested)" in
+  "TEST PASS | OK (3 tests) (at "*"1 commit(s) back)") ;;
+  *) note "tested one commit back: '$(say_tested)'" ;;
+esac
+
+# A receipt for a commit that is not behind HEAD is stale, never a pass.
+printf '%s TEST PASS | OK\n' "0000000000000000000000000000000000000000" > "$repo/.devskills/test-result"
+run
+case "$(say_tested)" in
+  stale*) ;;
+  *) note "tested with an unrelated sha: '$(say_tested)'" ;;
+esac
+rm -f "$repo/.devskills/test-result"
+
 if [ "$fails" -eq 0 ]; then
   printf 'pr-info: base, pull request, counts and unplanned paths follow the fixture\n'
 else

@@ -19,6 +19,10 @@
 #
 # On anything but PASS the runner's last 20 lines follow, so the failure can be
 # read without running it again. Exit 0 pass, 1 fail or timeout, 2 nothing ran.
+#
+# The verdict is also written to .devskills/test-result as "<HEAD sha> <verdict>",
+# so /dev-pr can tell whether anything was actually run for the code it is about
+# to propose, instead of taking the model's word for it.
 
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -78,17 +82,32 @@ summary="$(printf '%s\n' "$out" | grep -E \
 [ -z "$summary" ] && summary="$(printf '%s\n' "$out" | grep -v '^[[:space:]]*$' | tail -1 | sed 's/^[[:space:]]*//')"
 [ -z "$summary" ] && summary="(the runner printed nothing)"
 
+# The receipt: what was proved, and for which commit. A verdict with no commit
+# behind it is what "tests pass" in a pull request body has always been.
+receipt() {
+  sha="$(git rev-parse HEAD 2>/dev/null)" || return 0
+  [ -n "$sha" ] || return 0
+  mkdir -p .devskills 2>/dev/null || return 0
+  printf '%s %s\n' "$sha" "$1" > .devskills/test-result 2>/dev/null || true
+}
+
 if [ -n "$TIMEOUT" ] && [ "$rc" -eq 124 ]; then
-  echo "TEST TIMEOUT — no result after ${SECS}s; a hang is a failure, not a slow pass"
+  verdict="TEST TIMEOUT — no result after ${SECS}s; a hang is a failure, not a slow pass"
+  printf '%s\n' "$verdict"
+  receipt "$verdict"
   printf '%s\n' "$out" | tail -20
   exit 1
 fi
 
 if [ "$rc" -eq 0 ]; then
-  printf 'TEST PASS | %s%s\n' "$summary" "$([ -z "$TIMEOUT" ] && printf ' [unbounded: no timeout tool on this host]')"
+  verdict="TEST PASS | $summary$([ -z "$TIMEOUT" ] && printf ' [unbounded: no timeout tool on this host]')"
+  printf '%s\n' "$verdict"
+  receipt "$verdict"
   exit 0
 fi
 
-printf 'TEST FAIL | %s\n' "$summary"
+verdict="TEST FAIL | $summary"
+printf '%s\n' "$verdict"
+receipt "$verdict"
 printf '%s\n' "$out" | tail -20
 exit 1
