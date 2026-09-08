@@ -42,11 +42,25 @@ thing that will get a change reverted.
 
 ### Attribution
 
-If a model wrote a substantial part of the change, add a trailer to the commits:
+If a model wrote a substantial part of the change, add a trailer to the commits naming **both
+the agent and the model**:
 
 ```
-Co-Authored-By: <Model name> <noreply@anthropic.com>
+Co-Authored-By: OpenCode x Qwen3 Coder 30B
+Co-Authored-By: Claude Code x Claude Opus 4.5
 ```
+
+The agent matters as much as the model. The same model behaves differently under a different
+harness — different tools, different context handling, different guardrails — and when a change
+turns out to be wrong, the pairing is usually what explains it. Name the context window too if
+it is unusual.
+
+**The email is deliberately omitted.** `Co-Authored-By: Name <email>` is the form GitHub renders
+as a linked co-author, but there is no honest address to put here: a local Qwen or Llama model
+has no mailbox, and borrowing a vendor's `noreply` address credits the wrong vendor — writing
+`<noreply@anthropic.com>` beside a Qwen model is simply false. The trailer without an address is
+still recorded in the commit and readable by anyone; it just does not become a clickable
+co-author on GitHub. That is the right trade: accurate attribution over a rendered avatar.
 
 **Do not put a session or transcript link in the pull request body.** Those URLs answer `403` to
 anyone but their owner, so in a public repository they are dead links whose only content is which
