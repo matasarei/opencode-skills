@@ -52,6 +52,28 @@
               "reasoning_effort": "medium"
             }
           }
+        },
+        // Lower-End Hardware: Qwen3.5 9B (8–12 GB RAM, reasonable context and output length)
+        "qwen/qwen3.5-9b": {
+          "name": "Qwen3.5 9B",
+          "attachment": true,
+          "reasoning": true,
+          "tool_call": true,
+          "limit": {
+            "context": 32768,
+            "output": 8192
+          },
+          "options": {
+            "reasoning_effort": "none"
+          },
+          "variants": {
+            "off": {
+              "reasoning_effort": "none"
+            },
+            "on": {
+              "reasoning_effort": "medium"
+            }
+          }
         }
       }
     }

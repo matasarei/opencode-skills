@@ -21,8 +21,9 @@ These skills are optimized for ~30B parameter local coding models:
 1. **[Prism Bonsai 27B](https://lmstudio.ai/models/prism-ml/bonsai-27b)** (`prism-ml/bonsai-27b`) — Strong general coding, reasoning, and instruction-following. Best on Apple Silicon in MLX variant (32–48 GB RAM).
 2. **[Qwen3 Coder 30B](https://lmstudio.ai/models/qwen/qwen3-coder-30b)** (`qwen/qwen3-coder-30b`) — Tuned specifically for code generation, diff analysis, and fast tool calling. More capable, but requires more memory.
 3. **[Qwen3.8 27B](https://huggingface.co/Qwen/Qwen3.8-27B)** (`Qwen/Qwen3.8-27B`) — Often recommended for local agents as well, worth trying.
+4. **[Qwen3.5 9B](https://huggingface.co/Qwen/Qwen3.5-9B)** (`Qwen/Qwen3.5-9B`) — If you want to try running on lower-end hardware (8–12 GB RAM) with a reasonable context length.
 
-> **Crucial Server Requirement**: Set your model server's context window (LM Studio, Ollama, or llama.cpp) to **64k or 128k**. Local tool calling will degrade or loop if the context window is left at the default 4k/8k.
+> **Crucial Server Requirement**: Set your model server's context window (LM Studio, Ollama, or llama.cpp) to **64k or 128k** (or at least **32k** for 9B models on lower-end hardware). Local tool calling will degrade or loop if the context window is left at the default 4k/8k.
 
 ---
 
@@ -80,7 +81,7 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 ```
 
 * **Capabilities (`attachment`, `reasoning`, `tool_call`)**: Declares model capabilities to OpenCode. Prism Bonsai 27B is natively multimodal (vision) and reasoning-capable. Setting `"reasoning": true` allows OpenCode to parse reasoning tokens and support variants.
-* **Why 16k output?** In local inference, thinking tokens share the output budget. 16k gives ample headroom for large diffs, database migrations, and plans without truncation (`finish_reason: length`), while preventing runaway infinite loops.
+* **Why 16k output?** In local inference, thinking tokens share the output budget. 16k gives ample headroom for large diffs, database migrations, and plans without truncation (`finish_reason: length`), while preventing runaway infinite loops (on lower-end 8–12 GB hardware running 9B models, an 8k output ceiling and 32k context is configured in `opencode.jsonc`).
 * **Why reasoning OFF by default?** While the model is reasoning-capable, in agent loops local models spend 30–90 seconds generating `<think>` tokens before *every single tool call*, often simulating imaginary tool output instead of calling the tool. Setting `"reasoning_effort": "none"` in `options` defaults thinking off, reducing latency to 1–3 seconds so real tool output grounds the model.
 * **On-the-Fly Toggle**: Because `reasoning: true` is enabled, the `variants` block lets you toggle reasoning `on` whenever you need deep architectural planning (switch via `/variant` or `Ctrl+M` / `Cmd+M` in the OpenCode TUI).
 
