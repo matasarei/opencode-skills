@@ -139,6 +139,36 @@ printf '%s\n' "$out" | grep -q 'src/old.php' && note 'the old path of a rename i
 [ "$(printf '%s\n' "$out" | head -1 | cut -d' ' -f1)" = 1 ] || note 'the queue does not start at rank 1'
 [ "$(printf '%s\n' "$out" | tail -1 | cut -d' ' -f1)" = 9 ] || note 'the queue does not end at rank 9'
 
+# Build output is rank 9, and a pile of it is counted rather than listed. The
+# queue is read into a prompt: 300 generated files there is 300 lines a model
+# reads instead of the instructions above them.
+g switch -q main
+mkdir -p "$repo/build/assets" "$repo/dist"
+printf 'x\n' > "$repo/build/assets/app.js"
+printf 'x\n' > "$repo/dist/app.css"
+g add -A && g commit -qm built
+g switch -q feature && g merge -q main -m merge2
+printf 'y\n' > "$repo/build/assets/app.js"
+printf 'y\n' > "$repo/dist/app.css"
+g add -A && g commit -qm rebuilt
+out="$(cd "$repo" && bash "$changed" main 2>&1)"
+want_rank build/assets/app.js 9
+want_rank dist/app.css 9
+
+# Five or fewer stay listed; more than five collapse to a count.
+for i in 1 2 3 4 5 6 7 8; do printf 'x\n' > "$repo/build/assets/g$i.js"; done
+out="$(cd "$repo" && bash "$changed" main 2>&1)"
+printf '%s\n' "$out" | grep -q 'build/assets/g1.js' && note 'a pile of build output was listed file by file'
+printf '%s\n' "$out" | grep -qE '^\[[0-9]+ vendored or build file\(s\) not listed' \
+  || note "collapsed build output is not announced: '$(printf '%s\n' "$out" | tail -1)'"
+# The real change is still there, which is the whole point of collapsing.
+[ -n "$(rank_of src/app.php)" ] || note 'the source file was lost among the build output'
+
+# The cap truncates the tail and says so, and never drops a higher-risk file.
+out="$(cd "$repo" && DEV_SKILLS_QUEUE_CAP=2 bash "$changed" main 2>&1)"
+[ "$(printf '%s\n' "$out" | head -1 | cut -d' ' -f1)" = 1 ] || note 'the cap dropped the highest-risk file'
+printf '%s\n' "$out" | grep -q '^\[TRUNCATED:' || note 'the cap truncated without announcing it'
+
 # .devskills/ is never part of the change.
 mkdir -p "$repo/.devskills"; printf '{}\n' > "$repo/.devskills/profile.json"
 out="$(cd "$repo" && bash "$changed" main 2>&1)"

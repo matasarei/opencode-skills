@@ -41,6 +41,7 @@ for token in \
   'TEST PASS' \
   'tick.sh' \
   'branch.sh' \
+  'DEV_SKILLS_QUEUE_CAP' \
   '4,500 bytes'
 do
   grep -qF -- "$token" "$readme" || note "README never mentions $token"
