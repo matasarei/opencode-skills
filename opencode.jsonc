@@ -12,9 +12,9 @@
         // Recommended Model 1: Prism Bonsai 27B
         "prism-ml/bonsai-27b": {
           "name": "Prism Bonsai 27B",
-          "attachment": false,
-          "reasoning": false,
-          "tool_calling": true,
+          "attachment": true,
+          "reasoning": true,
+          "tool_call": true,
           "limit": {
             "context": 131072,
             "output": 16384
@@ -34,9 +34,9 @@
         // Recommended Model 2: Qwen3 Coder 30B
         "qwen/qwen3-coder-30b": {
           "name": "Qwen3 Coder 30B",
-          "attachment": false,
-          "reasoning": false,
-          "tool_calling": true,
+          "attachment": true,
+          "reasoning": true,
+          "tool_call": true,
           "limit": {
             "context": 131072,
             "output": 16384
