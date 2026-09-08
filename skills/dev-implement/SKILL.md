@@ -15,13 +15,14 @@ description: Build one step of a task file per run, on its own stacked branch �
 
 Uncommitted changes not yours → stop and ask. Resuming (`--continue`) → check path status below: changes matching this step are in-progress work, not foreign edits.
 
-**Branch.** `<slug>` is the task file's name without `.md`; step `n` builds on `step/<slug>-<n>`, cut from the previous step's branch when it exists, else from the base:
+**Branch** — `step/<slug>-<n>`, stacked on the previous. Run it, do not derive it:
 
 ```
-git switch -c step/<slug>-<n> step/<slug>-<n-1> 2>/dev/null || git switch -c step/<slug>-<n> <baseBranch>
+bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/branch.sh <task-file> <n>
+bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh <task-file> <n>
 ```
 
-Already on it → stay. Then `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh <task-file> <n>` — OVER → say so and suggest `/new` before `/dev-review`; never refuse the step.
+`BRANCH …` and you are on it; `BRANCH refused` → say so and stop. OVER budget → say so and suggest `/new` before `/dev-review`; never refuse the step.
 
 ## Step 2 — Build
 
@@ -35,11 +36,17 @@ Already on it → stay. Then `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-
 
 ## Step 3 — Prove it
 
-Run step's `Check:` command, then profile's `test` in `timeoutTool` (null → say hang is unbounded). **Quote the runner's result line**; a hang is a failure. Fails → fix, re-run, **at most three rounds**, then report. `exec.kind: host` → say results are against host.
+Run the step's `Check:` command, then:
+
+```
+bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/test.sh
+```
+
+**Quote its verdict line**: it carries the runner's own summary, and already chose the command and bounded the run. `TEST FAIL` → fix, re-run, **at most three rounds**, then report. `TEST MISSING` is not a pass. `exec.kind: host` → say results are against host.
 
 ## Step 4 — Tick and commit
 
-Tick step in task file: `N. [x] <title> — <what landed>`. One commit per step, in English. Moodle: bump `$plugin->version` when `classes/`, `db/`, caches or tasks changed. Lock file with manifest. Front-end sources → build.
+Tick it — `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/tick.sh <task-file> <n> "<what landed>"`, never by hand. One commit per step, in English. Moodle: bump `$plugin->version` when `classes/`, `db/`, caches or tasks changed. Lock file with manifest. Front-end sources → build.
 
 ## Step 5 — Report
 

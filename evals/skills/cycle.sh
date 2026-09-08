@@ -63,6 +63,25 @@ has dev-pr-review 'gh pr view $ARGUMENTS' 'the pull request arrives injected, no
 has dev-pr-review 'pr-comments.sh $ARGUMENTS' 'the comment ledger is injected for deduplication'
 has dev-pr-review '.devskills/reports/' 'a report lands in the ignored directory of the primary checkout'
 grep -q 'PR_REVIEW_' "$skills/dev-pr-review/SKILL.md" && note 'dev-pr-review: still writes PR_REVIEW_<n>.md at the root'
+# The three scripts exist to take four judgement calls away from the model:
+# which test command, whether to wrap it, what the result line was, and how to
+# edit a checkbox. A skill that describes the act instead of calling the script
+# has given them back.
+has dev-implement 'branch.sh'  'the stacked branch is cut by script, not by retyping a || chain'
+has dev-implement 'test.sh'    'the suite is run by script, so the verdict line is quotable'
+has dev-implement 'tick.sh'    'the step is ticked by script, not by hand-editing markdown'
+has dev-fix       'test.sh'    'a fix proves itself with the same verdict line'
+has dev-verify    'test.sh'    'and so does verification'
+grep -q 'git switch -c step/' "$skills/dev-implement/SKILL.md" \
+  && note 'dev-implement: the hand-typed branch fallback is back'
+flat dev-implement | grep -q 'Tick step in task file' \
+  && note 'dev-implement: ticking by hand is back'
+
+# A pull request may not claim a check nobody ran.
+has dev-pr 'tested:' 'the pull request stops when nothing was proved for this code'
+flat dev-pr | grep -q 'Tests not run' \
+  && note 'dev-pr: the body can still say "Tests not run" instead of stopping'
+
 # The hand-off has to name the file. /dev-fix injects plan-input.sh and
 # findings-check.sh with the same $ARGUMENTS: with none, the brief block says
 # EMPTY — which Mode A reads as "ask what to fix" — while the findings block
