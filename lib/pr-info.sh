@@ -65,6 +65,18 @@ else
   say house-style ""
 fi
 
+# Model detection: env var, project config, or global config
+MODEL="${OPENCODE_MODEL:-${MODEL:-}}"
+if [ -z "$MODEL" ]; then
+  for cfg in opencode.jsonc opencode.json .opencode.jsonc .opencode.json .opencode/opencode.jsonc .opencode/opencode.json "${HOME}/.config/opencode/opencode.jsonc" "${HOME}/.config/opencode/opencode.json"; do
+    if [ -f "$cfg" ]; then
+      MODEL="$(sed -n 's/^[[:space:]]*"model"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$cfg" | head -1)"
+      [ -n "$MODEL" ] && break
+    fi
+  done
+fi
+say model "${MODEL:-unknown}"
+
 # The branch against its remote and its base.
 if git rev-parse --verify --quiet "origin/$BRANCH" >/dev/null 2>&1; then
   say ahead "$(git rev-list --count "origin/$BRANCH..HEAD" 2>/dev/null)"
