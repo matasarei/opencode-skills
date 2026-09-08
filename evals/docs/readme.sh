@@ -47,6 +47,13 @@ do
 done
 
 # Claims that are no longer true must be gone.
+# A hard-coded suite count goes stale on the next pull request that adds one,
+# and it goes stale silently: two branches that both say "20" merge without a
+# conflict while the real number is 22. run-all.sh prints the count; the docs
+# should not also claim it.
+grep -qE '(all|execute all) [0-9]+ (test )?suites' "$readme" && note 'README hard-codes a suite count; run-all.sh prints it'
+agents="$root/AGENTS.md"
+[ -f "$agents" ] && grep -qE 'all [0-9]+ suites' "$agents" && note 'AGENTS.md hard-codes a suite count'
 grep -q 'seven `dev-` commands' "$readme" && note 'README still counts seven commands'
 grep -q 'REVIEW.md' "$readme" && note 'README still names REVIEW.md at the root'
 
