@@ -41,6 +41,26 @@ kv() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# A value read out of a repository file ends up inside a command string that
+# something later runs, so it must not be able to *be* a command. composer.json
+# is part of the checkout, and `"vendor-dir": "vend; touch PWNED"` used to reach
+# the test command verbatim. Anything that is not a plain relative path is
+# refused and the fallback used instead; REJECTED records it, because silently
+# substituting a default would hide a real misconfiguration too.
+REJECTED=""
+# Assigns through printf -v rather than printing: a command substitution would
+# run this in a subshell and REJECTED would not survive it.
+safe_path() { # safe_path <varname> <value> <fallback> <what it was>
+  case "$2" in
+    ""|*[!A-Za-z0-9._/-]*|/*|*..*)
+      # Truncated: notes are read into the model's context, and this value came
+      # out of the repository. Enough to recognise it, not enough to instruct.
+      [ -n "$2" ] && REJECTED="${REJECTED:+$REJECTED; }$4 (starting '$(printf '%.20s' "$2")') is not a plain relative path — using '$3'"
+      printf -v "$1" '%s' "$3" ;;
+    *) printf -v "$1" '%s' "$2" ;;
+  esac
+}
+
 # ------------------------------------------------------------- 0 platform ---
 
 case "$(uname -s 2>/dev/null || echo unknown)" in
@@ -198,6 +218,7 @@ elif [ -n "$COMPOSE_FILE" ]; then
     fi
   fi
 
+  safe_path SVC "$SVC" "" "compose service name"
   if [ -n "$SVC" ] && ! is_infra_svc "$SVC"; then
     EXEC_KIND=compose
     EXEC_PREFIX="docker compose exec -T $SVC"
@@ -255,7 +276,7 @@ INSTALL=null; LINT=null; TEST=null; TEST_SCOPED=null; BUILD=null
 # PHPUnit — check composer.json for a non-default vendor-dir before assuming vendor/.
 if [ -f phpunit.xml ] || [ -f phpunit.xml.dist ]; then
   VENDOR="$(grep -os '"vendor-dir"[[:space:]]*:[[:space:]]*"[^"]*"' composer.json 2>/dev/null | head -1 | sed 's/.*"vendor-dir"[[:space:]]*:[[:space:]]*"//; s/"$//')"
-  [ -z "$VENDOR" ] && VENDOR="vendor"
+  safe_path VENDOR "$VENDOR" vendor "composer.json vendor-dir"
   if [ -f "$VENDOR/bin/phpunit" ] || [ ! -d "$VENDOR" ]; then
     TEST="$(wrap "$VENDOR/bin/phpunit")"
     TEST_SCOPED="$(wrap "$VENDOR/bin/phpunit --filter {name}")"
@@ -375,7 +396,8 @@ fi
 # ----------------------------------------------------------------- notes -----
 
 NOTES=""
-[ -n "$CI_TEST" ] && NOTES="CI runs: $CI_TEST"
+[ -n "$REJECTED" ] && NOTES="$REJECTED"
+[ -n "$CI_TEST" ] && NOTES="${NOTES:+$NOTES; }CI runs: $CI_TEST"
 [ "$TEST" = "null" ] && NOTES="${NOTES:+$NOTES; }No test command found — this repository may have no test suite."
 [ -z "$NOTES" ] && NOTES=null
 

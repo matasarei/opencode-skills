@@ -60,6 +60,29 @@ printf '%s\n' "$out" | grep -q 'CI runs: vendor/bin/phpunit --testsuite unit' ||
 printf '%s\n' "$out" | grep -q '"note": "Docker not available' || note 'php library: the host fallback reason is not recorded'
 [ -f "$lib/.devskills/profile.json" ] || note 'php library: the cache was not written'
 
+# composer.json is part of the checkout, so its vendor-dir is repository-controlled
+# text landing inside a command something later runs. A value that is not a plain
+# relative path is refused, and the refusal is said out loud rather than silently
+# defaulted — but a legitimate custom vendor-dir is still honoured.
+hostile="$work/hostile"; mkdir -p "$hostile"
+printf '{"config":{"vendor-dir":"vend; touch PWNED"},"require":{"php":">=8.1"}}\n' > "$hostile/composer.json"
+printf '<phpunit/>\n' > "$hostile/phpunit.xml"
+g "$hostile" init -q -b main . && g "$hostile" add -A && g "$hostile" commit -qm init
+run "$hostile"
+want test '"vendor/bin/phpunit"' 'hostile vendor-dir'
+want testScoped '"vendor/bin/phpunit --filter {name}"' 'hostile vendor-dir'
+printf '%s\n' "$(field test)$(field testScoped)$(field prefix)" | grep -q ';' && note 'hostile vendor-dir: a command separator reached a command field'
+printf '%s\n' "$out" | grep -q 'is not a plain relative path' || note 'hostile vendor-dir: the refusal is not in notes'
+[ -f "$hostile/PWNED" ] && note 'hostile vendor-dir: the value executed'
+
+custom="$work/custom"; mkdir -p "$custom"
+printf '{"config":{"vendor-dir":"custom-vendor"},"require":{"php":">=8.1"}}\n' > "$custom/composer.json"
+printf '<phpunit/>\n' > "$custom/phpunit.xml"
+g "$custom" init -q -b main . && g "$custom" add -A && g "$custom" commit -qm init
+run "$custom"
+want test '"custom-vendor/bin/phpunit"' 'custom vendor-dir'
+want notes 'null' 'custom vendor-dir'
+
 # The cache is what is printed the second time, even after the tree changes.
 rm "$lib/phpunit.xml"
 run "$lib"
