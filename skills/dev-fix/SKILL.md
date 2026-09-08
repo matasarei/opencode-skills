@@ -9,9 +9,11 @@ Two jobs:
 1. **Given an issue or symptom in prompt**: investigate, verify root cause against the code, and write a task plan in `.tasks/fix-<slug>.md` for `/dev-implement`.
 2. **Given review findings** (or continuing after `/dev-review`): apply verified findings, one commit each.
 
+**Which mode is not yours to judge:** the `Input / brief` block's first line says it. `FINDINGS`, or `EMPTY` with findings below → **Mode B**. `FILE`, `ISSUE` or `TEXT` → **Mode A**. Never both.
+
 ## Mode A — Plan a fix for an issue or symptom
 
-When given a sentence, `#<issue>`, or bug report (see `Input / brief` below):
+When the brief is a sentence, `#<issue>`, or a bug report:
 
 1. **Find and verify**: grep 2–4 distinctive terms, read entry points and tests. Reproduce via `exec.prefix` if possible; quote output. Tag cause: `[from the code]` or `[hypothesis]`.
 2. **Write task plan** in `.tasks/fix-<slug>.md` using standard format (max 3–5 files per step):
@@ -26,7 +28,7 @@ When given a sentence, `#<issue>`, or bug report (see `Input / brief` below):
 
 ## Mode B — Apply review findings (post-review continue)
 
-When continuing after `/dev-review` (verified findings injected below from `findings-check.sh $ARGUMENTS`):
+When the brief said `FINDINGS` or `EMPTY` — the verified list is injected below from `findings-check.sh`. Never re-plan these as a task file; they are already located and checked.
 
 1. **Which to take**: BLOCKER and WARNING in file order; NIT and SMELL listed and left.
 2. **Fix**: smallest change per finding; `sed -n '<line-15>,<line+15>p' <path>`. Lint with `lint.sh <path>` and run `testScoped`.
