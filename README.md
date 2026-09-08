@@ -157,6 +157,38 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 
 ---
 
+## Supported Stacks
+
+Nothing in the cycle asks the model which command to run. `lib/profile.sh` works it out once, caches it in `.devskills/profile.json`, and every skill reads that.
+
+**Order of authority — CI, then the manifest, then the language branch, then `null`.** Whatever a `.github/workflows/*` file actually runs is what gates the project, so it wins; the manifest is the fallback; `null` is a real answer and is never replaced by an invention.
+
+| Detected by | Language | Test | Lint | Build / Install |
+|---|---|---|---|---|
+| `composer.json` + `phpunit.xml` | PHP | `vendor/bin/phpunit` | `php -l` | `composer install` |
+| `pyproject.toml`, `pytest.ini`, `conftest.py` | Python | `pytest` | `ruff check` | `pip install` |
+| `package.json` | Node | `npm test` | its `lint` script | `npm run build`, `npm ci` |
+| `go.mod` | Go | `go test ./...` | `gofmt -l` | `go build ./...` |
+| `Cargo.toml` | Rust | `cargo test` | `cargo fmt --check` | `cargo build` |
+| `pom.xml` | Java | `mvn -q test` | — | `mvn -q package` |
+| `build.gradle(.kts)` | Java/Kotlin | `gradle test` | — | `gradle build` |
+| `Gemfile` | Ruby | `rspec` or `rake test` | — | `bundle install` |
+| `mix.exs` | Elixir | `mix test` | — | `mix deps.get` |
+| `*.sln`, `*.csproj` | .NET | `dotnet test` | — | `dotnet build` |
+
+A stack not in this table still gets a real `test` command whenever its CI names one — that is the point of putting CI first.
+
+**A value read out of the repository is not a command.** `composer.json`'s `vendor-dir` and a CI run line are both files in the checkout, so they are validated before they reach a command string: anything but a plain relative path, or a capture carrying a shell metacharacter, is refused and recorded in `notes`.
+
+### Adding a stack
+
+1. Add a branch to the manifest block in `lib/profile.sh` — the file that identifies it, then `LANGUAGE`, `TEST`, `TEST_SCOPED`, and `LINT`/`BUILD`/`INSTALL` where the stack has an obvious one. Use `set_if_null` so CI still wins.
+2. Add a fixture to `evals/lib/profile.sh` via `manifest_case`, asserting the language and both test commands.
+3. If the linter is per-file, add its extensions to the whitelist in `lib/lint.sh`, or the command is detected and never invoked.
+4. `family` is for `/dev-init` templates and the Moodle version rules only — command detection does not use it, so a new stack does not need one.
+
+---
+
 ## Mechanics & Guardrails
 
 * **The Guard (`lib/dev-guard.js`)**: An OpenCode plugin that intercepts bash commands and blocks dangerous actions: force pushes, amended commits, skipped git hooks, pushes to `main`/`master`, and unauthorized `gh pr merge`. Verified against 43 test cases in `evals/guard/cases.sh`.
