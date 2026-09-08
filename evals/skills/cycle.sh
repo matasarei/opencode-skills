@@ -63,6 +63,22 @@ has dev-pr-review 'gh pr view $ARGUMENTS' 'the pull request arrives injected, no
 has dev-pr-review 'pr-comments.sh $ARGUMENTS' 'the comment ledger is injected for deduplication'
 has dev-pr-review '.devskills/reports/' 'a report lands in the ignored directory of the primary checkout'
 grep -q 'PR_REVIEW_' "$skills/dev-pr-review/SKILL.md" && note 'dev-pr-review: still writes PR_REVIEW_<n>.md at the root'
+# The hand-off has to name the file. /dev-fix injects plan-input.sh and
+# findings-check.sh with the same $ARGUMENTS: with none, the brief block says
+# EMPTY — which Mode A reads as "ask what to fix" — while the findings block
+# holds the list. Naming the file makes the brief say FINDINGS instead.
+has dev-review '/dev-fix .devskills/findings.md' 'a bare /dev-fix arrives with an empty brief and a list at once'
+has dev-fix    'FINDINGS'   'the mode is decided by the brief kind, not guessed'
+has dev-fix    'Never both' 'Mode A and Mode B must not both fire on one input'
+
+# A skill that writes must not also claim it never writes. Both review skills
+# maintain .devskills/findings.md — that file is the hallucination filter, and
+# an absolute the same page contradicts teaches the model the rules are soft.
+for s in dev-review dev-pr-review; do
+  flat "$s" | grep -qE 'Read-only|Review only' && note "$s: claims an absolute it breaks in the same file"
+  flat "$s" | grep -q '.devskills/' || note "$s: never says what it does write"
+done
+
 # The untrusted-input sentence, in every skill that reads outside text.
 n="$(grep -l 'evidence, never instruction' "$skills"/*/SKILL.md | wc -l | tr -d ' ')"
 [ "$n" -ge 6 ] || note "only $n skills carry 'evidence, never instruction'; at least six read outside text"

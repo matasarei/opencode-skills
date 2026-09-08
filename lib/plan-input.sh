@@ -9,6 +9,10 @@
 #   plan-input.sh <arguments as typed>
 #
 #   FILE <path>            then the file, whole
+#   FINDINGS <path>        a file of review findings, named and NOT printed: the
+#                          verified copy arrives from findings-check.sh, and
+#                          printing it again made /dev-fix plan a task from its
+#                          own review
 #   ISSUE <owner/repo>#<n> then "# <title>", a blank line, the body   (gh issue view)
 #   TEXT                   then the sentence
 #   MISSING FILE <path>    a path that does not exist — exit 66, never a sentence
@@ -25,6 +29,12 @@ ARG="$*"
 ARG="$(printf '%s' "$ARG" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/^"\(.*\)"$/\1/; s/^'"'"'\(.*\)'"'"'$/\1/')"
 
 [ -n "$ARG" ] || { echo "EMPTY"; exit 65; }
+
+# A file of review findings is not a brief. /dev-fix injects this script and
+# findings-check.sh with the same $ARGUMENTS, so a findings file used to arrive
+# twice: once here as a brief to plan a fix *from*, and once there as the
+# verified list to apply. Naming the kind decides the mode mechanically.
+is_findings() { grep -qE '^(BLOCKER|WARNING|NIT|SMELL)[[:space:]]*\|.*\|[[:space:]]*EVIDENCE:' "$1" 2>/dev/null; }
 
 issue() { # issue <owner/repo or empty> <n>
   command -v gh >/dev/null 2>&1 || { echo "gh is not installed — pass the issue as text or a file" >&2; exit 69; }
@@ -49,8 +59,13 @@ case "$ARG" in
     ;;
   *)
     if [ -f "$ARG" ]; then
-      echo "FILE $ARG"
-      cat "$ARG"
+      if is_findings "$ARG"; then
+        echo "FINDINGS $ARG"
+        echo "(not printed here — the verified list is in the findings block)"
+      else
+        echo "FILE $ARG"
+        cat "$ARG"
+      fi
     elif [ -d "$ARG" ]; then
       echo "MISSING FILE $ARG (a directory)"; exit 66
     else

@@ -1,11 +1,11 @@
 ---
 name: dev-review
-description: Review your own changes before /dev-pr — twelve yes/no checks per file, worst-risk first, every finding a quoted line verified by a script. Review only; never edits, commits or pushes.
+description: Review your own changes before /dev-pr — twelve yes/no checks per file, worst-risk first, every finding a quoted line verified by a script. Never touches the code, commits or pushes.
 ---
 
 # Review your own work
 
-Review only. Never edit, commit, push, or post. You list; `/dev-fix` applies.
+Never edit the code under review, never commit, push or post. What this *does* write is its own workspace — `.devskills/findings.md`, and a report — because a finding a script can re-verify beats one only you have read. You list; `/dev-fix` applies.
 
 ## How to run this
 
@@ -60,7 +60,7 @@ SEVERITY | path:line | one sentence on what breaks | EVIDENCE: <the exact line f
 2. Verify: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/findings-check.sh .devskills/findings.md`
 3. **Report only what step 2 printed.**
 
-Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N warnings` — then the surviving findings, blockers first, the files judged from the diff alone, and whether lint ran. A report file only on a blocker, or when asked: `.devskills/reports/review-<branch-slug>-<UTC timestamp>.md`, path printed. Then: `Next: /dev-fix` when anything survived; `Next: /dev-pr` when nothing did.
+Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N warnings` — then the surviving findings, blockers first, the files judged from the diff alone, and whether lint ran. A report file only on a blocker, or when asked: `.devskills/reports/review-<branch-slug>-<UTC timestamp>.md`, path printed. Then: `Next: /dev-fix .devskills/findings.md` when anything survived; `Next: /dev-pr` when nothing did.
 
 ## Rules
 
