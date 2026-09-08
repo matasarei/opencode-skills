@@ -111,17 +111,36 @@ for (const line of readFileSync(casesPath, "utf8").split("\n")) {
 try { await hook({ tool: "edit" }, { args: { command: "git push --force" } }) }
 catch { fails++; console.log(`FAIL  ${label} a non-bash tool was refused`) }
 // Grep patterns with unescaped backslashes (e.g. PHP namespaces) are sanitized
-const grepArgs = { pattern: "Company::class|models\\company\\.Company" }
+const grepArgs = { pattern: "User::class|models\\user\\.User" }
 await hook({ tool: "grep" }, { args: grepArgs })
-if (grepArgs.pattern !== "Company::class|models\\\\company\\.Company") {
+if (grepArgs.pattern !== "User::class|models\\\\user\\.User") {
   fails++
   console.log(`FAIL  ${label} grep pattern was not sanitized: ${grepArgs.pattern}`)
+}
+// Bash timeout sanitization (seconds converted to ms, clamped to >= 30000, invalid removed)
+const bashArgs5 = { command: "ls", timeout: 5 }
+await hook({ tool: "bash" }, { args: bashArgs5 })
+if (bashArgs5.timeout !== 30000) {
+  fails++
+  console.log(`FAIL  ${label} bash timeout: 5 was not sanitized to 30000: ${bashArgs5.timeout}`)
+}
+const bashArgs60 = { command: "ls", timeout: 60 }
+await hook({ tool: "bash" }, { args: bashArgs60 })
+if (bashArgs60.timeout !== 60000) {
+  fails++
+  console.log(`FAIL  ${label} bash timeout: 60 was not sanitized to 60000: ${bashArgs60.timeout}`)
+}
+const bashArgsInvalid = { command: "ls", timeout: -1 }
+await hook({ tool: "bash" }, { args: bashArgsInvalid })
+if ("timeout" in bashArgsInvalid) {
+  fails++
+  console.log(`FAIL  ${label} invalid bash timeout was not deleted`)
 }
 // Repeated identical edit call on an already-updated file is refused on retry
 const dummyFile = `${dir}/dummy.php`
 const { writeFileSync } = await import("node:fs")
-writeFileSync(dummyFile, "use CompanyBundle\\Entity\\Company;\n")
-const editArgs = { filePath: dummyFile, oldString: "use models\\company\\Company;", newString: "use CompanyBundle\\Entity\\Company;" }
+writeFileSync(dummyFile, "use UserBundle\\Entity\\User;\n")
+const editArgs = { filePath: dummyFile, oldString: "use models\\user\\User;", newString: "use UserBundle\\Entity\\User;" }
 await hook({ tool: "edit" }, { args: editArgs })
 let editRefused = false
 try { await hook({ tool: "edit" }, { args: editArgs }) }
