@@ -42,6 +42,10 @@ for token in \
   'tick.sh' \
   'branch.sh' \
   'DEV_SKILLS_QUEUE_CAP' \
+  'Supported Stacks' \
+  'Adding a stack' \
+  'go.mod' \
+  'Cargo.toml' \
   '4,500 bytes'
 do
   grep -qF -- "$token" "$readme" || note "README never mentions $token"
