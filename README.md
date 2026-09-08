@@ -18,7 +18,7 @@ Instead of relying on fragile multi-variable reasoning and prompt guesswork, the
 
 These skills are optimized for ~30B parameter local coding models:
 
-1. **[Prism Bonsai 27B](https://lmstudio.ai/models/prism-ml/bonsai-27b)** (`prism-ml/bonsai-27b`) — Strong general coding, reasoning, and instruction-following. Recommended on Apple Silicon in MLX variant (32–48 GB RAM).
+1. **[Prism Bonsai 27B](https://lmstudio.ai/models/prism-ml/bonsai-27b)** (`prism-ml/bonsai-27b`) — Strong general coding, reasoning, and instruction-following. Best on Apple Silicon in MLX variant (32–48 GB RAM).
 2. **[Qwen3 Coder 30B](https://lmstudio.ai/models/qwen/qwen3-coder-30b)** (`qwen/qwen3-coder-30b`) — Tuned specifically for code generation, diff analysis, and fast tool calling. More capable, but requires more memory.
 
 > **Crucial Server Requirement**: Set your model server's context window (LM Studio, Ollama, or llama.cpp) to **64k or 128k**. Local tool calling will degrade or loop if the context window is left at the default 4k/8k.
