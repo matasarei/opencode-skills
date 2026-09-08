@@ -32,3 +32,15 @@ jobs:
       # and a newer shellcheck than the runner's would otherwise fail a build by
       # adding notices nobody changed code for.
       - run: shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh
+
+  smoke:
+    name: opencode startup smoke test
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: install opencode CLI
+        run: npm install -g opencode-ai
+      - name: run opencode smoke test
+        run: OPENCODE_SMOKE_REQUIRED=1 bash evals/guard/smoke.sh
