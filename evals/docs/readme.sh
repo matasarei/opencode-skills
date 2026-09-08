@@ -40,6 +40,7 @@ for token in \
   'test.sh' \
   'TEST PASS' \
   'tick.sh' \
+  'branch.sh' \
   '4,500 bytes'
 do
   grep -qF -- "$token" "$readme" || note "README never mentions $token"
