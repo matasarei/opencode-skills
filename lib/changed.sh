@@ -51,7 +51,7 @@ fi
 # linted as though it had changed nothing.
 #
 # core.quotePath=false on both calls, because git otherwise C-quotes any path
-# holding a non-ASCII byte — "src/\320\240..." for a Ukrainian filename — and
+# holding a non-ASCII byte — "src/\347\256\200\345\216\206.php" for 简历.php — and
 # that string is not a path either, so the file is dropped from the queue in
 # silence. A path holding a literal quote, backslash or newline is still quoted;
 # only -z would cover those, and it would cost the rename parsing below.
