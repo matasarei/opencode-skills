@@ -21,6 +21,24 @@ if [ -z "$LINT" ] || [ "$LINT" = "null" ]; then
   exit 2
 fi
 
+# {file} inside single quotes cannot be filled safely. The path is passed as an
+# argument below, and "$1" is literal inside single quotes — the inner shell
+# would expand its own unset $1 and lint an empty path while reporting clean.
+# Substituting a quoted path instead is worse: the quotes close the region they
+# are already inside, so 'a;touch X.php' runs. Refuse, rather than report.
+case "$LINT" in
+  *"{file}"*)
+    before="${LINT%%\{file\}*}"
+    quotes="${before//[^\']/}"
+    if [ $(( ${#quotes} % 2 )) -eq 1 ]; then
+      echo "NO LINT COMMAND — {file} sits inside single quotes in the profile's lint"
+      echo "command, so the path cannot be passed safely. This review is unlinted:"
+      echo "fix \"lint\" in .devskills/profile.json. Got: $LINT"
+      exit 2
+    fi
+    ;;
+esac
+
 # If specific files are given, lint them directly. Otherwise, inspect
 # what changed against the base branch using changed.sh.
 if [ "$#" -gt 0 ] && [ -f "$1" ]; then
