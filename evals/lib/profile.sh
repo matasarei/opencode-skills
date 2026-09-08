@@ -33,7 +33,12 @@ want_runtime() { [ "$(field kind 2)" = "$1" ] || note "$2: runtime.kind = $(fiel
 # deterministically, whatever this machine has.
 stub="$work/bin"; mkdir -p "$stub"
 printf '#!/bin/sh\nexit 1\n' > "$stub/docker"; chmod +x "$stub/docker"
-run() { out="$(cd "$1" && PATH="$stub:$PATH" bash "$profile" "${2:-}" 2>&1)"; }
+# HOME is redirected for every case. profile.sh reads ~/.config/opencode when a
+# project declares no window of its own -- correct, that is the config OpenCode
+# falls back to -- so without this the suite would report whatever window the
+# developer running it happens to have configured.
+nohome="$work/nohome"; mkdir -p "$nohome"
+run() { out="$(cd "$1" && HOME="$nohome" PATH="$stub:$PATH" bash "$profile" "${2:-}" 2>&1)"; }
 
 # A PHP library with PHPUnit, a database call, a CI workflow, no compose file.
 lib="$work/lib"; mkdir -p "$lib/src" "$lib/tests" "$lib/.github/workflows"
@@ -173,6 +178,39 @@ want install '"pip install -e ."' 'python'
 want_runtime '"cli"' 'python'
 want how '"python main.py"' 'python'
 want contextTokens '100000' 'python'
+
+# contextTokens comes from OpenCode's own config, because assuming it is how a
+# step gets sized for a window the machine does not have. HOME is redirected for
+# these: the search reaches ~/.config/opencode deliberately -- that is the config
+# OpenCode uses when a project has none -- so without this the result would
+# depend on whose machine ran the suite.
+ctx_case() { # ctx_case <dir> <config or empty> <want> <what>
+  d="$work/ctx-$1"; mkdir -p "$d"
+  [ -n "$2" ] && printf '%s\n' "$2" > "$d/opencode.jsonc"
+  g "$d" init -q -b main . && g "$d" add -A >/dev/null 2>&1
+  g "$d" -c user.email=t@e commit -qm init --allow-empty
+  got="$(cd "$d" && HOME="$nohome" PATH="$stub:$PATH" bash "$profile" 2>&1 | sed -n 's/.*"contextTokens": *\([0-9]*\).*/\1/p')"
+  [ "$got" = "$3" ] || note "contextTokens, $4: got '$got', want $3"
+}
+
+ctx_case declared '{ "model": "lmstudio/qwen/q9b", "provider": { "lmstudio": { "models": {
+  "qwen/q9b": { "limit": { "context": 65536, "output": 8192 } } } } } }' \
+  65536 'a declared window is used'
+
+ctx_case picks '{ "model": "lmstudio/c/d", "provider": { "lmstudio": { "models": {
+  "a/b": { "limit": { "context": 32768 } },
+  "c/d": { "limit": { "context": 131072 } } } } } }' \
+  131072 'the selected model wins, not the first one listed'
+
+ctx_case none '' 100000 'no config falls back'
+ctx_case bad '{ "model": "x/y", "provider": { "p": { "models": { "y": { "limit": { "context": "nope" } } } } } }' \
+  100000 'a malformed value falls back rather than propagating'
+ctx_case noslash '{ "model": "onlyprovider" }' 100000 'a model with no provider prefix falls back'
+
+# The override still wins over a declared window.
+d="$work/ctx-declared"
+got="$(cd "$d" && HOME="$nohome" DEV_SKILLS_CONTEXT=40000 PATH="$stub:$PATH" bash "$profile" --reprofile 2>&1 | sed -n 's/.*"contextTokens": *\([0-9]*\).*/\1/p')"
+[ "$got" = 40000 ] || note "contextTokens: DEV_SKILLS_CONTEXT no longer overrides a declared window (got '$got')"
 
 # contextTokens: the default, and the DEV_SKILLS_CONTEXT override (a number, unquoted).
 out="$(cd "$py" && PATH="$stub:$PATH" DEV_SKILLS_CONTEXT=64000 bash "$profile" --reprofile 2>&1)"
