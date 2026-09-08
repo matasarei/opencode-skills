@@ -32,22 +32,17 @@ Answer yes or no. Do not weigh, rank, or reconsider — just answer.
 - **C11 TEST** — does it add logic with no test, or a test whose assertion proves nothing?
 - **C12 ERROR** — does it add a throw, guard or error return that nothing tests?
 
-**Severity is decided by which check fired. Do not choose it yourself:**
-
-| Fired | Severity |
-|---|---|
-| C1–C8 | `BLOCKER` |
-| C9–C12 | `WARNING` |
+**Severity is fixed**: C1–C8 → `BLOCKER`; C9–C12 → `WARNING`. Do not choose it yourself.
 
 ## C5 is grep, not judgement
 
-For every renamed or removed symbol, grep the files the current step names first — `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/task-step.sh <task-file> --paths <n>` lists them — then the tree:
+For every renamed or removed symbol, grep the files the current step names first — `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/task-step.sh <task-file> --paths <n>` lists them — then run:
 
 ```
-grep -rn "<oldname>" --exclude-dir=vendor --exclude-dir=node_modules .
+bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/callers.sh "<oldname>"
 ```
 
-Any surviving caller in code, tests/ or views/ is a BLOCKER. Do not reason about whether it is reachable — report what grep found.
+Any surviving caller in code, tests/ or views/ is a BLOCKER. Do not reason about whether it is reachable — report what callers.sh found.
 
 ## The output line
 

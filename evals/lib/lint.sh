@@ -80,6 +80,19 @@ run
 [ "$rc" -eq 0 ] || note "deleted file: exit $rc, want 0"
 printf '%s\n' "$out" | grep -q 'nothing was checked' || note "deleted file: got '$out'"
 
+# Specific file argument: lints only that file directly
+mkdir -p "$work/src"
+printf 'ok\n' > "$work/src/a.php"
+out="$(cd "$work" && bash "$lint" src/a.php 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] || note "specific file clean: exit $rc, want 0"
+[ "$out" = 'lint: clean across 1 changed file(s)' ] || note "specific file clean: got '$out'"
+
+printf 'BAD\n' > "$work/src/a.php"
+out="$(cd "$work" && bash "$lint" src/a.php 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] || note "specific file bad: exit $rc, want 1"
+printf '%s\n' "$out" | grep -q '^LINT FAIL src/a.php' || note "specific file bad: got '$out'"
+
+
 if [ "$fails" -eq 0 ]; then
   printf 'lint: says which of the four outcomes happened, never a false clean\n'
 else

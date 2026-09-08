@@ -19,7 +19,7 @@ For each finding:
 
 1. `sed -n '<line-15>,<line+15>p' <path>` — the place and enough around it. Nothing else.
 2. **The smallest change that resolves the claim.** No refactor, no tidying, no second finding while you are there. Never a file the finding does not name, except the test that covers it.
-3. Lint the file through `exec.prefix`; run `testScoped` if one covers it. A failure means the fix is wrong — fix the fix.
+3. `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh <path>`; run `testScoped` if one covers it. A failure means the fix is wrong — fix the fix.
 4. `git add <path> [<its test>]` and `git commit -m "Fix: <the finding's sentence>"`. A hook failure → the finding is **skipped** and reported so. Never `--no-verify`.
 5. One line: what changed.
 
