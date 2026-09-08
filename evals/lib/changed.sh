@@ -6,7 +6,8 @@
 # The queue's order is the decision a small model must not make, so the ranks
 # are asserted one by one against a fixture branch, along with the two refusals
 # (on the base branch, nothing changed), that uncommitted work is in the queue,
-# and that a rename yields the destination path rather than "old -> new".
+# that a rename yields the destination path rather than "old -> new", and that a
+# new directory of untracked files arrives as its files and never as a directory.
 #
 # Exits 0 when every case matches, 1 otherwise, naming each mismatch.
 
@@ -61,6 +62,13 @@ g add -A && g commit -qm change
 # And one uncommitted, untracked file: it must be in the queue too.
 printf '<?php\n// wip\n' > "$repo/src/wip.php"
 
+# And a whole new directory of untracked files. Porcelain collapses these to a
+# single "?? assets/js/" entry unless -uall is passed, and then neither file is
+# ever linted or reviewed.
+mkdir -p "$repo/assets/js"
+printf 'export const a = 1\n' > "$repo/assets/js/widget.js"
+printf 'export const b = 2\n' > "$repo/assets/js/helper.js"
+
 out="$(cd "$repo" && bash "$changed" main 2>&1)"
 
 want_rank db/upgrade.php 1
@@ -73,6 +81,12 @@ want_rank README.md 7
 want_rank vendor/lib.php 9
 want_rank src/wip.php 4
 [ "$(status_of src/wip.php)" = "??" ] || note "an untracked file should carry status ??, got '$(status_of src/wip.php)'"
+
+# The new directory: both of its files are in the queue, and the directory
+# itself is never a queue entry — a path ending in "/" is not a path.
+want_rank assets/js/widget.js 4
+want_rank assets/js/helper.js 4
+printf '%s\n' "$out" | grep -qE ' [^ ]+/$' && note 'a directory reached the queue; the status call needs -uall'
 
 # The rename: destination path, status R, and no "->" anywhere in the queue.
 [ -n "$(rank_of src/renamed.php)" ] || note 'a renamed file is missing from the queue under its new path'
