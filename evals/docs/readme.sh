@@ -37,6 +37,8 @@ for token in \
   'step/<slug>-<n>' \
   'Depends on #' \
   'http-check.sh' \
+  'test.sh' \
+  'TEST PASS' \
   'tick.sh' \
   '4,500 bytes'
 do

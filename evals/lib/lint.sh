@@ -133,6 +133,23 @@ run
 printf '%s\n' "$out" | grep -q '^NO LINT COMMAND' || note "single-quoted {file}: got '$out'"
 printf '%s\n' "$out" | grep -q 'clean across' && note 'single-quoted {file}: reported clean without linting'
 
+# {file} inside DOUBLE quotes is refused too: the "$1" we substitute would close
+# that region, leaving $1 bare, so the path is word-split and globbed.
+profile '"sh -c \"bash ./lintstub.sh {file}\""'
+run
+[ "$rc" -eq 2 ] || note "double-quoted {file}: exit $rc, want 2"
+printf '%s\n' "$out" | grep -q 'inside double quotes' || note "double-quoted {file}: got '$out'"
+
+# An apostrophe inside double-quoted text is not a delimiter, so a command whose
+# {file} is outside every quote must still be accepted.
+profile '"sh -c \"echo it'"'"'s fine\" ; bash ./lintstub.sh {file}"'
+printf 'BAD\n' > "$work/src/apos.php"   # a fresh path: src/a.php carries a staged deletion from above
+run
+[ "$rc" -eq 1 ] || note "apostrophe in double quotes: exit $rc, want 1 (the file is BAD)"
+printf '%s\n' "$out" | grep -q '^NO LINT COMMAND' && note 'apostrophe in double quotes: refused a usable lint command'
+printf '%s\n' "$out" | grep -q '^LINT FAIL src/apos.php' || note "apostrophe in double quotes: the file was not linted: '$out'"
+rm -f "$work/src/apos.php"
+
 # The container shape the profile writes for a project with no compose file:
 # ${PWD} must still expand in the command, now that it runs under bash -c.
 profile '"bash ./lintstub.sh ${PWD}/{file}"'
@@ -144,6 +161,16 @@ printf 'BAD\n' > "$work/src/pwd.php"
 run
 [ "$rc" -eq 1 ] || note "expanded \${PWD}, bad file: exit $rc, want 1"
 printf '%s\n' "$out" | grep -q '^LINT FAIL src/pwd.php' || note "expanded \${PWD}, bad file: got '$out'"
+
+# A path starting with a dash reaches the linter as a path, not as an option.
+profile '"bash ./lintstub.sh {file}"'
+rm -f "$work/src/pwd.php"
+printf 'BAD\n' > "$work/-dash.php"
+run
+[ "$rc" -eq 1 ] || note "dash-leading path: exit $rc, want 1"
+printf '%s\n' "$out" | grep -q 'LINT FAIL -dash.php' || note "dash-leading path: got '$out'"
+printf '%s\n' "$out" | grep -q 'syntax error in ./-dash.php' || note "dash-leading path: the linter did not receive ./-dash.php: '$out'"
+rm -f "$work/-dash.php"
 
 
 if [ "$fails" -eq 0 ]; then
