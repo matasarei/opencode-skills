@@ -1,13 +1,13 @@
 ---
 name: dev-init
-description: Write this repository's AGENTS.md — the detected commands plus its family's conventions and security rules — and leave CLAUDE.md as an @AGENTS.md stub. Writes those two files and nothing else.
+description: Write this repository's AGENTS.md — the detected commands plus its family's conventions and security rules. Writes AGENTS.md only and nothing else.
 ---
 
 # Give this repository an AGENTS.md
 
 `AGENTS.md` is loaded at the start of every session: the build and test commands, and the handful of rules that actually get broken here.
 
-**Content goes in `AGENTS.md`; `CLAUDE.md` is exactly `@AGENTS.md`.** OpenCode reads `AGENTS.md` and falls back to `CLAUDE.md` only when it is absent, and follows no links inside it — a stub `AGENTS.md` pointing elsewhere makes every rule invisible. Claude Code resolves the `@` import, so both tools read one file. Content in `CLAUDE.md` and none in `AGENTS.md` → **move** it.
+**Content goes in `AGENTS.md` only.** OpenCode reads `AGENTS.md` directly. If existing rules are in `CLAUDE.md` and none in `AGENTS.md`, **move** them into `AGENTS.md`. Never create or write `CLAUDE.md` stubs.
 
 ## Step 1 — Map the family to a template
 
@@ -60,13 +60,13 @@ Report one of three, and **do not write without saying which**: **Already fine**
 
 Look, then write what you find — never assume: does the template layer escape automatically (read a view and the render path; cannot tell → say so and mark it); is there a CSRF helper — name it or record none; how authorisation is checked — middleware, base controller, per-action; which files hold credentials and whether they are ignored — where, **never their contents**; what is generated and must not be hand-edited; what breaks only in production — a cache, a version bump, a migration.
 
-## Step 5 — The stub, and the report
+## Step 5 — Report
 
-`CLAUDE.md` containing only `@AGENTS.md`, unless it already holds real content — the step 2 conflict, the developer decides. Then report: the family and why, the absolute paths written, whether `CLAUDE.md` was created or left, which commands came out `null`, and what step 4 left as a question. `--dry-run` prints and writes nothing.
+Write `AGENTS.md`. Never create `CLAUDE.md` stubs — OpenCode targets `AGENTS.md` directly. Then report: the family and why, the absolute path written, which commands came out `null`, and what step 4 left as a question. `--dry-run` prints and writes nothing.
 
 ## Rules
 
-- **Only `AGENTS.md` and the stub.** No source, no config, no commits. Never invent a command. Never copy a secret into the file.
+- **Only `AGENTS.md`.** Never write `CLAUDE.md`. No source, no config, no commits. Never invent a command. Never copy a secret into the file.
 - **Under ~120 lines** including the family block; the surplus belongs in the repository's own documentation.
 - English or Ukrainian, matching the repository. A monorepo gets one file at the root, noting which directory each command applies to. Already correct → say so and stop; no reformatting.
 
