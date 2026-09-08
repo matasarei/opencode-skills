@@ -31,7 +31,7 @@
             }
           }
         },
-        // Recommended Model 2: Qwen3 Coder 30B (more capable, but requires more RAM)
+        // Recommended Model 2: Qwen3 Coder 30B (more capable, but requires more memory)
         "qwen/qwen3-coder-30b": {
           "name": "Qwen3 Coder 30B",
           "attachment": true,
