@@ -26,8 +26,14 @@ echo "Installing to $TARGET"
 
 mkdir -p "$SKILLS" "$LIB"
 
-# Shared scripts. Every skill calls these; they are the reason the skills are short.
-# The .awk beside them is what the task-file scripts share.
+# Shared scripts. Clean up obsolete scripts first so deleted scripts do not linger.
+for installed in "$LIB"/*.sh "$LIB"/*.awk; do
+  [ -f "$installed" ] || continue
+  fname="$(basename "$installed")"
+  if [ ! -f "$SRC/lib/$fname" ]; then
+    rm -f "$installed"
+  fi
+done
 cp "$SRC"/lib/*.sh "$SRC"/lib/*.awk "$LIB/"
 chmod +x "$LIB"/*.sh
 
@@ -56,6 +62,13 @@ cp "$SRC/lib/dev-guard.js" "$TARGET/plugins/dev-guard.js"
 # Agents are optional — only copied if the user has an agents directory or asks for one.
 if [ -d "$SRC/agents" ]; then
   mkdir -p "$TARGET/agents"
+  for installed in "$TARGET/agents"/*.md; do
+    [ -f "$installed" ] || continue
+    fname="$(basename "$installed")"
+    if [ ! -f "$SRC/agents/$fname" ]; then
+      rm -f "$installed"
+    fi
+  done
   cp "$SRC"/agents/*.md "$TARGET/agents/" 2>/dev/null || true
 fi
 
