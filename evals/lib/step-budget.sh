@@ -86,6 +86,34 @@ CTX=100000 run nope.md 1;   [ "$rc" -eq 66 ] || note "no such file: exit $rc, wa
 CTX=100000 run;             [ "$rc" -eq 64 ] || note "no arguments: exit $rc, want 64"
 CTX=100000 run --paths;     [ "$rc" -eq 64 ] || note "--paths with nothing: exit $rc, want 64"
 
+# The cap has to follow the window the machine actually has, now that
+# profile.sh detects it rather than assuming 100k. These are the two windows the
+# README recommends, and the numbers a planner is sizing steps against.
+cap_for() { # cap_for <contextTokens> -> the cap the verdict line reports
+  printf '{\n  "baseBranch": "main",\n  "contextTokens": %s,\n  "notes": null\n}\n' "$1" > "$work/.devskills/profile.json"
+  CTX='' run --paths "$work/src/small.php"
+  printf '%s\n' "$out" | sed -n 's|.*/\([0-9]*\) lines.*|\1|p' | tail -1
+}
+
+[ "$(cap_for 65536)"  = 786 ]  || note "a 64k window caps at $(cap_for 65536) lines, want 786"
+[ "$(cap_for 131072)" = 1572 ] || note "a 128k window caps at $(cap_for 131072) lines, want 1572"
+[ "$(cap_for 32768)"  = 393 ]  || note "a 32k window caps at $(cap_for 32768) lines, want 393"
+
+# The override still beats the detected window, which is what makes it useful
+# on a machine whose server is configured differently from its config file.
+printf '{\n  "baseBranch": "main",\n  "contextTokens": 131072,\n  "notes": null\n}\n' > "$work/.devskills/profile.json"
+CTX=65536 run --paths "$work/src/small.php"
+printf '%s\n' "$out" | grep -q '/786 lines' || note "DEV_SKILLS_CONTEXT no longer overrides a detected window: '$(last)'"
+
+# And the same step is over at 32k and fits at 128k — the whole point of
+# detecting the window rather than assuming one.
+printf '{\n  "baseBranch": "main",\n  "contextTokens": 32768,\n  "notes": null\n}\n' > "$work/.devskills/profile.json"
+CTX='' run --paths "$work/src/big.php"
+[ "$rc" -eq 1 ] || note "900 lines should be OVER at 32k, exit $rc"
+printf '{\n  "baseBranch": "main",\n  "contextTokens": 131072,\n  "notes": null\n}\n' > "$work/.devskills/profile.json"
+CTX='' run --paths "$work/src/big.php"
+[ "$rc" -eq 0 ] || note "900 lines should fit at 128k, exit $rc"
+
 if [ "$fails" -eq 0 ]; then
   printf 'step-budget: the cap follows the window, the paths follow the step\n'
 else

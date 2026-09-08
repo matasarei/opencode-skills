@@ -456,7 +456,49 @@ fi
 # exists, not a limit anything refuses on. DEV_SKILLS_CONTEXT overrides it for a
 # machine whose window is bigger or smaller than the default.
 
-CONTEXT="${DEV_SKILLS_CONTEXT:-100000}"
+# Detected, not assumed. OpenCode's config already declares the window per model
+# and pr-info.sh already reads that file for the model name, so the number is
+# there to be had. Assuming it is the expensive mistake: a step sized for 100k on
+# a 64k machine authorises half again what fits, and on a 32k one it authorises
+# the whole window before the model writes a line -- silently, because an
+# oversized step still runs, it just degrades.
+context_from_config() { # the selected model's limit.context, or nothing
+  for cfg in opencode.jsonc opencode.json .opencode.jsonc .opencode.json \
+             .opencode/opencode.jsonc .opencode/opencode.json \
+             "${HOME}/.config/opencode/opencode.jsonc" "${HOME}/.config/opencode/opencode.json"; do
+    [ -f "$cfg" ] || continue
+    # "model": "<provider>/<key>" — the key is everything after the first slash,
+    # because a key may itself contain one ("prism-ml/bonsai-27b").
+    sel="$(sed -n 's/.*"model"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$cfg" | head -1)"
+    key="${sel#*/}"
+    [ -n "$key" ] && [ "$key" != "$sel" ] || continue
+    # The first "context" inside *that model's own block*, bounded by brace depth.
+    # Without the bound the scan runs to end of file, so a model declaring no
+    # window silently reports the next model's — which is the same wrong answer
+    # this whole detection exists to prevent, reached a different way.
+    n="$(awk -v k="\"$key\":" '
+      function braces(s, c,   n, i) {
+        n = 0
+        for (i = 1; i <= length(s); i++) if (substr(s, i, 1) == c) n++
+        return n
+      }
+      !inblock && index($0, k) { inblock = 1 }
+      inblock {
+        if (match($0, /"context"[[:space:]]*:[[:space:]]*[0-9]+/)) {
+          v = substr($0, RSTART, RLENGTH); sub(/.*[^0-9]/, "", v); print v; exit
+        }
+        depth += braces($0, "{") - braces($0, "}")
+        if (depth <= 0) exit   # the block closed and never declared one
+      }
+    ' "$cfg")"
+    case "$n" in ''|*[!0-9]*) continue ;; esac
+    printf '%s' "$n"; return 0
+  done
+  return 1
+}
+
+CONTEXT="${DEV_SKILLS_CONTEXT:-}"
+[ -z "$CONTEXT" ] && CONTEXT="$(context_from_config)"
 case "$CONTEXT" in ''|*[!0-9]*) CONTEXT=100000 ;; esac
 
 # ----------------------------------------------------------- 8 hasDatabase ---
