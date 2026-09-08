@@ -137,8 +137,71 @@ code=0
 bash "$check" http://127.0.0.1:59123/test --timeout 1 >/dev/null 2>&1 || code=$?
 [ "$code" -eq 2 ] || note "expected exit 2 on connection refused, got $code"
 
+# 13. Auth drop: login form or password field returned on non-login route
+cat > "$work/protected_dropped_to_login.html" <<'HTML'
+<!DOCTYPE html>
+<html>
+<head><title>Please Log In</title></head>
+<body>
+  <form action="/auth/do_login" method="post">
+    <input type="text" name="username">
+    <input type="password" name="password">
+    <button type="submit">Log In</button>
+  </form>
+</body>
+</html>
+HTML
+assert_exit 1 "$work/protected_dropped_to_login.html"
+
+# 14. Login page allowed explicitly or via login filename
+assert_exit 0 "$work/protected_dropped_to_login.html" --allow-login
+cp "$work/protected_dropped_to_login.html" "$work/login.html"
+assert_exit 0 "$work/login.html"
+
+# 15. Soft 200 error pages (Access Denied, 404/500 headings)
+cat > "$work/soft_denied.html" <<'HTML'
+<!DOCTYPE html>
+<html><head><title>Access Denied</title></head><body><h1>Access Denied</h1><p>Forbidden</p></body></html>
+HTML
+assert_exit 1 "$work/soft_denied.html"
+
+cat > "$work/soft_404.html" <<'HTML'
+<!DOCTYPE html>
+<html><head><title>Page Not Found</title></head><body><h2>Page Not Found</h2></body></html>
+HTML
+assert_exit 1 "$work/soft_404.html"
+
+# 16. JSON API failures (success: false, authenticated: false, status: error)
+cat > "$work/json_success_false.json" <<'JSON'
+{
+  "success": false,
+  "message": "Session expired"
+}
+JSON
+assert_exit 1 "$work/json_success_false.json"
+
+cat > "$work/json_auth_false.json" <<'JSON'
+{
+  "authenticated": false,
+  "user": null
+}
+JSON
+assert_exit 1 "$work/json_auth_false.json"
+
+cat > "$work/json_status_error.json" <<'JSON'
+{
+  "status": "error",
+  "error": "Unauthorized"
+}
+JSON
+assert_exit 1 "$work/json_status_error.json"
+
+# 17. Rejected pattern via --reject
+assert_exit 1 "$work/clean.html" --reject "Admin"
+assert_exit 0 "$work/clean.html" --reject "Database Error"
+
 if [ "$fails" -eq 0 ]; then
-  printf 'http-check: cross-stack crash signatures and connection checks pass\n'
+  printf 'http-check: cross-stack crash signatures, auth drops, and soft errors pass\n'
 else
   printf 'http-check: %s failure(s)\n' "$fails" >&2
 fi
