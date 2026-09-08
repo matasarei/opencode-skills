@@ -43,10 +43,22 @@ fi
 #
 #   git diff --name-status   R100 <tab> old <tab> new
 #   git status --porcelain   "R  old -> new"
+#
+# -uall, because porcelain otherwise collapses an untracked directory to a single
+# "?? dir/" entry. That entry is not a path either: lint.sh tests [ -f "$file" ]
+# and skips it, the review is told to read a directory, and the guard refuses
+# that read. A step whose files all land in a new directory was reviewed and
+# linted as though it had changed nothing.
+#
+# core.quotePath=false on both calls, because git otherwise C-quotes any path
+# holding a non-ASCII byte — "src/\347\256\200\345\216\206.php" for 简历.php — and
+# that string is not a path either, so the file is dropped from the queue in
+# silence. A path holding a literal quote, backslash or newline is still quoted;
+# only -z would cover those, and it would cost the rename parsing below.
 {
-  git diff --name-status "$BASE"...HEAD 2>/dev/null \
+  git -c core.quotePath=false diff --name-status "$BASE"...HEAD 2>/dev/null \
     | awk -F'\t' '{ if ($1 ~ /^[RC]/ && NF >= 3) print substr($1,1,1) "\t" $3; else if (NF >= 2) print $1 "\t" $2 }'
-  git status --porcelain 2>/dev/null \
+  git -c core.quotePath=false status --porcelain -uall 2>/dev/null \
     | sed 's/^ *//; s/^\([A-Z?]*\)[[:space:]]*/\1\t/; s/^\([A-Z?]*\)\t.* -> /\1\t/'
 } | awk -F'\t' 'NF>=2 && $2!="" {print $1"\t"$2}' | sort -u -k2 > /tmp/devskills-changed.$$
 

@@ -6,7 +6,8 @@
 # The one thing a lint step must never do is read as a pass when it did not
 # run, so the four outcomes are asserted by their exact first line: no lint
 # command, could not determine what changed, nothing lintable, clean — and a
-# real failure with the file named. The profile is written by hand so the
+# real failure with the file named, and a file in a new untracked directory is
+# linted rather than skipped. The profile is written by hand so the
 # suite never depends on Docker or on what this machine has installed.
 #
 # Exits 0 when every case matches, 1 otherwise, naming each mismatch.
@@ -91,6 +92,24 @@ printf 'BAD\n' > "$work/src/a.php"
 out="$(cd "$work" && bash "$lint" src/a.php 2>&1)"; rc=$?
 [ "$rc" -eq 1 ] || note "specific file bad: exit $rc, want 1"
 printf '%s\n' "$out" | grep -q '^LINT FAIL src/a.php' || note "specific file bad: got '$out'"
+
+# A file inside a NEW untracked directory is linted, not skipped. git status
+# collapses such a directory to a single "?? dir/" entry unless changed.sh asks
+# for -uall, and lint.sh then finds nothing to lint and reports it as clean —
+# the whole point of the queue fix, asserted from the lint side.
+rm -f "$work/src/a.php"          # its deletion is already staged; leave the new directory alone in the queue
+mkdir -p "$work/assets/js"
+printf 'ok\n' > "$work/assets/js/widget.js"
+run
+[ "$rc" -eq 0 ] || note "new untracked directory: exit $rc, want 0"
+[ "$out" = 'lint: clean across 1 changed file(s)' ] || note "new untracked directory: got '$out'"
+
+# And a bad file in that directory is caught, which is what proves it was
+# actually linted rather than merely counted.
+printf 'BAD\n' > "$work/assets/js/widget.js"
+run
+[ "$rc" -eq 1 ] || note "bad file in a new untracked directory: exit $rc, want 1"
+printf '%s\n' "$out" | grep -q '^LINT FAIL assets/js/widget.js' || note "bad file in a new untracked directory: got '$out'"
 
 
 if [ "$fails" -eq 0 ]; then
