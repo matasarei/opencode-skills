@@ -21,6 +21,24 @@ if [ -z "$LINT" ] || [ "$LINT" = "null" ]; then
   exit 2
 fi
 
+# {file} inside single quotes cannot be filled safely. The path is passed as an
+# argument below, and "$1" is literal inside single quotes — the inner shell
+# would expand its own unset $1 and lint an empty path while reporting clean.
+# Substituting a quoted path instead is worse: the quotes close the region they
+# are already inside, so 'a;touch X.php' runs. Refuse, rather than report.
+case "$LINT" in
+  *"{file}"*)
+    before="${LINT%%\{file\}*}"
+    quotes="${before//[^\']/}"
+    if [ $(( ${#quotes} % 2 )) -eq 1 ]; then
+      echo "NO LINT COMMAND — {file} sits inside single quotes in the profile's lint"
+      echo "command, so the path cannot be passed safely. This review is unlinted:"
+      echo "fix \"lint\" in .devskills/profile.json. Got: $LINT"
+      exit 2
+    fi
+    ;;
+esac
+
 # If specific files are given, lint them directly. Otherwise, inspect
 # what changed against the base branch using changed.sh.
 if [ "$#" -gt 0 ] && [ -f "$1" ]; then
@@ -45,8 +63,13 @@ while read -r _ status file; do
   [ -f "$file" ] || continue
   case "$file" in *.php|*.py|*.js|*.ts) ;; *) continue ;; esac
 
-  cmd="${LINT//\{file\}/$file}"
-  if ! out="$(eval "$cmd" 2>&1)"; then
+  # The path travels as an argument, never spliced into the string the shell
+  # evaluates. git quotes almost nothing printable, so 'a;touch${IFS}PWNED.php'
+  # is a path it hands over verbatim — interpolating that into a command and
+  # evaluating it runs it, and the run still reports "clean". {file} becomes
+  # "$1", and the path arrives as bash -c's first positional parameter.
+  cmd="${LINT//\{file\}/\"\$1\"}"
+  if ! out="$(bash -c "$cmd" lint.sh "$file" 2>&1)"; then
     echo "LINT FAIL $file"
     printf '%s\n' "$out" | head -5
     failed=1

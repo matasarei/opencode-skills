@@ -7,7 +7,8 @@
 # run, so the four outcomes are asserted by their exact first line: no lint
 # command, could not determine what changed, nothing lintable, clean — and a
 # real failure with the file named, and a file in a new untracked directory is
-# linted rather than skipped. The profile is written by hand so the
+# linted rather than skipped, and a path holding shell metacharacters is linted
+# rather than executed. The profile is written by hand so the
 # suite never depends on Docker or on what this machine has installed.
 #
 # Exits 0 when every case matches, 1 otherwise, naming each mismatch.
@@ -110,6 +111,39 @@ printf 'BAD\n' > "$work/assets/js/widget.js"
 run
 [ "$rc" -eq 1 ] || note "bad file in a new untracked directory: exit $rc, want 1"
 printf '%s\n' "$out" | grep -q '^LINT FAIL assets/js/widget.js' || note "bad file in a new untracked directory: got '$out'"
+
+# A filename is not a command. git quotes almost nothing printable, so a path
+# like 'a;touch${IFS}PWNED.php' reaches the queue verbatim; spliced into a
+# command string and evaluated, it runs — and the run still reports clean.
+rm -f "$work/assets/js/widget.js" "$work/PWNED.php"
+printf 'BAD\n' > "$work/src/a;touch\${IFS}PWNED.php"
+run
+[ -f "$work/PWNED.php" ] && note 'a filename executed: the path is being spliced into an evaluated command string'
+printf '%s\n' "$out" | grep -qF 'LINT FAIL src/a;touch${IFS}PWNED.php' \
+  || note "a path with shell metacharacters was not linted as a path: got '$out'"
+rm -f "$work/src/a;touch\${IFS}PWNED.php" "$work/PWNED.php"
+
+# {file} inside single quotes is refused, not linted-and-called-clean. "$1" is
+# literal inside single quotes, and substituting a quoted path there would let
+# the quotes close the region they sit in, so neither form is safe.
+profile '"sh -c '"'"'bash ./lintstub.sh {file}'"'"'"'
+printf 'BAD\n' > "$work/src/a.php"
+run
+[ "$rc" -eq 2 ] || note "single-quoted {file}: exit $rc, want 2"
+printf '%s\n' "$out" | grep -q '^NO LINT COMMAND' || note "single-quoted {file}: got '$out'"
+printf '%s\n' "$out" | grep -q 'clean across' && note 'single-quoted {file}: reported clean without linting'
+
+# The container shape the profile writes for a project with no compose file:
+# ${PWD} must still expand in the command, now that it runs under bash -c.
+profile '"bash ./lintstub.sh ${PWD}/{file}"'
+printf 'ok\n' > "$work/src/pwd.php"     # a fresh path: src/a.php carries a staged deletion from above
+run
+[ "$rc" -eq 0 ] || note "expanded \${PWD}: exit $rc, want 0"
+[ "$out" = 'lint: clean across 1 changed file(s)' ] || note "expanded \${PWD}: got '$out'"
+printf 'BAD\n' > "$work/src/pwd.php"
+run
+[ "$rc" -eq 1 ] || note "expanded \${PWD}, bad file: exit $rc, want 1"
+printf '%s\n' "$out" | grep -q '^LINT FAIL src/pwd.php' || note "expanded \${PWD}, bad file: got '$out'"
 
 
 if [ "$fails" -eq 0 ]; then
