@@ -108,6 +108,30 @@ want contextTokens '64000' 'override'
 out="$(cd "$py" && PATH="$stub:$PATH" DEV_SKILLS_CONTEXT=lots bash "$profile" --reprofile 2>&1)"
 want contextTokens '100000' 'non-numeric override falls back'
 
+# A PHP app with docker compose having mysql, fpm, nginx:
+# verifies that fpm is selected, and mysql is never chosen.
+compose_app="$work/compose_app"; mkdir -p "$compose_app"
+printf '{"require":{"php":">=8.0"}}\n' > "$compose_app/composer.json"
+printf 'services:\n  mysql:\n  fpm:\n  nginx:\n' > "$compose_app/docker-compose.yml"
+g "$compose_app" init -q -b main . && g "$compose_app" add -A && g "$compose_app" commit -qm init
+
+compose_stub="$work/compose_bin"; mkdir -p "$compose_stub"
+cat > "$compose_stub/docker" <<'DOCKER'
+#!/bin/sh
+case "$*" in
+  "info") exit 0 ;;
+  *"config --services"*) printf 'mysql\nfpm\nnginx\n'; exit 0 ;;
+  *"ps --status running"*) printf 'mysql\nfpm\nnginx\n'; exit 0 ;;
+  *"exec -T fpm which php"*) exit 0 ;;
+  *"exec -T mysql which php"*) exit 1 ;;
+  *) exit 0 ;;
+esac
+DOCKER
+chmod +x "$compose_stub/docker"
+out="$(cd "$compose_app" && PATH="$compose_stub:$PATH" bash "$profile" 2>&1)"
+want kind '"compose"' 'compose app'
+want prefix '"docker compose exec -T fpm"' 'compose selects fpm over mysql'
+
 if [ "$fails" -eq 0 ]; then
   printf 'profile: every field follows its fixture, null included\n'
 else

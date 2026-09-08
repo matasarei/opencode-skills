@@ -13,7 +13,7 @@ description: Build one step of a task file per run, on its own stacked branch �
 
 ## Step 1 — Set up
 
-Uncommitted changes you did not make → stop and ask. Resuming (`--continue`) → check the step's path status below: working tree changes matching this step are in-progress work, not foreign edits.
+Uncommitted changes not yours → stop and ask. Resuming (`--continue`) → check path status below: changes matching this step are in-progress work, not foreign edits.
 
 **Branch.** `<slug>` is the task file's name without `.md`; step `n` builds on `step/<slug>-<n>`, cut from the previous step's branch when it exists, else from the base:
 
@@ -25,25 +25,25 @@ Already on it → stay. Then `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-
 
 ## Step 2 — Build
 
-**Shell before reading.** `wc -l` before opening; `sed -n 'a,bp'` for ranges; `grep -rn` for symbols, `gh … --json … -q` for GitHub. Read whole file only when `wc -l` is under 300. Copy tool output; never retype it.
+**Shell before reading.** `wc -l` before opening; `sed -n 'a,bp'` for ranges; `grep -rn` for symbols. Read whole file only when `wc -l` is under 300. Copy tool output; never retype it.
 
-1. Open the `Modify:` paths first, at the lines named. **Check before edit**: if path status or `git diff` shows the file is already modified with the required change, do not re-edit it.
-2. Make the change. Match the file you are in — its naming, structure, comment style — over any style guide.
-3. Check it now: lint the changed file through `exec.prefix`; run the scoped test if one covers it.
+1. Open `Modify:` paths first, at lines named. **Check before edit**: if path status or `git diff` shows file is already modified with required change, do not re-edit.
+2. Make change. Match file naming, structure, comment style, CRLF/LF line endings. Imports (`use`/`import`) strictly at file root under namespace, never in method/function bodies. Namespace splits require explicit `use` imports for cross-class callers.
+3. Check now: lint changed file through `exec.prefix`; run scoped test if one covers it. Syntax errors must be resolved before committing.
 
-**A file no step line names is the signal to stop.** A **blocker** (this step cannot land without it — shown by an error or a failing test) → fix first, own commit, say so. The **plan no longer reaches its goal** → stop, propose the change, write the new steps into the task file, wait. **Anything else** → a note in the report, never an edit. The one test: does an acceptance criterion fail without it?
+**A file no step line names is the signal to stop.** A **blocker** (error or failing test) → fix first, own commit, say so. Plan cannot reach goal → stop, write new steps into task file, wait. Note anything else in report; never edit. The one test: does an criterion fail without it?
 
 ## Step 3 — Prove it
 
-Run the step's `Check:` command, then the profile's `test`, wrapped in `timeoutTool` (null → say a hang cannot be bounded). **Quote the runner's result line**; a hang is a failure. Fails → fix, re-run, **at most three rounds**, then report what still fails. `exec.kind: host` → say the results are against this machine's versions.
+Run step's `Check:` command, then profile's `test` in `timeoutTool` (null → say hang is unbounded). **Quote the runner's result line**; a hang is a failure. Fails → fix, re-run, **at most three rounds**, then report. `exec.kind: host` → say results are against host.
 
 ## Step 4 — Tick and commit
 
-Tick the step in the task file: `N. [x] <title> — <what landed>`. One commit per step, in English. Moodle: bump `$plugin->version` when `classes/`, `db/`, caches or tasks changed. Lock file with the manifest. Front-end sources → build.
+Tick step in task file: `N. [x] <title> — <what landed>`. One commit per step, in English. Moodle: bump `$plugin->version` when `classes/`, `db/`, caches or tasks changed. Lock file with manifest. Front-end sources → build.
 
 ## Step 5 — Report
 
-What landed, criteria met or explicitly not, files changed, the quoted test line, what you noticed and left alone. One line at most for the next run — a trap of this repository, not this change — appended to `.devskills/learned.md`, then `tail -20` it back into place.
+What landed, criteria met or not, files changed, quoted test line, what was left alone. One line at most for next run appended to `.devskills/learned.md`, then `tail -20` it back into place.
 
 Then: `Next: /dev-review`. After `/dev-pr` has opened this step's pull request: `/new`, then `/dev-implement <task-file> --continue` — the task file and the branch are the state. `/compact` only when this context is already long.
 
@@ -51,6 +51,7 @@ Then: `Next: /dev-review`. After `/dev-pr` has opened this step's pull request: 
 
 - **Never push, never open a pull request** — `/dev-pr`, after `/dev-review` and `/dev-fix`. Never `--no-verify`, `--force`, `--amend`. Never weaken or delete a test to get green — say so if a test is wrong.
 - **The plan is the scope.** With `hasDatabase`: bulk writes need dry-run by default, safe re-runs, bounded scope — each missing one is a blocker.
+- **Imports & namespaces**: imports (`use`/`import`) belong at file root; namespace splits require explicit imports for cross-namespace references.
 - Never report success with a failing test or an unmet criterion.
 
 ---

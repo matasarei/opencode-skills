@@ -47,7 +47,7 @@ For every renamed or removed symbol, grep the files the current step names first
 grep -rn "<oldname>" --exclude-dir=vendor --exclude-dir=node_modules .
 ```
 
-Any surviving caller is a BLOCKER. Do not reason about whether it is still reachable — report what grep found.
+Any surviving caller in code, tests/ or views/ is a BLOCKER. Do not reason about whether it is reachable — report what grep found.
 
 ## The output line
 

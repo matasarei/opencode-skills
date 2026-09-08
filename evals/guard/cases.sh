@@ -162,6 +162,15 @@ let editRefused = false
 try { await hook({ tool: "edit" }, { args: editArgs }) }
 catch (e) { if (e.message.includes("is already present")) editRefused = true }
 if (!editRefused) { fails++; console.log(`FAIL  ${label} repeated edit on already-updated file was not refused`) }
+// Line ending preservation (CRLF in file normalizes LF in edit arguments)
+const crlfFile = `${dir}/crlf.txt`
+writeFileSync(crlfFile, "first line\r\nsecond line\r\n")
+const crlfEditArgs = { filePath: crlfFile, oldString: "second line\n", newString: "second line updated\n" }
+await hook({ tool: "edit" }, { args: crlfEditArgs })
+if (!crlfEditArgs.oldString.includes("\r\n") || !crlfEditArgs.newString.includes("\r\n")) {
+  fails++
+  console.log(`FAIL  ${label} edit arguments did not preserve CRLF line endings`)
+}
 process.exit(fails ? 1 : 0)
 JS
 

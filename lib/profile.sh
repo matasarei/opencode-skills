@@ -134,19 +134,78 @@ docker_up() { have docker && docker info >/dev/null 2>&1; }
 if ! docker_up; then
   EXEC_NOTE="Docker not available or daemon not running; falling back to the host toolchain."
 elif [ -n "$COMPOSE_FILE" ]; then
-  # Prefer a service whose name looks like the application, else the first one.
-  SERVICES="$(docker compose config --services 2>/dev/null)"
+  # Target runtime binary expected in the application container
+  RUNTIME_BIN=""
+  case "$FAMILY" in
+    moodle-plugin|cms|php-app|php-library) RUNTIME_BIN="php" ;;
+    python-app) RUNTIME_BIN="python" ;;
+    node) RUNTIME_BIN="node" ;;
+  esac
+
+  is_infra_svc() {
+    case "$1" in
+      mysql|mariadb|postgres|postgresql|db|database|redis|memcached|mongo|mongodb|elasticsearch|opensearch|rabbitmq|mailhog|mailer|minio|nginx|caddy|traefik|proxy)
+        return 0
+        ;;
+      *)
+        return 1
+        ;;
+    esac
+  }
+
+  # Prefer an application service (e.g. app, php, fpm, web, api, backend, workspace).
+  SERVICES="$(docker compose config --services 2>/dev/null || true)"
   SVC=""
-  for want in app php web api backend; do
-    for s in $SERVICES; do [ "$s" = "$want" ] && { SVC="$s"; break 2; }; done
+  CANDIDATE_OFFLINE=""
+  for want in app php fpm php-fpm web api backend workspace server webserver; do
+    for s in $SERVICES; do
+      if [ "$s" = "$want" ]; then
+        if docker compose ps --status running 2>/dev/null | grep -qs "$s"; then
+          if [ -z "$RUNTIME_BIN" ] || docker compose exec -T "$s" which "$RUNTIME_BIN" >/dev/null 2>&1; then
+            SVC="$s"
+            break 2
+          fi
+        else
+          [ -z "$CANDIDATE_OFFLINE" ] && CANDIDATE_OFFLINE="$s"
+        fi
+      fi
+    done
   done
-  [ -z "$SVC" ] && SVC="$(printf '%s\n' "$SERVICES" | head -1)"
-  if [ -n "$SVC" ]; then
+
+  # If no candidate matched, check any running non-infra service that has the runtime
+  if [ -z "$SVC" ] && [ -n "$RUNTIME_BIN" ]; then
+    for s in $SERVICES; do
+      if ! is_infra_svc "$s" && docker compose ps --status running 2>/dev/null | grep -qs "$s"; then
+        if docker compose exec -T "$s" which "$RUNTIME_BIN" >/dev/null 2>&1; then
+          SVC="$s"
+          break
+        fi
+      fi
+    done
+  fi
+
+  # Fall back to candidate service if containers are offline, or first non-infra service
+  if [ -z "$SVC" ]; then
+    if [ -n "$CANDIDATE_OFFLINE" ]; then
+      SVC="$CANDIDATE_OFFLINE"
+    else
+      for s in $SERVICES; do
+        if ! is_infra_svc "$s"; then
+          SVC="$s"
+          break
+        fi
+      done
+    fi
+  fi
+
+  if [ -n "$SVC" ] && ! is_infra_svc "$SVC"; then
     EXEC_KIND=compose
     EXEC_PREFIX="docker compose exec -T $SVC"
     if ! docker compose ps --status running 2>/dev/null | grep -qs "$SVC"; then
       EXEC_NOTE="Service '$SVC' is not running; use 'docker compose run --rm $SVC' or start it first."
     fi
+  else
+    EXEC_NOTE="Compose file found, but no application service containing '$RUNTIME_BIN' was identified; falling back to host."
   fi
 fi
 
