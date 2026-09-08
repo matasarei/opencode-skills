@@ -73,6 +73,11 @@ rank_of() {
   case "$file" in
     .devskills/*|.devskills) echo 99; return ;;   # our own cache, never part of the change
     vendor/*|node_modules/*|*/vendor/*|*/node_modules/*|*.min.js|*.min.css|amd/build/*) echo 9; return ;;
+    # Build output. callers.sh already excludes these directories as noise; the
+    # queue was still ranking them 4, so 300 generated files outranked the one
+    # source file that changed and pushed it past the cap below.
+    build/*|*/build/*|dist/*|*/dist/*|out/*|coverage/*|target/debug/*|target/release/*) echo 9; return ;;
+    .next/*|.nuxt/*|.turbo/*|__pycache__/*|*.pyc|*.map) echo 9; return ;;
     *.lock|package-lock.json|pnpm-lock.yaml) echo 6; return ;;
     # Dependency manifests and CI, before the documentation rule below can claim
     # them: a changed dependency is somebody else's code entering the build, and
@@ -117,11 +122,32 @@ rank_of() {
   echo 4
 }
 
+# The queue is read into a prompt, so it needs the same discipline diff.sh has:
+# capped, and the truncation announced rather than silent. An un-ignored build
+# or vendor directory takes it from three lines to three hundred, and a 30B model
+# handed three hundred lines of queue stops following the instructions above it.
+#
+# Rank 9 is vendored and build output — never part of the change — so a handful
+# is listed and a pile is counted. Everything else is capped last-first, because
+# the queue is ordered by risk and the tail is what matters least.
+CAP="${DEV_SKILLS_QUEUE_CAP:-200}"
+case "$CAP" in ''|*[!0-9]*) CAP=200 ;; esac
+
 while IFS=$'\t' read -r status file; do
   [ -z "$file" ] && continue
   rank="$(rank_of "$file" "$status")"
   [ "$rank" = "99" ] && continue
   printf '%s %s %s\n' "$rank" "$status" "$file"
-done < /tmp/devskills-changed.$$ | sort -n
+done < /tmp/devskills-changed.$$ | sort -n | awk -v cap="$CAP" '
+  { line[NR] = $0; rank[NR] = $1; if ($1 == 9) nine++ }
+  END {
+    for (i = 1; i <= NR; i++) {
+      if (rank[i] == 9 && nine > 5) { collapsed++; continue }
+      if (++shown <= cap) print line[i]; else over++
+    }
+    if (collapsed) printf "[%d vendored or build file(s) not listed — rank 9, not part of the change]\n", collapsed
+    if (over) printf "[TRUNCATED: %d more file(s) not listed. The queue is ordered by risk, so these are the lowest.]\n", over
+  }
+'
 
 rm -f /tmp/devskills-changed.$$
