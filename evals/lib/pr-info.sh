@@ -38,7 +38,8 @@ case "$1 $2" in
 esac
 EOF
 chmod +x "$stub/gh"
-run() { out="$(cd "$repo" && PATH="$stub:$PATH" bash "$script" "$@" 2>&1)"; }
+mkdir -p "$work/home"
+run() { out="$(cd "$repo" && HOME="$work/home" PATH="$stub:$PATH" bash "$script" "$@" 2>&1)"; }
 
 # The fixture: main, a bare origin, step 1 pushed, step 2 cut from it.
 git init -q --bare "$work/origin.git"
@@ -89,6 +90,13 @@ want commits '1' 'step 1'
 want on-base 'no' 'step 1'
 printf '%s\n' "$out" | grep -q '^pr: 11$' || note "step 1: pr = '$(row pr)', want the fake gh's answer"
 want house-style 'feat: earlier;fix: before that' 'step 1'
+want model 'unknown' 'default model when no config present'
+
+# Model detected from local opencode.jsonc
+printf '{\n  "model": "qwen3-coder-30b"\n}\n' > "$repo/opencode.jsonc"
+run
+want model 'qwen3-coder-30b' 'model detected from opencode.jsonc'
+rm -f "$repo/opencode.jsonc"
 
 # Step 2, cut from step 1, unpushed, with one planned and one unplanned change.
 g switch -qc step/x-2
