@@ -42,6 +42,8 @@ for token in \
   'tick.sh' \
   'branch.sh' \
   'DEV_SKILLS_QUEUE_CAP' \
+  'What each window buys' \
+  'limit.context' \
   '4,500 bytes'
 do
   grep -qF -- "$token" "$readme" || note "README never mentions $token"
