@@ -57,6 +57,7 @@ Treat every one of these as a blocker, not a preference.
   cover them, and that no credential ever reaches a log or an error page.
 - **Errors**: log the detail, show the user nothing but a generic message. Stack traces and SQL
   in a response are a disclosure.
+- **Endpoint verification**: When checking routes, verify status code and scan for crash/error markers (via `http-check.sh`). A raw pipe `curl | grep` hides connection failures and passes when servers are down.
 - **Exports carry a formula-injection risk** — a spreadsheet cell starting `=`, `+`, `-` or `@`
   executes on open. Write user-controlled text as an explicit string type.
 
