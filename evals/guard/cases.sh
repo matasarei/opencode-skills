@@ -110,12 +110,22 @@ for (const line of readFileSync(casesPath, "utf8").split("\n")) {
 // Another tool's arguments are never read: an edit whose text mentions a push is not a push.
 try { await hook({ tool: "edit" }, { args: { command: "git push --force" } }) }
 catch { fails++; console.log(`FAIL  ${label} a non-bash tool was refused`) }
-// Grep patterns with unescaped backslashes (e.g. PHP namespaces) are sanitized
-const grepArgs = { pattern: "User::class|models\\user\\.User" }
+// Grep patterns with unescaped backslashes (e.g. namespaces, paths) are sanitized
+const grepArgs = { pattern: "Vendor\\Modules\\Resource" }
 await hook({ tool: "grep" }, { args: grepArgs })
-if (grepArgs.pattern !== "User::class|models\\\\user\\.User") {
+if (grepArgs.pattern !== "Vendor\\\\Modules\\\\Resource") {
   fails++
   console.log(`FAIL  ${label} grep pattern was not sanitized: ${grepArgs.pattern}`)
+}
+// Glob path sanitization (file path converted to parent directory)
+const globDummyFile = `${dir}/sample.txt`
+const { writeFileSync } = await import("node:fs")
+writeFileSync(globDummyFile, "hello\n")
+const globArgs = { path: globDummyFile, pattern: "*.txt" }
+await hook({ tool: "glob" }, { args: globArgs })
+if (globArgs.path !== dir) {
+  fails++
+  console.log(`FAIL  ${label} glob file path was not sanitized to dirname: ${globArgs.path}`)
 }
 // Bash timeout sanitization (seconds converted to ms, clamped to >= 30000, invalid removed)
 const bashArgs5 = { command: "ls", timeout: 5 }
@@ -137,10 +147,9 @@ if ("timeout" in bashArgsInvalid) {
   console.log(`FAIL  ${label} invalid bash timeout was not deleted`)
 }
 // Repeated identical edit call on an already-updated file is refused on retry
-const dummyFile = `${dir}/dummy.php`
-const { writeFileSync } = await import("node:fs")
-writeFileSync(dummyFile, "use UserBundle\\Entity\\User;\n")
-const editArgs = { filePath: dummyFile, oldString: "use models\\user\\User;", newString: "use UserBundle\\Entity\\User;" }
+const dummyFile = `${dir}/dummy.txt`
+writeFileSync(dummyFile, "const AUTH_CONFIG = { enabled: true };\n")
+const editArgs = { filePath: dummyFile, oldString: "const AUTH_CONFIG = { enabled: false };", newString: "const AUTH_CONFIG = { enabled: true };" }
 await hook({ tool: "edit" }, { args: editArgs })
 let editRefused = false
 try { await hook({ tool: "edit" }, { args: editArgs }) }

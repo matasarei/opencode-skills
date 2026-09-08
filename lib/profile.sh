@@ -85,7 +85,7 @@ if [ -f version.php ] && grep -qs 'plugin->component' version.php; then
   FAMILY=moodle-plugin
 elif [ -d wp-content ] || { [ -f functions.php ] && [ -f style.css ]; }; then
   FAMILY=cms
-elif [ -f composer.json ] && [ -d application/core ] && [ -f run ]; then
+elif [ -f composer.json ] && { [ -d public ] || [ -d web ] || [ -d app ] || [ -d application ] || [ -f artisan ] || [ -f bin/console ] || [ -f run ]; }; then
   FAMILY=php-app
 elif [ -f composer.json ] && grep -qs '"type"[[:space:]]*:[[:space:]]*"library"' composer.json; then
   FAMILY=php-library
