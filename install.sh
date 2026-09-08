@@ -19,6 +19,8 @@ else
   TARGET="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
 fi
 
+[ -n "$TARGET" ] && [ "$TARGET" != "/" ] || { echo "invalid install target: '$TARGET'" >&2; exit 1; }
+
 SKILLS="$TARGET/skills"
 LIB="$TARGET/dev-lib"
 
@@ -26,23 +28,33 @@ echo "Installing to $TARGET"
 
 mkdir -p "$SKILLS" "$LIB"
 
-# Shared scripts. Every skill calls these; they are the reason the skills are short.
-# The .awk beside them is what the task-file scripts share.
+# Shared scripts. Clean up obsolete scripts first so deleted scripts do not linger.
+for installed in "${LIB:?}"/*.sh "${LIB:?}"/*.awk; do
+  [ -f "$installed" ] || continue
+  fname="$(basename "$installed")"
+  [ -n "$fname" ] && [ "$fname" != "." ] && [ "$fname" != ".." ] || continue
+  if [ ! -f "$SRC/lib/$fname" ]; then
+    rm -f "${LIB:?}/${fname:?}"
+  fi
+done
 cp "$SRC"/lib/*.sh "$SRC"/lib/*.awk "$LIB/"
 chmod +x "$LIB"/*.sh
 
 # Skills. Clean up obsolete dev-* skills first so deleted skills do not linger.
-for installed in "$SKILLS"/dev-*/; do
+for installed in "${SKILLS:?}"/dev-*/; do
   [ -d "$installed" ] || continue
   sname="$(basename "$installed")"
+  [ -n "$sname" ] && [ "$sname" != "." ] && [ "$sname" != ".." ] || continue
   if [ ! -d "$SRC/skills/$sname" ]; then
-    rm -rf "$installed"
+    rm -rf "${SKILLS:?}/${sname:?}"
   fi
 done
-for dir in "$SRC"/skills/*/; do
+for dir in "${SRC:?}"/skills/*/; do
+  [ -d "$dir" ] || continue
   name="$(basename "$dir")"
-  rm -rf "${SKILLS:?}/$name"
-  cp -R "$dir" "$SKILLS/$name"
+  [ -n "$name" ] && [ "$name" != "." ] && [ "$name" != ".." ] || continue
+  rm -rf "${SKILLS:?}/${name:?}"
+  cp -R "$dir" "${SKILLS:?}/${name:?}"
   echo "  $name"
 done
 
@@ -56,6 +68,14 @@ cp "$SRC/lib/dev-guard.js" "$TARGET/plugins/dev-guard.js"
 # Agents are optional — only copied if the user has an agents directory or asks for one.
 if [ -d "$SRC/agents" ]; then
   mkdir -p "$TARGET/agents"
+  for installed in "${TARGET:?}/agents"/*.md; do
+    [ -f "$installed" ] || continue
+    fname="$(basename "$installed")"
+    [ -n "$fname" ] && [ "$fname" != "." ] && [ "$fname" != ".." ] || continue
+    if [ ! -f "$SRC/agents/$fname" ]; then
+      rm -f "${TARGET:?}/agents/${fname:?}"
+    fi
+  done
   cp "$SRC"/agents/*.md "$TARGET/agents/" 2>/dev/null || true
 fi
 
