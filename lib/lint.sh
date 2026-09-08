@@ -85,13 +85,38 @@ else
   fi
 fi
 
+# A lint command with no {file} placeholder is project-wide — `npm run lint` is
+# the common one. Substituting into it changes nothing, so the old loop ran the
+# entire project's linter once per changed file: eight files, eight full runs,
+# and eight copies of the same failure.
+case "$LINT" in
+  *"{file}"*) ;;
+  *)
+    changed_count=$(printf '%s\n' "$QUEUE" | grep -c '[^[:space:]]')
+    if out="$(bash -c "$LINT" lint.sh 2>&1)"; then
+      echo "lint: clean — project-wide command ran once over $changed_count changed file(s)"
+      exit 0
+    fi
+    echo "LINT FAIL (project-wide command)"
+    printf '%s\n' "$out" | head -5
+    exit 1 ;;
+esac
+
 failed=0
 linted=0
 while read -r _ status file; do
   [ -z "${file:-}" ] && continue
   [ "$status" = "D" ] && continue
   [ -f "$file" ] || continue
-  case "$file" in *.php|*.py|*.js|*.ts) ;; *) continue ;; esac
+  # Every extension a linter the profile can detect actually handles. The old
+  # four meant a Go project got `gofmt -l {file}` from the profile and a
+  # "nothing was checked" from here, which reads like a pass.
+  case "$file" in
+    *.php|*.py|*.js|*.jsx|*.ts|*.tsx|*.vue|*.svelte) ;;
+    *.go|*.rs|*.rb|*.java|*.kt|*.kts|*.cs|*.swift|*.scala|*.ex|*.exs) ;;
+    *.c|*.h|*.cc|*.cpp|*.hpp|*.m|*.mm|*.sh|*.bash|*.pl|*.lua|*.dart) ;;
+    *) continue ;;
+  esac
 
   # The path travels as an argument, never spliced into the string the shell
   # evaluates. git quotes almost nothing printable, so 'a;touch${IFS}PWNED.php'

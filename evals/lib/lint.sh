@@ -173,6 +173,45 @@ printf '%s\n' "$out" | grep -q 'syntax error in ./-dash.php' || note "dash-leadi
 rm -f "$work/-dash.php"
 
 
+# A Go file is linted, not skipped. profile.sh detects `gofmt -l {file}` for a
+# Go project, and the old four-extension whitelist meant that command was never
+# invoked while the run reported "nothing was checked" — which reads like a pass.
+profile '"bash ./lintstub.sh {file}"'
+rm -f "$work/src/a.php" "$work/assets/js/widget.js"
+mkdir -p "$work/svc"
+printf 'BAD\n' > "$work/svc/main.go"
+run
+[ "$rc" -eq 1 ] || note "a .go file: exit $rc, want 1"
+printf '%s\n' "$out" | grep -q '^LINT FAIL svc/main.go' || note "a .go file was not linted: '$out'"
+printf 'ok\n' > "$work/svc/main.go"
+printf 'BAD\n' > "$work/svc/lib.rs"
+run
+printf '%s\n' "$out" | grep -q '^LINT FAIL svc/lib.rs' || note "a .rs file was not linted: '$out'"
+rm -f "$work/svc/lib.rs"
+
+# A command with no {file} is project-wide: it runs ONCE, however many files
+# changed. The old loop substituted nothing and ran it once per file.
+printf '#!/bin/sh\necho "ran" >> "$COUNTER"\nexit 0\n' > "$work/counting.sh"
+chmod +x "$work/counting.sh"
+: > "$work/count.txt"
+printf 'ok\n' > "$work/svc/one.go"
+printf 'ok\n' > "$work/svc/two.go"
+printf 'ok\n' > "$work/svc/three.go"
+profile '"sh ./counting.sh"'
+out="$(cd "$work" && COUNTER="$work/count.txt" bash "$lint" 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] || note "project-wide command: exit $rc, want 0"
+runs="$(grep -c ran "$work/count.txt")"
+[ "$runs" = 1 ] || note "project-wide command ran $runs times, want 1"
+printf '%s\n' "$out" | grep -q 'ran once' || note "project-wide command: '$out'"
+
+# And a failing project-wide command is a failure, once.
+printf '#!/bin/sh\necho "ran" >> "$COUNTER"\necho "eslint: 3 problems"\nexit 1\n' > "$work/counting.sh"
+: > "$work/count.txt"
+out="$(cd "$work" && COUNTER="$work/count.txt" bash "$lint" 2>&1)"; rc=$?
+[ "$rc" -eq 1 ] || note "failing project-wide command: exit $rc, want 1"
+[ "$(grep -c ran "$work/count.txt")" = 1 ] || note 'failing project-wide command ran more than once'
+printf '%s\n' "$out" | grep -q 'eslint: 3 problems' || note "failing project-wide command: output not quoted: '$out'"
+
 if [ "$fails" -eq 0 ]; then
   printf 'lint: says which of the four outcomes happened, never a false clean\n'
 else
