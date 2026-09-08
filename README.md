@@ -59,9 +59,9 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 "models": {
   "prism-ml/bonsai-27b": {
     "name": "Prism Bonsai 27B",
-    "attachment": false,
-    "reasoning": false,
-    "tool_calling": true,
+    "attachment": true,
+    "reasoning": true,
+    "tool_call": true,
     "limit": {
       "context": 131072,  // 128k context window
       "output": 16384     // 16k output ceiling
@@ -77,9 +77,10 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 }
 ```
 
+* **Capabilities (`attachment`, `reasoning`, `tool_call`)**: Declares model capabilities to OpenCode. Prism Bonsai 27B is natively multimodal (vision) and reasoning-capable. Setting `"reasoning": true` allows OpenCode to parse reasoning tokens and support variants.
 * **Why 16k output?** In local inference, thinking tokens share the output budget. 16k gives ample headroom for large diffs, database migrations, and plans without truncation (`finish_reason: length`), while preventing runaway infinite loops.
-* **Why reasoning OFF?** In agent loops, local models spend 30–90 seconds generating `<think>` tokens before *every single tool call*, often simulating imaginary tool output instead of calling the tool. Disabling reasoning reduces tool call latency to 1–3 seconds, allowing real tool output (compilers, linters, tests) to ground the model.
-* **On-the-Fly Toggle**: The `variants` block lets you switch reasoning `on` whenever you need deep architectural planning (switch via `/variant` or `Ctrl+M` / `Cmd+M` in the OpenCode TUI).
+* **Why reasoning OFF by default?** While the model is reasoning-capable, in agent loops local models spend 30–90 seconds generating `<think>` tokens before *every single tool call*, often simulating imaginary tool output instead of calling the tool. Setting `"reasoning_effort": "none"` in `options` defaults thinking off, reducing latency to 1–3 seconds so real tool output grounds the model.
+* **On-the-Fly Toggle**: Because `reasoning: true` is enabled, the `variants` block lets you toggle reasoning `on` whenever you need deep architectural planning (switch via `/variant` or `Ctrl+M` / `Cmd+M` in the OpenCode TUI).
 
 ### 2. Permissions & Agent Configuration
 
