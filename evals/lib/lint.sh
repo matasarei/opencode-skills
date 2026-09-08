@@ -7,7 +7,8 @@
 # run, so the four outcomes are asserted by their exact first line: no lint
 # command, could not determine what changed, nothing lintable, clean — and a
 # real failure with the file named, and a file in a new untracked directory is
-# linted rather than skipped. The profile is written by hand so the
+# linted rather than skipped, and a path holding shell metacharacters is linted
+# rather than executed. The profile is written by hand so the
 # suite never depends on Docker or on what this machine has installed.
 #
 # Exits 0 when every case matches, 1 otherwise, naming each mismatch.
@@ -110,6 +111,17 @@ printf 'BAD\n' > "$work/assets/js/widget.js"
 run
 [ "$rc" -eq 1 ] || note "bad file in a new untracked directory: exit $rc, want 1"
 printf '%s\n' "$out" | grep -q '^LINT FAIL assets/js/widget.js' || note "bad file in a new untracked directory: got '$out'"
+
+# A filename is not a command. git quotes almost nothing printable, so a path
+# like 'a;touch${IFS}PWNED.php' reaches the queue verbatim; spliced into a
+# command string and evaluated, it runs — and the run still reports clean.
+rm -f "$work/assets/js/widget.js" "$work/PWNED.php"
+printf 'BAD\n' > "$work/src/a;touch\${IFS}PWNED.php"
+run
+[ -f "$work/PWNED.php" ] && note 'a filename executed: the path is being spliced into an evaluated command string'
+printf '%s\n' "$out" | grep -qF 'LINT FAIL src/a;touch${IFS}PWNED.php' \
+  || note "a path with shell metacharacters was not linted as a path: got '$out'"
+rm -f "$work/src/a;touch\${IFS}PWNED.php" "$work/PWNED.php"
 
 
 if [ "$fails" -eq 0 ]; then

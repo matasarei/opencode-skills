@@ -45,8 +45,13 @@ while read -r _ status file; do
   [ -f "$file" ] || continue
   case "$file" in *.php|*.py|*.js|*.ts) ;; *) continue ;; esac
 
-  cmd="${LINT//\{file\}/$file}"
-  if ! out="$(eval "$cmd" 2>&1)"; then
+  # The path travels as an argument, never spliced into the string the shell
+  # evaluates. git quotes almost nothing printable, so 'a;touch${IFS}PWNED.php'
+  # is a path it hands over verbatim — interpolating that into a command and
+  # evaluating it runs it, and the run still reports "clean". {file} becomes
+  # "$1", and the path arrives as bash -c's first positional parameter.
+  cmd="${LINT//\{file\}/\"\$1\"}"
+  if ! out="$(bash -c "$cmd" lint.sh "$file" 2>&1)"; then
     echo "LINT FAIL $file"
     printf '%s\n' "$out" | head -5
     failed=1
