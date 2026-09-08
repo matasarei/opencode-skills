@@ -124,6 +124,27 @@ printf '%s\n' "$out" | grep -q '^TEST FAIL' || note "absent runner: '$(first)'"
 printf '%s\n' "$out" | grep -q 'test\.sh:' && note 'absent runner: the error names test.sh, as if the toolkit were broken'
 printf '%s\n' "$out" | grep -q 'project test command' || note "absent runner: the error does not say whose command it is: '$(first)'"
 
+# node --test prints its counts on separate lines, so the generic summary search
+# picked "duration_ms" on a pass and a stray closing brace on a failure -- neither
+# quotable as evidence, which is the whole point of the verdict line.
+printf '#!/bin/sh\ncat <<EOF\nTAP version 13\nok 1 - slugify\n1..1\n# tests 1\n# suites 0\n\u2139 pass 1\n\u2139 fail $1\n\u2139 duration_ms 37.5\nEOF\nexit $1\n' > "$work/node-ish.sh"
+chmod +x "$work/node-ish.sh"
+
+profile '"sh ./node-ish.sh 0"' null
+run
+[ "$rc" -eq 0 ] || note "node --test pass: exit $rc, want 0"
+case "$(first)" in "TEST PASS | pass 1, fail 0"*) ;; *) note "node --test pass: '$(first)'" ;; esac
+
+profile '"sh ./node-ish.sh 1"' null
+run
+[ "$rc" -eq 1 ] || note "node --test fail: exit $rc, want 1"
+case "$(first)" in "TEST FAIL | pass 1, fail 1"*) ;; *) note "node --test fail: '$(first)'" ;; esac
+
+# A runner that prints no counts must still fall through to the generic search.
+profile '"sh ./runner.sh"' null
+run
+case "$(first)" in "TEST PASS | OK (43 tests, 118 assertions)"*) ;; *) note "non-node runner regressed: '$(first)'" ;; esac
+
 if [ "$fails" -eq 0 ]; then
   printf 'test: pass, fail, missing, scoped and timeout each get their verdict line\n'
 else

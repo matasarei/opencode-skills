@@ -82,7 +82,17 @@ rc=$?
 
 # The runner's own summary, searched for from the end: the last line is often a
 # blank or a coverage footer, and "tests pass" is not evidence of anything.
-summary="$(printf '%s\n' "$out" | grep -E \
+# node --test prints its counts on separate lines, so neither alone is a summary
+# and the generic search below picks up "duration_ms" on a pass and a stray brace
+# on a failure. Field-based, because the marker it prefixes them with is
+# multibyte and matching it by regex is locale-dependent.
+summary="$(printf '%s\n' "$out" | awk '
+  NF >= 2 && $(NF-1) == "pass" && $NF ~ /^[0-9]+$/ { p = $NF }
+  NF >= 2 && $(NF-1) == "fail" && $NF ~ /^[0-9]+$/ { f = $NF }
+  END { if (p != "" && f != "") printf "pass %s, fail %s", p, f }
+')"
+
+[ -z "$summary" ] && summary="$(printf '%s\n' "$out" | grep -E \
   '^(OK|FAILURES!|ERRORS!|PASS|FAIL|ok|--- FAIL)\b|Tests:[[:space:]]*[0-9]|test result:|[0-9]+ (passed|failed|error)|=+ .*(passed|failed|error)' \
   | tail -1 | sed 's/^[[:space:]]*//')"
 [ -z "$summary" ] && summary="$(printf '%s\n' "$out" | grep -v '^[[:space:]]*$' | tail -1 | sed 's/^[[:space:]]*//')"
