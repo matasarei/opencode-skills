@@ -17,16 +17,57 @@ shift
 EXCLUDES=(
   --exclude-dir=vendor
   --exclude-dir=node_modules
+  --exclude-dir=.venv
+  --exclude-dir=venv
   --exclude-dir=.git
+  --exclude-dir=.idea
+  --exclude-dir=.vscode
+  --exclude-dir=.claude
+  --exclude-dir=.claude-plugin
+  --exclude-dir=.antigravitycli
+  --exclude-dir=.gemini
+  --exclude-dir=.gku
+  --exclude-dir=.opencode
+  --exclude-dir=.agents
   --exclude-dir=.devskills
   --exclude-dir=.tasks
-  --exclude-dir=.opencode
+  --exclude-dir=.quests
+  --exclude-dir=.phpunit.cache
+  --exclude-dir=.pytest_cache
+  --exclude-dir=.mypy_cache
+  --exclude-dir=.mysql
+  --exclude-dir=.next
+  --exclude-dir=.nuxt
+  --exclude-dir=.turbo
+  --exclude-dir=data
+  --exclude-dir=storage
+  --exclude-dir=uploads
+  --exclude-dir=media
+  --exclude-dir=tmp
+  --exclude-dir=temp
+  --exclude-dir=var
+  --exclude-dir=cache
+  --exclude-dir=log
+  --exclude-dir=logs
+  --exclude-dir=build
+  --exclude-dir=dist
+  --exclude-dir=coverage
+  --exclude="*.lock"
+  --exclude="package-lock.json"
+  --exclude="pnpm-lock.yaml"
+  --exclude="yarn.lock"
+  --exclude="*.cache"
+  --exclude="*.min.js"
+  --exclude="*.min.css"
+  --exclude="*.map"
+  --exclude="*.sql"
+  --exclude="*.dump"
 )
 
 if [ "$#" -gt 0 ]; then
-  matches="$(grep -rn "${EXCLUDES[@]}" -F -- "$SYM" "$@" 2>/dev/null || true)"
+  matches="$(grep -rnI "${EXCLUDES[@]}" -F -- "$SYM" "$@" 2>/dev/null || true)"
 else
-  matches="$(grep -rn "${EXCLUDES[@]}" -F -- "$SYM" . 2>/dev/null || true)"
+  matches="$(grep -rnI "${EXCLUDES[@]}" -F -- "$SYM" . 2>/dev/null || true)"
 fi
 
 if [ -n "$matches" ]; then
