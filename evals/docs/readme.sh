@@ -42,6 +42,10 @@ for token in \
   'tick.sh' \
   'branch.sh' \
   'DEV_SKILLS_QUEUE_CAP' \
+  'Supported Stacks' \
+  'Adding a stack' \
+  'go.mod' \
+  'Cargo.toml' \
   'What each window buys' \
   'limit.context' \
   '4,500 bytes'
