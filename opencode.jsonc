@@ -23,6 +23,9 @@
             "reasoning_effort": "none"
           },
           "variants": {
+            "low": { "disabled": true },
+            "medium": { "disabled": true },
+            "high": { "disabled": true },
             "off": {
               "reasoning_effort": "none"
             },
@@ -45,6 +48,9 @@
             "reasoning_effort": "none"
           },
           "variants": {
+            "low": { "disabled": true },
+            "medium": { "disabled": true },
+            "high": { "disabled": true },
             "off": {
               "reasoning_effort": "none"
             },
@@ -67,6 +73,9 @@
             "reasoning_effort": "none"
           },
           "variants": {
+            "low": { "disabled": true },
+            "medium": { "disabled": true },
+            "high": { "disabled": true },
             "off": {
               "reasoning_effort": "none"
             },

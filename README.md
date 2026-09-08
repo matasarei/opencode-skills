@@ -73,6 +73,9 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
       "reasoning_effort": "none"  // Disables thinking tokens by default
     },
     "variants": {
+      "low": { "disabled": true },
+      "medium": { "disabled": true },
+      "high": { "disabled": true },
       "off": { "reasoning_effort": "none" },
       "on":  { "reasoning_effort": "medium" }
     }
@@ -83,7 +86,7 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 * **Capabilities (`attachment`, `reasoning`, `tool_call`)**: Declares model capabilities to OpenCode. Prism Bonsai 27B is natively multimodal (vision) and reasoning-capable. Setting `"reasoning": true` allows OpenCode to parse reasoning tokens and support variants.
 * **Why 16k output?** In local inference, thinking tokens share the output budget. 16k gives ample headroom for large diffs, database migrations, and plans without truncation (`finish_reason: length`), while preventing runaway infinite loops (on lower-end 8–12 GB VRAM hardware running 9B models, an 8k output ceiling and 32k context is configured in `opencode.jsonc`).
 * **Why reasoning OFF by default?** While the model is reasoning-capable, in agent loops local models spend 30–90 seconds generating `<think>` tokens before *every single tool call*, often simulating imaginary tool output instead of calling the tool. Setting `"reasoning_effort": "none"` in `options` defaults thinking off, reducing latency to 1–3 seconds so real tool output grounds the model.
-* **On-the-Fly Toggle**: Because `reasoning: true` is enabled, the `variants` block lets you toggle reasoning `on` whenever you need deep architectural planning (switch via `/variant` or `Ctrl+M` / `Cmd+M` in the OpenCode TUI).
+* **On-the-Fly Toggle**: Because `reasoning: true` is enabled, the `variants` block lets you toggle reasoning `on` whenever you need deep architectural planning (switch via `/variant` or `Ctrl+M` / `Cmd+M` in the OpenCode TUI). Built-in `low`, `medium`, and `high` variants are disabled (`"disabled": true`) to keep the picker clean (`Default`, `off`, `on`).
 
 ### 2. Permissions & Agent Configuration
 
