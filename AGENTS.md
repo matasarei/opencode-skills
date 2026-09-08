@@ -11,6 +11,7 @@ Development skills for OpenCode, engineered for local ~30B models. These scripts
 | Test Scoped | `bash evals/lib/<script>.sh` (e.g. `bash evals/lib/http-check.sh`) |
 | Lint | `shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh` |
 | Size Check | `bash evals/skills/size.sh` |
+| Verify Loaded | `opencode debug skill` (or `opencode debug skill --print-logs`) |
 | Build | none — no build system; just shell scripts and SKILL.md files |
 | Run | none — not a runtime application; skills load via OpenCode |
 
@@ -32,7 +33,11 @@ When developing, updating, or debugging skills in this repository:
    - Run the target test during iteration (`bash evals/lib/<script>.sh`), then run the full suite: `bash evals/run-all.sh` (all 18 suites must pass).
 4. **Sync Local Installation (Dogfooding)**:
    - **Crucial step**: Always run `./install.sh` after editing skills or scripts so `~/.config/opencode/` is updated. OpenCode executes installed files, not the working repo directly.
-5. **PR & Guard Rules**:
+5. **Verify Loaded in OpenCode CLI**:
+   - Testing is not only running evals — verify that OpenCode actually boots, parses, and loads the skill.
+   - Run `opencode debug skill` to confirm the skill parses cleanly and appears in the catalog (`opencode debug skill | grep '"name": "<skill-name>"'`).
+   - Run `opencode debug skill --print-logs` to confirm plugins (`lib/dev-guard.js`) and configs bootstrap with 0 runtime errors (`level=ERROR`).
+6. **PR & Guard Rules**:
    - The guard (`lib/dev-guard.js`) forbids `git push --force`, `git commit --amend`, `--no-verify`, and pushing to `main`/`master`. Make new commits instead.
    - Clean up any generated files (`.tasks/`, `plans/`, stray `.md` files) before creating or updating PRs.
    - Always open PRs as draft (`--draft`) using `/dev-pr` or `gh pr create --draft`.
