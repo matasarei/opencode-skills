@@ -317,13 +317,98 @@ case "$FAMILY" in
   python-app) have ruff && LINT="$(wrap "ruff check {file}")" ;;
 esac
 
-# CI overrides everything above — it is what actually gates the project.
+# Manifests, for every stack the branches above do not name. `family` is
+# deliberately left alone — it picks a /dev-init template and the Moodle rules —
+# so this fills commands by what the repository actually contains. A stack with
+# no branch here still gets a real command from CI below.
+set_if_null() { # set_if_null <varname> <value>
+  eval "[ \"\${$1}\" = null ] && $1=\"\$2\""
+  return 0
+}
+if [ -f go.mod ]; then
+  [ "$LANGUAGE" = null ] && LANGUAGE="Go"
+  set_if_null TEST "$(wrap "go test ./...")"
+  set_if_null TEST_SCOPED "$(wrap "go test ./... -run {name}")"
+  set_if_null LINT "$(wrap "gofmt -l {file}")"
+  set_if_null BUILD "$(wrap "go build ./...")"
+  set_if_null INSTALL "$(wrap "go mod download")"
+elif [ -f Cargo.toml ]; then
+  [ "$LANGUAGE" = null ] && LANGUAGE="Rust"
+  set_if_null TEST "$(wrap "cargo test")"
+  set_if_null TEST_SCOPED "$(wrap "cargo test {name}")"
+  set_if_null LINT "$(wrap "cargo fmt --check --")"
+  set_if_null BUILD "$(wrap "cargo build")"
+  set_if_null INSTALL "$(wrap "cargo fetch")"
+elif [ -f pom.xml ]; then
+  [ "$LANGUAGE" = null ] && LANGUAGE="Java"
+  set_if_null TEST "$(wrap "mvn -q test")"
+  set_if_null TEST_SCOPED "$(wrap "mvn -q test -Dtest={name}")"
+  set_if_null BUILD "$(wrap "mvn -q package")"
+  set_if_null INSTALL "$(wrap "mvn -q dependency:resolve")"
+elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then
+  [ "$LANGUAGE" = null ] && LANGUAGE="Java/Kotlin"
+  GRADLE="gradle"; [ -x ./gradlew ] && GRADLE="./gradlew"
+  set_if_null TEST "$(wrap "$GRADLE test")"
+  set_if_null TEST_SCOPED "$(wrap "$GRADLE test --tests {name}")"
+  set_if_null BUILD "$(wrap "$GRADLE build")"
+elif [ -f Gemfile ]; then
+  [ "$LANGUAGE" = null ] && LANGUAGE="Ruby"
+  if [ -d spec ]; then
+    set_if_null TEST "$(wrap "bundle exec rspec")"
+    set_if_null TEST_SCOPED "$(wrap "bundle exec rspec -e {name}")"
+  else
+    set_if_null TEST "$(wrap "bundle exec rake test")"
+  fi
+  set_if_null INSTALL "$(wrap "bundle install")"
+elif [ -f mix.exs ]; then
+  [ "$LANGUAGE" = null ] && LANGUAGE="Elixir"
+  set_if_null TEST "$(wrap "mix test")"
+  set_if_null INSTALL "$(wrap "mix deps.get")"
+else
+  for proj in ./*.sln ./*.csproj; do
+    [ -f "$proj" ] || continue
+    [ "$LANGUAGE" = null ] && LANGUAGE=".NET"
+    set_if_null TEST "$(wrap "dotnet test")"
+    set_if_null TEST_SCOPED "$(wrap "dotnet test --filter {name}")"
+    set_if_null BUILD "$(wrap "dotnet build")"
+    set_if_null INSTALL "$(wrap "dotnet restore")"
+    break
+  done
+fi
+
+# CI is the authority: whatever the workflow runs is what actually gates the
+# project, whichever stack it belongs to. This used to be detected and then
+# thrown away into notes, so a Go repository whose CI says `go test ./...`
+# reported test: null and every skill had nothing to run.
+#
+# The workflow is a file in the checkout, so the captured text is repository
+# input reaching a command. Only a known runner prefix is accepted, and a
+# capture carrying a shell metacharacter is refused outright.
 CI_TEST=""
 for wf in .github/workflows/*.yml .github/workflows/*.yaml; do
   [ -f "$wf" ] || continue
-  CI_TEST="$(grep -hoE '(vendor/bin/phpunit|phpunit|pytest|npm (run )?test|go test)[^"'"'"']*' "$wf" 2>/dev/null | head -1)"
+  CI_TEST="$(grep -hoE '(vendor/bin/phpunit|phpunit|pytest|npm (run )?test|yarn test|go test|cargo test|mvn [^"'"'"']*test|(\./)?gradlew? [^"'"'"']*test|dotnet test|bundle exec (rspec|rake test)|mix test|pnpm test)[^"'"'"']*' "$wf" 2>/dev/null | head -1)"
   [ -n "$CI_TEST" ] && break
 done
+case "$CI_TEST" in
+  *[\;\&\|\`\$\<\>]*|*$'\n'*)
+    REJECTED="${REJECTED:+$REJECTED; }a CI test command carrying a shell metacharacter was ignored"
+    CI_TEST="" ;;
+esac
+if [ -n "$CI_TEST" ]; then
+  TEST="$(wrap "$CI_TEST")"
+  # testScoped has to be the same runner as test, or a scoped run and a full run
+  # exercise different configurations and comparing them means nothing. Derived
+  # from the CI command where the flag is known, and null where it is not —
+  # keeping the default branch's scoped command would point at the other runner.
+  TEST_SCOPED=null
+  case "$CI_TEST" in
+    *phpunit*)   TEST_SCOPED="$(wrap "$CI_TEST --filter {name}")" ;;
+    *pytest*)    TEST_SCOPED="$(wrap "$CI_TEST -k {name}")" ;;
+    *cargo\ test*) TEST_SCOPED="$(wrap "$CI_TEST {name}")" ;;  # before *go test*: "cargo test" contains it
+    *go\ test*)   TEST_SCOPED="$(wrap "$CI_TEST -run {name}")" ;;
+  esac
+fi
 
 # --------------------------------------------------------------- 6 runtime ---
 
@@ -397,7 +482,7 @@ fi
 
 NOTES=""
 [ -n "$REJECTED" ] && NOTES="$REJECTED"
-[ -n "$CI_TEST" ] && NOTES="${NOTES:+$NOTES; }CI runs: $CI_TEST"
+[ -n "$CI_TEST" ] && NOTES="${NOTES:+$NOTES; }test comes from CI: $CI_TEST"
 [ "$TEST" = "null" ] && NOTES="${NOTES:+$NOTES; }No test command found — this repository may have no test suite."
 [ -z "$NOTES" ] && NOTES=null
 
