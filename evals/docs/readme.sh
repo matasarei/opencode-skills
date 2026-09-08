@@ -46,6 +46,8 @@ for token in \
   'Adding a stack' \
   'go.mod' \
   'Cargo.toml' \
+  'What each window buys' \
+  'limit.context' \
   '4,500 bytes'
 do
   grep -qF -- "$token" "$readme" || note "README never mentions $token"

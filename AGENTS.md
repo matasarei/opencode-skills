@@ -15,7 +15,9 @@ Development skills for OpenCode, engineered for local ~30B models. These scripts
 | Build | none — no build system; just shell scripts and SKILL.md files |
 | Run | none — not a runtime application; skills load via OpenCode |
 
-Commands run on the host system (no container). Ensure you have `gh`, Docker, and an OpenCode model server at 128k context.
+Commands run on the host system (no container). Ensure you have `gh`, Docker, and an OpenCode model server at 64k or 128k.
+
+`profile.sh` reads the window from `opencode.jsonc` and `step-budget.sh` sizes each step against it: 1,572 lines at 128k, 786 at 64k, 393 at 32k. A 32k window does not carry implement → review → fix → pr in one context — see **What each window buys** in the README.
 
 ## Skill Development & Testing Workflow
 
