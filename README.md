@@ -21,30 +21,9 @@ These skills are optimized for ~30B parameter local coding models:
 1. **[Prism Bonsai 27B](https://lmstudio.ai/models/prism-ml/bonsai-27b)** (`prism-ml/bonsai-27b`) — Strong general coding, reasoning, and instruction-following. Best on Apple Silicon in MLX variant (32–48 GB RAM).
 2. **[Qwen3 Coder 30B](https://lmstudio.ai/models/qwen/qwen3-coder-30b)** (`qwen/qwen3-coder-30b`) — Tuned specifically for code generation, diff analysis, and fast tool calling. More capable, but requires more memory.
 3. **[Qwen3.8 27B](https://huggingface.co/Qwen/Qwen3.8-27B)** (`Qwen/Qwen3.8-27B`) — Often recommended for local agents as well, worth trying.
-4. **[Qwen3.5 9B](https://huggingface.co/Qwen/Qwen3.5-9B)** (`Qwen/Qwen3.5-9B`) — For lower-end hardware (8–12 GB VRAM) at 32k. One skill per session; see **What each window buys** below.
+4. **[Qwen3.5 9B](https://huggingface.co/Qwen/Qwen3.5-9B)** (`Qwen/Qwen3.5-9B`) — For lower-end hardware (8–12 GB VRAM) at 32k. One skill per session, not the whole cycle — see [What each window buys](#what-each-window-buys).
 
-> **Crucial Server Requirement**: Set your model server's context window (LM Studio, Ollama, or llama.cpp) to **64k or 128k**. Local tool calling degrades or loops if it is left at the default 4k/8k.
-
-### What each window buys
-
-One step's whole cycle — `/dev-implement` → `/dev-review` → `/dev-fix` → `/dev-pr` in a single
-context — measured on this repository at ~9 tokens per line of source, with the four skills'
-prompts and their injected facts summing to ~21k:
-
-| Server window | Step cap | One cycle | Verdict |
-|---|---|---|---|
-| **128k** | 1,572 lines | ~35k tokens (26%) | Comfortable. The whole cycle, with room for retries. |
-| **64k** | 786 lines | ~28k tokens (42%) | Fits, with about half the window free. |
-| **32k** | 393 lines | ~24.5k tokens (74%) | **Not the full cycle.** Run one skill per session, clearing between them. |
-
-`profile.sh` reads the window from your `opencode.jsonc` — the selected model's `limit.context` —
-and `step-budget.sh` sizes every step against it, so a plan written on a 128k machine is sized
-for 128k. `DEV_SKILLS_CONTEXT` overrides it when your server is configured differently from your
-config file. **A step sized for a window you do not have still runs — it just degrades**, which
-is why the number is detected rather than assumed.
-
-The 9B option above is for 8–12 GB VRAM at 32k: good for `/dev-plan`, `/dev-review` and
-`/dev-pr` one at a time, not for the cycle in one context.
+> **Crucial Server Requirement**: Set your model server's context window (LM Studio, Ollama, or llama.cpp) to **64k or 128k**. Local tool calling degrades or loops if it is left at the default 4k/8k. What each of those windows actually buys you — and what 32k does not — is measured in [What each window buys](#what-each-window-buys).
 
 ---
 
@@ -170,11 +149,34 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 ```
 
 1. **Initialize (once per repo)**: `/dev-init` inspects the project, writes build/test/lint commands and stack conventions to `AGENTS.md`.
-2. **Plan**: `/dev-plan` resolves input via `plan-input.sh`, validates referenced paths with `plan-check.sh`, and sizes each step using `step-budget.sh` against `contextTokens` (default 100k, overridden by `DEV_SKILLS_CONTEXT`). Shared parsing is handled by `steps.awk`. For targeted bug fixes, `/dev-fix <issue>` investigates root cause and produces a verified plan in `.tasks/fix-<slug>.md`.
+2. **Plan**: `/dev-plan` resolves input via `plan-input.sh`, validates referenced paths with `plan-check.sh`, and sizes each step using `step-budget.sh` against `contextTokens`, read from your `opencode.jsonc` and overridable with `DEV_SKILLS_CONTEXT`. Shared parsing is handled by `steps.awk`. For targeted bug fixes, `/dev-fix <issue>` investigates root cause and produces a verified plan in `.tasks/fix-<slug>.md`.
 3. **Build**: `/dev-implement` injects exactly one step via `task-step.sh` onto a stacked branch named `step/<slug>-<n>`.
 4. **Review**: `/dev-review` runs 12 mechanical checks against changed files. If clean, proceed directly to `/dev-pr`. If unfixed blockers or warnings survive, hand off to `/dev-fix` to apply verified findings with one commit per finding.
 5. **Push & PR**: `/dev-pr` pushes the branch and opens the PR (annotated with `Depends on #` for stacked dependencies).
 6. **Next Step**: Continue to the next step with `/dev-implement <task-file> --continue`. Choose a context management pre-step based on your session: run `/compact` (or stay in the session) to keep conversational context while pruning raw tool outputs, or run `/new` for a fresh session when context has ballooned (>60k–80k tokens) or when starting fresh. Inter-step repository discoveries persist in `.devskills/learned.md`.
+
+---
+
+## What each window buys
+
+One step's whole cycle — `/dev-implement` → `/dev-review` → `/dev-fix` → `/dev-pr` in a single
+context — measured on this repository at ~9 tokens per line of source, with the four skills'
+prompts and their injected facts summing to ~21k:
+
+| Server window | Step cap | One cycle | Verdict |
+|---|---|---|---|
+| **128k** | 1,572 lines | ~35k tokens (26%) | Comfortable. The whole cycle, with room for retries. |
+| **64k** | 786 lines | ~28k tokens (42%) | Fits, with about half the window free. |
+| **32k** | 393 lines | ~24.5k tokens (74%) | **Not the full cycle.** Run one skill per session, clearing between them. |
+
+`profile.sh` reads the window from your `opencode.jsonc` — the selected model's `limit.context` —
+and `step-budget.sh` sizes every step against it, so a plan written on a 128k machine is sized
+for 128k. `DEV_SKILLS_CONTEXT` overrides it when your server is configured differently from your
+config file. **A step sized for a window you do not have still runs — it just degrades**, which
+is why the number is detected rather than assumed.
+
+The 9B option under [Recommended Models](#recommended-models) is 8–12 GB VRAM at 32k: good for
+`/dev-plan`, `/dev-review` and `/dev-pr` one at a time, not for the cycle in one context.
 
 ---
 
