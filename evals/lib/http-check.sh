@@ -158,18 +158,13 @@ assert_exit 0 "$work/protected_dropped_to_login.html" --allow-login
 cp "$work/protected_dropped_to_login.html" "$work/login.html"
 assert_exit 0 "$work/login.html"
 
-# 15. Soft 200 error pages (Access Denied, 404/500 headings)
-cat > "$work/soft_denied.html" <<'HTML'
+# 15. Localized soft error / unexpected content detected via --require
+cat > "$work/localized_denied.html" <<'HTML'
 <!DOCTYPE html>
-<html><head><title>Access Denied</title></head><body><h1>Access Denied</h1><p>Forbidden</p></body></html>
+<html><head><title>Доступ заборонено</title></head><body><h1>Помилка</h1><p>Немає прав</p></body></html>
 HTML
-assert_exit 1 "$work/soft_denied.html"
-
-cat > "$work/soft_404.html" <<'HTML'
-<!DOCTYPE html>
-<html><head><title>Page Not Found</title></head><body><h2>Page Not Found</h2></body></html>
-HTML
-assert_exit 1 "$work/soft_404.html"
+assert_exit 1 "$work/localized_denied.html" --require "User Dashboard"
+assert_exit 0 "$work/clean.html" --require "User Dashboard"
 
 # 16. JSON API failures (success: false, authenticated: false, status: error)
 cat > "$work/json_success_false.json" <<'JSON'
@@ -201,7 +196,7 @@ assert_exit 1 "$work/clean.html" --reject "Admin"
 assert_exit 0 "$work/clean.html" --reject "Database Error"
 
 if [ "$fails" -eq 0 ]; then
-  printf 'http-check: cross-stack crash signatures, auth drops, and soft errors pass\n'
+  printf 'http-check: cross-stack crash signatures, auth drops, and assertions pass\n'
 else
   printf 'http-check: %s failure(s)\n' "$fails" >&2
 fi

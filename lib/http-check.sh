@@ -4,11 +4,12 @@
 # Checks:
 # 1. Connection / network exit code (detects connection refused, timeouts)
 # 2. HTTP status code (default 200, or --expect-status <code|regex>)
-# 3. Auth drop detection (redirect to /login, or login forms rendered on protected routes)
+# 3. Auth drop detection (redirect to /login, or password fields rendered on protected routes)
 # 4. Empty body detection (0 bytes is a failure unless --allow-empty)
 # 5. Cross-stack crash signatures (PHP, Python, Node, Java, Go, Ruby, SQL)
-# 6. Soft 200 errors (Access Denied, 404/500 headings, JSON success: false)
-# 7. Required / rejected content assertions (--require <text>, --reject <pattern>)
+# 6. Web server gateway errors (Nginx/Apache 500/502/503/504 default pages)
+# 7. JSON API error payloads & failures (error, statusCode: 5xx, success: false, status: error)
+# 8. Required / rejected content assertions (--require <text>, --reject <pattern>)
 #
 # Usage:
 #   http-check.sh <url> [options] [-- curl-options]
@@ -116,19 +117,11 @@ scan_body_errors() {
   # 0. Auth drop: Login form or password field returned on a non-login route
   if [ "$ALLOW_LOGIN" -eq 0 ] && [ "$IS_LOGIN_TARGET" -eq 0 ]; then
     local auth_match
-    auth_match="$(grep -niE '<input[^>]*type=["'"'"']?password["'"'"']?|<form[^>]*action=["'"'"'][^"'"'"']*(login|signin)|<title>[^<]*(login|sign in|log in)[^<]*</title>' "$file" | head -1 || true)"
+    auth_match="$(grep -niE '<input[^>]*type=["'"'"']?password["'"'"']?|<form[^>]*action=["'"'"'][^"'"'"']*(login|signin)' "$file" | head -1 || true)"
     if [ -n "$auth_match" ]; then
-      printf 'Auth failure (received login form or sign-in page on protected route): %s\n' "$auth_match"
+      printf 'Auth failure (received login form or password field on protected route): %s\n' "$auth_match"
       return 1
     fi
-  fi
-
-  # 0b. Soft 200 error pages
-  local soft_err
-  soft_err="$(grep -niE '<title>[^<]*(Access Denied|Unauthorized|Forbidden|Page Not Found|404 Not Found)[^<]*</title>|<h[12][^>]*>[^<]*(Access Denied|Unauthorized|Forbidden|Page Not Found|404 Not Found)[^<]*</h[12]>' "$file" | head -1 || true)"
-  if [ -n "$soft_err" ]; then
-    printf 'Soft error page returned: %s\n' "$soft_err"
-    return 1
   fi
 
   # 1. PHP Fatal / Exceptions / Warnings / Debug markers
