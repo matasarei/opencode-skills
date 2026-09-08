@@ -41,17 +41,22 @@ if [ "$code" -ne 0 ]; then
 fi
 
 # 3. Assert no plugin hook failures or runtime errors occurred
-if echo "$output" | grep -q 'level=ERROR'; then
-  printf 'FAIL smoke: OpenCode logged startup or plugin error\n%s\n' "$output" >&2
-  exit 1
-fi
+case "$output" in
+  *"level=ERROR"*)
+    printf 'FAIL smoke: OpenCode logged startup or plugin error\n%s\n' "$output" >&2
+    exit 1
+    ;;
+esac
 
 # 4. Assert that all 9 dev skills were discovered by OpenCode
 for skill in dev-init dev-plan dev-implement dev-review dev-fix dev-pr dev-pr-review dev-pr-comment dev-verify; do
-  if ! echo "$output" | grep -q "\"name\": \"$skill\""; then
-    printf 'FAIL smoke: OpenCode failed to resolve skill %s\n' "$skill" >&2
-    exit 1
-  fi
+  case "$output" in
+    *"\"name\": \"$skill\""*) ;;
+    *)
+      printf 'FAIL smoke: OpenCode failed to resolve skill %s\n' "$skill" >&2
+      exit 1
+      ;;
+  esac
 done
 
 printf 'smoke: OpenCode startup, plugin loader, and all 9 skills pass\n'
