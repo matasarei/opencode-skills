@@ -92,6 +92,26 @@ else
 fi
 say uncommitted "$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
 
+# What was actually proved, and for which commit. test.sh writes the receipt;
+# without it /dev-pr can only take the model's word that a suite ran, which is
+# how "tests pass" ends up in a body with nothing behind it.
+TESTED=none
+if [ -r .devskills/test-result ]; then
+  T_SHA="$(cut -d' ' -f1 .devskills/test-result 2>/dev/null)"
+  T_VERDICT="$(cut -d' ' -f2- .devskills/test-result 2>/dev/null)"
+  if [ -n "$T_SHA" ]; then
+    if [ "$T_SHA" = "$(git rev-parse HEAD 2>/dev/null)" ]; then
+      TESTED="$T_VERDICT (this HEAD)"
+    elif git merge-base --is-ancestor "$T_SHA" HEAD 2>/dev/null; then
+      BACK="$(git rev-list --count "$T_SHA..HEAD" 2>/dev/null)"
+      TESTED="$T_VERDICT (at $(git rev-parse --short "$T_SHA" 2>/dev/null), $BACK commit(s) back)"
+    else
+      TESTED="stale — recorded for $(git rev-parse --short "$T_SHA" 2>/dev/null), which is not behind HEAD"
+    fi
+  fi
+fi
+say tested "$TESTED"
+
 # The task file and the step, when there is one: the diff's paths that no
 # Create:/Modify:/Test: line of this step names are the coherence check.
 TASK="${1:-}"

@@ -83,6 +83,37 @@ else
   printf 'test: no timeout tool on this host, the timeout case was skipped\n' >&2
 fi
 
+# The receipt: what was proved, and for which commit. /dev-pr reads it instead
+# of taking the model's word that a suite ran.
+if command -v git >/dev/null 2>&1; then
+  git -C "$work" init -q -b main . 2>/dev/null
+  printf 'x\n' > "$work/f"
+  git -C "$work" add -A >/dev/null 2>&1
+  git -C "$work" -c user.email=t@e -c user.name=t commit -qm base >/dev/null 2>&1
+  head_sha="$(git -C "$work" rev-parse HEAD 2>/dev/null)"
+
+  profile '"sh ./runner.sh"' null
+  rm -f "$work/.devskills/test-result"
+  run
+  [ -f "$work/.devskills/test-result" ] || note 'receipt: a pass wrote none'
+  [ "$(cut -d' ' -f1 "$work/.devskills/test-result" 2>/dev/null)" = "$head_sha" ] \
+    || note 'receipt: the recorded commit is not HEAD'
+  cut -d' ' -f2- "$work/.devskills/test-result" 2>/dev/null | grep -q '^TEST PASS' \
+    || note "receipt: the verdict was not recorded: '$(cat "$work/.devskills/test-result" 2>/dev/null)'"
+
+  # A failure is a result too, and must not leave the last pass standing.
+  profile '"sh ./runner.sh fail"' null
+  run
+  cut -d' ' -f2- "$work/.devskills/test-result" 2>/dev/null | grep -q '^TEST FAIL' \
+    || note 'receipt: a failure did not overwrite the previous pass'
+
+  # No test command writes nothing: there is no result to record.
+  rm -f "$work/.devskills/test-result"
+  profile null null
+  run
+  [ -f "$work/.devskills/test-result" ] && note 'receipt: TEST MISSING wrote a receipt'
+fi
+
 if [ "$fails" -eq 0 ]; then
   printf 'test: pass, fail, missing, scoped and timeout each get their verdict line\n'
 else
