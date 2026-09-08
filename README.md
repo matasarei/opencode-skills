@@ -123,7 +123,7 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 | `/dev-plan <request>` | Investigates code, sizes steps against budget, writes `.tasks/*.md` | No |
 | `/dev-implement <task>` | Builds one discrete step from the task file, ticks it off, and stops | Yes |
 | `/dev-review` | Runs 12 yes/no checks on changed files with mechanical quote verification | No |
-| `/dev-fix` | Applies verified findings from `/dev-review`, landing one commit each | Yes |
+| `/dev-fix [<issue>|<file>]` | Plans verified bug fixes into `.tasks/`, or applies post-review findings | Yes |
 | `/dev-pr` | Pushes the step branch, opens stacked PR with `Depends on #` | No |
 | `/dev-verify` | Runs test suites and exercises runtime behaviour inside Docker containers | No |
 | `/dev-pr-review <pr>` | Reviews an external PR against a structured checklist | No |
@@ -131,16 +131,21 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 ### The Step Cycle
 
 ```
-   /dev-init ──▶ /dev-plan ──▶ /dev-implement ──▶ /dev-review ──▶ /dev-fix ──▶ /dev-pr
-(once per repo)                       ▲                                           │
-                                      └── (next: /dev-implement --continue) ──────┘
-                                          (pre-step: /compact or /new)
+   /dev-init ──▶ /dev-plan ──▶ /dev-implement ──▶ /dev-review ──────────────▶ /dev-pr
+(once per repo)                       ▲                 │                         │
+                                      │        (unfixed findings)                 │
+     /dev-fix ────────────────────────┤                 ▼                         │
+(bug/issue plan)                      │             /dev-fix                      │
+                                      │             (apply)                       │
+                                      │                 │                         │
+                                      └─────────────────┴── (next: --continue) ───┘
+                                                            (pre-step: /compact or /new)
 ```
 
 1. **Initialize (once per repo)**: `/dev-init` inspects the project, writes build/test/lint commands and stack conventions to `AGENTS.md`.
-2. **Plan**: `/dev-plan` resolves input via `plan-input.sh`, validates referenced paths with `plan-check.sh`, and sizes each step using `step-budget.sh` against `contextTokens` (default 100k, overridden by `DEV_SKILLS_CONTEXT`). Shared parsing is handled by `steps.awk`.
+2. **Plan**: `/dev-plan` resolves input via `plan-input.sh`, validates referenced paths with `plan-check.sh`, and sizes each step using `step-budget.sh` against `contextTokens` (default 100k, overridden by `DEV_SKILLS_CONTEXT`). Shared parsing is handled by `steps.awk`. For targeted bug fixes, `/dev-fix <issue>` investigates root cause and produces a verified plan in `.tasks/fix-<slug>.md`.
 3. **Build**: `/dev-implement` injects exactly one step via `task-step.sh` onto a stacked branch named `step/<slug>-<n>`.
-4. **Review & Fix**: `/dev-review` finds blockers/warnings, and `/dev-fix` applies verified findings.
+4. **Review**: `/dev-review` runs 12 mechanical checks against changed files. If clean, proceed directly to `/dev-pr`. If unfixed blockers or warnings survive, hand off to `/dev-fix` to apply verified findings with one commit per finding.
 5. **Push & PR**: `/dev-pr` pushes the branch and opens the PR (annotated with `Depends on #` for stacked dependencies).
 6. **Next Step**: Continue to the next step with `/dev-implement <task-file> --continue`. Choose a context management pre-step based on your session: run `/compact` (or stay in the session) to keep conversational context while pruning raw tool outputs, or run `/new` for a fresh session when context has ballooned (>60k–80k tokens) or when starting fresh. Inter-step repository discoveries persist in `.devskills/learned.md`.
 
