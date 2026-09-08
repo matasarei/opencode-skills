@@ -21,17 +21,47 @@ if [ -z "$LINT" ] || [ "$LINT" = "null" ]; then
   exit 2
 fi
 
-# {file} inside single quotes cannot be filled safely. The path is passed as an
-# argument below, and "$1" is literal inside single quotes — the inner shell
-# would expand its own unset $1 and lint an empty path while reporting clean.
-# Substituting a quoted path instead is worse: the quotes close the region they
-# are already inside, so 'a;touch X.php' runs. Refuse, rather than report.
+# {file} inside a quoted region cannot be filled safely, in either quote.
+#
+#   '...{file}...'  "$1" is literal inside single quotes: the inner shell expands
+#                   its own unset $1 and lints an empty path, reporting clean.
+#   "...{file}..."  the substituted "$1" closes that region and leaves $1 bare,
+#                   so the path is word-split and globbed — src/*.php reaches the
+#                   linter as whatever it matched, which is another file entirely.
+#
+# Substituting a quoted path instead is worse still: the quotes close the region
+# they are already inside, so 'a;touch X.php' runs. Refuse, rather than report.
+#
+# Counting one character class is not enough to spot either: an apostrophe inside
+# "..." is not a delimiter. Walk the text and track the state.
+quote_state() { # quote_state <text> -> none | single | double
+  s="$1"; st=none; i=0
+  while [ "$i" -lt "${#s}" ]; do
+    c="${s:$i:1}"
+    case "$st" in
+      none)
+        case "$c" in
+          \\) i=$((i + 1)) ;;
+          \') st=single ;;
+          \") st=double ;;
+        esac ;;
+      single) [ "$c" = "'" ] && st=none ;;
+      double)
+        case "$c" in
+          \\) i=$((i + 1)) ;;
+          \") st=none ;;
+        esac ;;
+    esac
+    i=$((i + 1))
+  done
+  printf '%s' "$st"
+}
+
 case "$LINT" in
   *"{file}"*)
-    before="${LINT%%\{file\}*}"
-    quotes="${before//[^\']/}"
-    if [ $(( ${#quotes} % 2 )) -eq 1 ]; then
-      echo "NO LINT COMMAND — {file} sits inside single quotes in the profile's lint"
+    st="$(quote_state "${LINT%%\{file\}*}")"
+    if [ "$st" != none ]; then
+      echo "NO LINT COMMAND — {file} sits inside $st quotes in the profile's lint"
       echo "command, so the path cannot be passed safely. This review is unlinted:"
       echo "fix \"lint\" in .devskills/profile.json. Got: $LINT"
       exit 2
@@ -68,8 +98,13 @@ while read -r _ status file; do
   # is a path it hands over verbatim — interpolating that into a command and
   # evaluating it runs it, and the run still reports "clean". {file} becomes
   # "$1", and the path arrives as bash -c's first positional parameter.
+  # A path starting with a dash is an option to whatever the linter is, so it
+  # goes in as ./-name. Paths from changed.sh are always repository-relative.
+  arg="$file"
+  case "$arg" in -*) arg="./$arg" ;; esac
+
   cmd="${LINT//\{file\}/\"\$1\"}"
-  if ! out="$(bash -c "$cmd" lint.sh "$file" 2>&1)"; then
+  if ! out="$(bash -c "$cmd" lint.sh "$arg" 2>&1)"; then
     echo "LINT FAIL $file"
     printf '%s\n' "$out" | head -5
     failed=1

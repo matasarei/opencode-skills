@@ -99,6 +99,37 @@ want_rank "assets/js/咖啡.js" 4
 printf '%s\n' "$out" | grep -q '\\[0-9]' && note 'a path reached the queue C-escaped; both git calls need core.quotePath=false'
 printf '%s\n' "$out" | grep -q ' "' && note 'a path reached the queue wrapped in quotes'
 
+# Risk does not stop at PHP. Existing code modified in any language is rank 2,
+# a dependency manifest or a CI workflow is rank 3 rather than documentation,
+# and a non-PHP request idiom reaches rank 3 like $_GET does.
+g switch -q main
+mkdir -p "$repo/svc" "$repo/.github/workflows"
+printf 'package main\nfunc main(){}\n' > "$repo/svc/main.go"
+printf 'fn main(){}\n' > "$repo/svc/main.rs"
+printf 'class A {}\n' > "$repo/svc/A.java"
+printf 'export const x = 1\n' > "$repo/svc/w.tsx"
+printf 'module x\n' > "$repo/go.mod"
+printf 'on: push\n' > "$repo/.github/workflows/ci.yml"
+g add -A && g commit -qm langs
+g switch -q feature && g merge -q main -m merge
+printf 'package main\nfunc main(){ _ = 1 }\n' > "$repo/svc/main.go"
+printf 'fn main(){ let _ = 1; }\n' > "$repo/svc/main.rs"
+printf 'class A { int x; }\n' > "$repo/svc/A.java"
+printf 'export const x = 2\n' > "$repo/svc/w.tsx"
+printf 'module x\nrequire y v1\n' > "$repo/go.mod"
+printf 'on: [push]\n' > "$repo/.github/workflows/ci.yml"
+printf 'package h\nfunc H(r *http.Request){ r.URL.Query().Get("id") }\n' > "$repo/svc/handler.go"
+g add -A && g commit -qm polyglot
+out="$(cd "$repo" && bash "$changed" main 2>&1)"
+
+want_rank svc/main.go 2
+want_rank svc/main.rs 2
+want_rank svc/A.java 2
+want_rank svc/w.tsx 2
+want_rank go.mod 3
+want_rank .github/workflows/ci.yml 3
+want_rank svc/handler.go 3
+
 # The rename: destination path, status R, and no "->" anywhere in the queue.
 [ -n "$(rank_of src/renamed.php)" ] || note 'a renamed file is missing from the queue under its new path'
 printf '%s\n' "$out" | grep -q -- '->' && note 'a rename leaked through as "old -> new"'
