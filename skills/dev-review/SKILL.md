@@ -29,7 +29,7 @@ Answer yes or no. Do not weigh, rank, or reconsider — just answer.
 - **C8 VERSION** — *(moodle-plugin only)* does it touch `classes/`, `db/`, caches or tasks with no `version.php` bump?
 - **C9 NULL** — does it use a value that can be null without checking?
 - **C10 LOOP** — does it add a loop, cursor or search that may not terminate on empty, duplicate or gapped data?
-- **C11 TEST** — does it add logic with no test, or a test whose assertion proves nothing?
+- **C11 TEST** — does it add logic with no test, or a test whose assertion proves nothing (e.g. status 200 without checking content/state)?
 - **C12 ERROR** — does it add a throw, guard or error return that nothing tests?
 
 **Severity is fixed**: C1–C8 → `BLOCKER`; C9–C12 → `WARNING`. Do not choose it yourself.

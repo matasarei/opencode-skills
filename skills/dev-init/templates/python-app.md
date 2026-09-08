@@ -49,7 +49,7 @@
   `Markup(...)` and `mark_safe(...)` disable escaping for that value; each use needs a reason
   that survives review.
 - Authorisation is checked in the route handler, not only in the template that draws the link.
-- **Endpoint verification**: When checking routes, verify HTTP status code and scan for tracebacks or unhandled exceptions (via `http-check.sh`). Never use a pipe like `curl | grep` that masks connection drops.
+- **Endpoint verification**: When checking routes, HTTP 200 alone proves nothing (catches soft errors, auth drops to login). Assert expected domain content (`--require "<text>"`) and scan for tracebacks or unhandled exceptions (via `http-check.sh`). Never use a pipe like `curl | grep` that masks connection drops.
 
 ### Changing data in bulk
 
@@ -60,6 +60,7 @@ stated recovery path before it runs.
 ### Tests
 
 - `pytest` with fixtures in `conftest.py` for shared setup.
+- **Assert content and state, not just HTTP 200.** A test checking only `response.status_code == 200` passes even when the route drops auth, redirects to login, or renders a soft error page. Assert domain data and database effects.
 - Test the error paths, not just the happy one — bad input, missing record, failed write, empty
   result.
 - No real clock, no unseeded randomness, no `sleep()` in a test; inject a clock, fix a seed,

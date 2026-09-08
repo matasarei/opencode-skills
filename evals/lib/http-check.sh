@@ -122,10 +122,25 @@ cat > "$work/json_error.json" <<'JSON'
 JSON
 assert_exit 1 "$work/json_error.json"
 
-# 10. Empty body detection
+# 10. Empty body detection (0 bytes, whitespace-only, or empty <body> White Screen of Death)
 : > "$work/empty.html"
 assert_exit 1 "$work/empty.html"
 assert_exit 0 "$work/empty.html" --allow-empty
+
+printf "   \n\t  \n" > "$work/whitespace_only.html"
+assert_exit 1 "$work/whitespace_only.html"
+assert_exit 0 "$work/whitespace_only.html" --allow-empty
+
+cat > "$work/wsod.html" <<'HTML'
+<!DOCTYPE html>
+<html>
+<head><title>App</title></head>
+<body class="site">
+
+</body>
+</html>
+HTML
+assert_exit 1 "$work/wsod.html"
 
 # 11. Required text option
 assert_exit 0 "$work/clean.html" --require "Welcome, Admin"
@@ -137,8 +152,87 @@ code=0
 bash "$check" http://127.0.0.1:59123/test --timeout 1 >/dev/null 2>&1 || code=$?
 [ "$code" -eq 2 ] || note "expected exit 2 on connection refused, got $code"
 
+# 13. Auth drop: login form or password field returned on non-login route
+cat > "$work/protected_dropped_to_login.html" <<'HTML'
+<!DOCTYPE html>
+<html>
+<head><title>Please Log In</title></head>
+<body>
+  <form action="/auth/do_login" method="post">
+    <input type="text" name="username">
+    <input type="password" name="password">
+    <button type="submit">Log In</button>
+  </form>
+</body>
+</html>
+HTML
+assert_exit 1 "$work/protected_dropped_to_login.html"
+
+# 14. Login page allowed explicitly or via login filename
+assert_exit 0 "$work/protected_dropped_to_login.html" --allow-login
+cp "$work/protected_dropped_to_login.html" "$work/login.html"
+assert_exit 0 "$work/login.html"
+
+# 15. Localized soft error / unexpected content detected via --require
+cat > "$work/localized_denied.html" <<'HTML'
+<!DOCTYPE html>
+<html><head><title>Доступ заборонено</title></head><body><h1>Помилка</h1><p>Немає прав</p></body></html>
+HTML
+assert_exit 1 "$work/localized_denied.html" --require "User Dashboard"
+assert_exit 0 "$work/clean.html" --require "User Dashboard"
+
+# 15b. English framework error screens & headings (even on soft-200)
+cat > "$work/error_screen_react.html" <<'HTML'
+<html><body><h1>Something went wrong</h1></body></html>
+HTML
+assert_exit 1 "$work/error_screen_react.html"
+
+cat > "$work/error_laravel.html" <<'HTML'
+<div>Whoops! There was an error.</div>
+HTML
+assert_exit 1 "$work/error_laravel.html"
+
+cat > "$work/error_access_denied.html" <<'HTML'
+<html><head><title>Access Denied</title></head><body><h1>Access Denied</h1></body></html>
+HTML
+assert_exit 1 "$work/error_access_denied.html"
+
+cat > "$work/article_clean.html" <<'HTML'
+<html><head><title>User Guide</title></head><body><h1>Access Denied: Troubleshooting Guide</h1><p>Doc content</p></body></html>
+HTML
+assert_exit 0 "$work/article_clean.html"
+
+# 16. JSON API failures (success: false, authenticated: false, status: error)
+cat > "$work/json_success_false.json" <<'JSON'
+{
+  "success": false,
+  "message": "Session expired"
+}
+JSON
+assert_exit 1 "$work/json_success_false.json"
+
+cat > "$work/json_auth_false.json" <<'JSON'
+{
+  "authenticated": false,
+  "user": null
+}
+JSON
+assert_exit 1 "$work/json_auth_false.json"
+
+cat > "$work/json_status_error.json" <<'JSON'
+{
+  "status": "error",
+  "error": "Unauthorized"
+}
+JSON
+assert_exit 1 "$work/json_status_error.json"
+
+# 17. Rejected pattern via --reject
+assert_exit 1 "$work/clean.html" --reject "Admin"
+assert_exit 0 "$work/clean.html" --reject "Database Error"
+
 if [ "$fails" -eq 0 ]; then
-  printf 'http-check: cross-stack crash signatures and connection checks pass\n'
+  printf 'http-check: cross-stack crash signatures, auth drops, and assertions pass\n'
 else
   printf 'http-check: %s failure(s)\n' "$fails" >&2
 fi

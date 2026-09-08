@@ -57,7 +57,7 @@ Treat every one of these as a blocker, not a preference.
   cover them, and that no credential ever reaches a log or an error page.
 - **Errors**: log the detail, show the user nothing but a generic message. Stack traces and SQL
   in a response are a disclosure.
-- **Endpoint verification**: When checking routes, verify status code and scan for crash/error markers (via `http-check.sh`). A raw pipe `curl | grep` hides connection failures and passes when servers are down.
+- **Endpoint verification**: When checking routes, HTTP 200 alone proves nothing (catches soft errors, auth drops to login). Assert expected domain content (`--require "<text>"`) and scan for crash/error markers (via `http-check.sh`). A raw pipe `curl | grep` hides connection failures and passes when servers are down.
 - **Exports carry a formula-injection risk** — a spreadsheet cell starting `=`, `+`, `-` or `@`
   executes on open. Write user-controlled text as an explicit string type.
 
@@ -71,6 +71,11 @@ Any script that writes across many rows:
 - a stated recovery path before it runs.
 
 A wrong `WHERE` clause against records of record is not a bug you fix forward.
+
+### Tests
+
+- **Assert content and state, not just HTTP 200.** A test checking only `$response->getStatusCode() === 200` passes even when the route drops auth, renders a login screen, or displays a soft error page.
+- Assert domain assertions: expected HTML strings, database row changes, and specific payload keys.
 
 ### Dependencies
 
