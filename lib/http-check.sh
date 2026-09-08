@@ -180,11 +180,12 @@ scan_body_errors() {
     return 1
   fi
 
-  # 8. Web server default error pages (500/502/503/504)
+  # 8. Web server default error pages & English application error screens (even on soft-200)
+  local srv_pattern='<title>[[:space:]]*(500 Internal Server Error|502 Bad Gateway|503 Service Unavailable|504 Gateway Time-out|Server Error|Internal Server Error|Application Error|Access Denied|403 Forbidden|404 Not Found)[[:space:]]*</title>|<h[12][^>]*>[[:space:]]*(500 Internal Server Error|Bad Gateway|Server Error|Internal Server Error|Application Error|Something went wrong|An error occurred|Access Denied|403 Forbidden|404 Not Found)[[:space:]]*</h[12]>|Whoops! There was an error|Server Error in .Application|Application error: a client-side exception has occurred|The server returned a .*500 Internal Server Error|Action Controller: Exception caught'
   local srv_match
-  srv_match="$(grep -nE "<title>(500 Internal Server Error|502 Bad Gateway|503 Service Unavailable|504 Gateway Time-out)</title>|<h1>(500 Internal Server Error|Bad Gateway|Server Error \(500\))</h1>" "$file" | head -1 || true)"
+  srv_match="$(grep -niE "$srv_pattern" "$file" | head -1 || true)"
   if [ -n "$srv_match" ]; then
-    printf 'Server error page found: %s\n' "$srv_match"
+    printf 'Server or application error page found: %s\n' "$srv_match"
     return 1
   fi
 
@@ -215,9 +216,15 @@ scan_body_errors() {
 if [ -n "$SCAN_FILE" ]; then
   [ -f "$SCAN_FILE" ] || { echo "FAIL: file not found: $SCAN_FILE" >&2; exit 1; }
 
-  if [ "$ALLOW_EMPTY" -eq 0 ] && [ ! -s "$SCAN_FILE" ]; then
-    echo "FAIL EMPTY: file is 0 bytes: $SCAN_FILE" >&2
-    exit 1
+  if [ "$ALLOW_EMPTY" -eq 0 ]; then
+    if [ ! -s "$SCAN_FILE" ] || [ -z "$(tr -d '[:space:]' < "$SCAN_FILE")" ]; then
+      echo "FAIL EMPTY: file is 0 bytes or whitespace-only: $SCAN_FILE" >&2
+      exit 1
+    fi
+    if tr '\n' ' ' < "$SCAN_FILE" | grep -qiE '<body[^>]*>[[:space:]]*</body>'; then
+      echo "FAIL EMPTY: file contains an empty <body> (White Screen of Death): $SCAN_FILE" >&2
+      exit 1
+    fi
   fi
 
   if [ -n "$REQUIRE_TEXT" ]; then
@@ -274,10 +281,16 @@ if ! [[ "$STATUS_CODE" =~ ^($EXPECT_STATUS)$ ]]; then
   exit 1
 fi
 
-# Check empty body
-if [ "$ALLOW_EMPTY" -eq 0 ] && [ ! -s "$TMP_BODY" ] && [ "$STATUS_CODE" != "204" ] && [ "$STATUS_CODE" != "304" ]; then
-  echo "FAIL EMPTY: response body is 0 bytes (HTTP $STATUS_CODE) for $URL" >&2
-  exit 1
+# Check empty body (0 bytes, whitespace-only, or empty <body> White Screen of Death)
+if [ "$ALLOW_EMPTY" -eq 0 ] && [ "$STATUS_CODE" != "204" ] && [ "$STATUS_CODE" != "304" ]; then
+  if [ ! -s "$TMP_BODY" ] || [ -z "$(tr -d '[:space:]' < "$TMP_BODY")" ]; then
+    echo "FAIL EMPTY: response body is 0 bytes or whitespace-only (HTTP $STATUS_CODE) for $URL" >&2
+    exit 1
+  fi
+  if tr '\n' ' ' < "$TMP_BODY" | grep -qiE '<body[^>]*>[[:space:]]*</body>'; then
+    echo "FAIL EMPTY: response contains an empty <body> tag (White Screen of Death) for $URL" >&2
+    exit 1
+  fi
 fi
 
 # Check required text
