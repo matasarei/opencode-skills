@@ -32,7 +32,7 @@ Ask **once in chat** (max 4 questions with recommended answers) only what code c
 ## Step 4 — Write it
 
 **One step = one PR-sized build for `/dev-implement`** (build, review, fix, PR).
-- **Step size**: Max 3–5 files per step. Never write vague summaries like "flip 20 consumers" — list every single file. Split large tasks into sequential slices (3–5 files each).
+- **Step size**: Max 3–5 files per step. Never write vague summaries like "flip 20 consumers" — list every single file. Split large tasks into sequential slices (3–5 files each). For refactors, include steps updating `tests/` and `views/` callers.
 - **Format**: Strictly `N. [ ] <title>` (e.g. `1. [ ] ...`). Numbered `N. [ ]`, never `- [ ]`, never bold numbers like `1. **...**` (scripts parse it):
 
 ```markdown
