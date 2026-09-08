@@ -35,11 +35,20 @@ g remote add origin https://github.com/acme/widget.git
 stub="$work/bin"; mkdir -p "$stub"
 
 # --- gh missing entirely -----------------------------------------------------
-printf '#!/bin/sh\nexit 127\n' > "$stub/gh"; chmod +x "$stub/gh"
+# A PATH of "$work/nogh:/usr/bin:/bin" is not a gh-free PATH: gh lives in
+# /opt/homebrew/bin on macOS and in /usr/bin on Ubuntu, so that trick removed it
+# on one platform and not the other, and the case passed here while failing CI.
+# So: a directory holding symlinks to exactly the tools the script needs before
+# its gh check, and nothing else on PATH at all. --repo means git is not needed.
 noghdir="$work/nogh"; mkdir -p "$noghdir"
-out="$(cd "$repo" && PATH="$noghdir:/usr/bin:/bin" bash "$script" 7 2>&1)"; rc=$?
+for t in sed grep; do
+  p="$(command -v "$t" 2>/dev/null)" && ln -sf "$p" "$noghdir/$t"
+done
+[ -e "$noghdir/gh" ] && note 'the gh-free directory somehow contains gh'
+out="$(cd "$repo" && PATH="$noghdir" "$(command -v bash)" "$script" 7 --repo acme/widget 2>&1)"; rc=$?
 [ "$rc" -eq 69 ] || note "gh missing: exit $rc, want 69"
 printf '%s\n' "$out" | grep -q 'gh is not installed' || note "gh missing: '$out'"
+printf '#!/bin/sh\nexit 127\n' > "$stub/gh"; chmod +x "$stub/gh"
 
 # --- argument handling, before any network -----------------------------------
 run
