@@ -51,12 +51,15 @@ want baseBranch '"main"' 'php library'
 want standardsDoc '"CONTRIBUTING.md"' 'php library'
 want kind '"host"' 'php library'
 want_runtime '"library"' 'php library'
-want test '"vendor/bin/phpunit"' 'php library'
-want testScoped '"vendor/bin/phpunit --filter {name}"' 'php library'
+# CI wins over the PHPUnit default: this fixture's workflow runs the suite with
+# --testsuite unit, and that is what actually gates the project. Before, the CI
+# line was detected and then dropped into notes while test kept the default.
+want test '"vendor/bin/phpunit --testsuite unit"' 'php library'
+want testScoped '"vendor/bin/phpunit --testsuite unit --filter {name}"' 'php library'
 want lint '"php -l {file}"' 'php library'
 want install '"composer install"' 'php library'
 want hasDatabase 'true' 'php library'
-printf '%s\n' "$out" | grep -q 'CI runs: vendor/bin/phpunit --testsuite unit' || note 'php library: the CI run line is not in notes'
+printf '%s\n' "$out" | grep -q 'test comes from CI: vendor/bin/phpunit --testsuite unit' || note 'php library: notes do not say the test command came from CI'
 printf '%s\n' "$out" | grep -q '"note": "Docker not available' || note 'php library: the host fallback reason is not recorded'
 [ -f "$lib/.devskills/profile.json" ] || note 'php library: the cache was not written'
 
@@ -83,10 +86,56 @@ run "$custom"
 want test '"custom-vendor/bin/phpunit"' 'custom vendor-dir'
 want notes 'null' 'custom vendor-dir'
 
+# Stacks with no branch of their own get their commands from the manifest, so
+# "run the tests and quote the runner's line" has something to run. Before this,
+# a Go, Rust or Java repository profiled with every command null.
+manifest_case() { # manifest_case <dir> <language> <test> <testScoped>
+  d="$work/$1"; mkdir -p "$d"
+  shift
+  lang="$1"; t="$2"; ts="$3"
+  g "$d" init -q -b main . && g "$d" add -A >/dev/null 2>&1
+  g "$d" -c user.email=t@e commit -qm init --allow-empty
+  run "$d"
+  want language "\"$lang\"" "$lang manifest"
+  want test "\"$t\"" "$lang manifest"
+  [ -n "$ts" ] && want testScoped "\"$ts\"" "$lang manifest"
+}
+
+mkdir -p "$work/go"   && printf 'module x\ngo 1.22\n' > "$work/go/go.mod"
+manifest_case go Go 'go test ./...' 'go test ./... -run {name}'
+mkdir -p "$work/rust" && printf '[package]\nname="x"\n' > "$work/rust/Cargo.toml"
+manifest_case rust Rust 'cargo test' 'cargo test {name}'
+mkdir -p "$work/java" && printf '<project/>\n' > "$work/java/pom.xml"
+manifest_case java Java 'mvn -q test' 'mvn -q test -Dtest={name}'
+mkdir -p "$work/rb/spec" && printf "source 'x'\n" > "$work/rb/Gemfile"
+manifest_case rb Ruby 'bundle exec rspec' 'bundle exec rspec -e {name}'
+
+# CI is the authority over the manifest default: whatever the workflow runs is
+# what actually gates the project.
+ci="$work/goci"; mkdir -p "$ci/.github/workflows"
+printf 'module x\n' > "$ci/go.mod"
+printf 'jobs:\n  t:\n    steps:\n      - run: go test ./... -race\n' > "$ci/.github/workflows/ci.yml"
+g "$ci" init -q -b main . && g "$ci" add -A && g "$ci" commit -qm init
+run "$ci"
+want test '"go test ./... -race"' 'CI over manifest'
+printf '%s\n' "$out" | grep -q 'test comes from CI' || note 'CI over manifest: notes do not say where test came from'
+
+# A workflow is a file in the checkout, so its captured text is repository input
+# reaching a command. One carrying a shell metacharacter is refused, and the
+# manifest default is used instead of it.
+evil="$work/goevil"; mkdir -p "$evil/.github/workflows"
+printf 'module x\n' > "$evil/go.mod"
+printf 'jobs:\n  t:\n    steps:\n      - run: go test ./...; touch PWNED\n' > "$evil/.github/workflows/ci.yml"
+g "$evil" init -q -b main . && g "$evil" add -A && g "$evil" commit -qm init
+run "$evil"
+want test '"go test ./..."' 'hostile CI'
+printf '%s\n' "$out" | grep -q 'touch PWNED' && note 'hostile CI: the value reached the profile'
+printf '%s\n' "$out" | grep -q 'shell metacharacter was ignored' || note 'hostile CI: the refusal is not in notes'
+
 # The cache is what is printed the second time, even after the tree changes.
-rm "$lib/phpunit.xml"
+rm "$lib/phpunit.xml" "$lib/.github/workflows/ci.yml"
 run "$lib"
-want test '"vendor/bin/phpunit"' 'cached'
+want test '"vendor/bin/phpunit --testsuite unit"' 'cached'
 # --reprofile detects again and sees the change.
 run "$lib" --reprofile
 want test 'null' 'reprofiled'
