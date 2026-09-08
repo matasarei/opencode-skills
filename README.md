@@ -129,7 +129,7 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 | `/dev-plan <request>` | Investigates code, sizes steps against budget, writes `.tasks/*.md` | No |
 | `/dev-implement <task>` | Builds one discrete step from the task file, ticks it off, and stops | Yes |
 | `/dev-review` | Runs 12 yes/no checks on changed files with mechanical quote verification | No |
-| `/dev-fix [<issue>|<file>]` | Plans verified bug fixes into `.tasks/`, or applies post-review findings | Yes |
+| `/dev-fix [<issue>\|<file>]` | Plans verified bug fixes into `.tasks/`, or applies post-review findings | Yes |
 | `/dev-pr` | Pushes the step branch, opens stacked PR with `Depends on #` | No |
 | `/dev-verify` | Runs test suites and exercises runtime behaviour inside Docker containers | No |
 | `/dev-pr-review <pr>` | Reviews an external PR against a structured checklist | No |
