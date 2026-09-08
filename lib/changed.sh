@@ -73,7 +73,13 @@ rank_of() {
   case "$file" in
     .devskills/*|.devskills) echo 99; return ;;   # our own cache, never part of the change
     vendor/*|node_modules/*|*/vendor/*|*/node_modules/*|*.min.js|*.min.css|amd/build/*) echo 9; return ;;
-    *.lock) echo 6; return ;;
+    *.lock|package-lock.json|pnpm-lock.yaml) echo 6; return ;;
+    # Dependency manifests and CI, before the documentation rule below can claim
+    # them: a changed dependency is somebody else's code entering the build, and
+    # a changed workflow decides whether anything gets checked at all.
+    package.json|composer.json|go.mod|go.sum|Cargo.toml|pyproject.toml|requirements.txt) echo 3; return ;;
+    pom.xml|build.gradle|build.gradle.kts|Gemfile|mix.exs|*.csproj|Makefile) echo 3; return ;;
+    .github/workflows/*|.gitlab-ci.yml|Jenkinsfile|Dockerfile|docker-compose*.y*ml|compose.y*ml) echo 3; return ;;
     *.md|*.txt|*.json|*.yml|*.yaml|lang/*) echo 7; return ;;
   esac
 
@@ -86,12 +92,21 @@ rank_of() {
 
   # 2 — modifications to code that already existed, which is where regressions live.
   if [ "$status" != "A" ] && [ "$status" != "??" ]; then
-    case "$file" in *.php|*.py|*.js|*.ts|*.go) echo 2; return ;; esac
+    case "$file" in
+      *.php|*.py|*.js|*.ts|*.jsx|*.tsx|*.vue|*.svelte) echo 2; return ;;
+      *.go|*.rs|*.rb|*.java|*.kt|*.kts|*.cs|*.swift|*.scala|*.ex|*.exs) echo 2; return ;;
+      *.c|*.h|*.cc|*.cpp|*.hpp|*.m|*.mm|*.sh|*.bash|*.pl|*.lua|*.dart) echo 2; return ;;
+    esac
   fi
 
   # 3 — new loops, queries, or parsing of external input.
   if git show ":$file" >/dev/null 2>&1 || [ -f "$file" ]; then
-    if grep -qsE 'foreach|while |for \(|SELECT |INSERT |UPDATE |DELETE |\$_(GET|POST|REQUEST)|json_decode|preg_match' "$file" 2>/dev/null; then
+    # Loops and queries are near enough universal; the request-reading idioms are
+    # not, and a PHP-only list quietly ranked every other stack's entry points 4.
+    if grep -qsE 'foreach|while |for \(|for [a-zA-Z_]+ :?=|SELECT |INSERT |UPDATE |DELETE ' "$file" 2>/dev/null \
+    || grep -qsE '\$_(GET|POST|REQUEST)|json_decode|preg_match|unserialize' "$file" 2>/dev/null \
+    || grep -qsE 'request\.(args|form|GET|POST|body|query|params)|req\.(query|body|params)|JSON\.parse' "$file" 2>/dev/null \
+    || grep -qsE 'r\.URL\.Query|r\.FormValue|os\.Getenv|json\.Unmarshal|params\[|@RequestParam' "$file" 2>/dev/null; then
       echo 3; return
     fi
   fi
