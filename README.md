@@ -4,6 +4,7 @@
   <a href="https://opencode.ai"><img src="https://img.shields.io/badge/OpenCode-1B1B1B?style=for-the-badge" alt="OpenCode" /></a>
   <img src="https://img.shields.io/badge/Local_models-6E56CF?style=for-the-badge&logo=ollama&logoColor=white" alt="Local models" />
   <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  <a href="https://github.com/matasarei/opencode-skills/actions/workflows/checks.yml"><img src="https://img.shields.io/github/actions/workflow/status/matasarei/opencode-skills/checks.yml?style=for-the-badge&label=CI" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-3DA639?style=for-the-badge" alt="License: MIT" /></a>
 </p>
 
