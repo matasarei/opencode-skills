@@ -7,7 +7,8 @@
 # are asserted one by one against a fixture branch, along with the two refusals
 # (on the base branch, nothing changed), that uncommitted work is in the queue,
 # that a rename yields the destination path rather than "old -> new", and that a
-# new directory of untracked files arrives as its files and never as a directory.
+# new directory of untracked files arrives as its files and never as a directory,
+# and that a non-ASCII path is never C-quoted into something that is not a path.
 #
 # Exits 0 when every case matches, 1 otherwise, naming each mismatch.
 
@@ -52,6 +53,7 @@ printf '<?php\n// schema\n' > "$repo/db/upgrade.php"                       # 1: 
 printf '<?php\n// app changed\n' > "$repo/src/app.php"                     # 2: existing code modified
 printf '<?php\nforeach ($a as $b) {}\n' > "$repo/src/loop.php"             # 3: new code with a loop
 printf '<?php\n// plain\n' > "$repo/src/plain.php"                         # 4: new code, nothing risky
+printf '<?php\n// plain\n' > "$repo/src/Резюме.php"                        # 4: a non-ASCII path, committed
 printf '<?php\n// test\n' > "$repo/tests/PlainTest.php"                    # 5: a test
 printf '{}\n' > "$repo/composer.lock"                                      # 6: a lock file
 printf 'y\n' > "$repo/README.md"                                           # 7: docs
@@ -68,6 +70,7 @@ printf '<?php\n// wip\n' > "$repo/src/wip.php"
 mkdir -p "$repo/assets/js"
 printf 'export const a = 1\n' > "$repo/assets/js/widget.js"
 printf 'export const b = 2\n' > "$repo/assets/js/helper.js"
+printf 'export const c = 3\n' > "$repo/assets/js/Кафе.js"
 
 out="$(cd "$repo" && bash "$changed" main 2>&1)"
 
@@ -87,6 +90,14 @@ want_rank src/wip.php 4
 want_rank assets/js/widget.js 4
 want_rank assets/js/helper.js 4
 printf '%s\n' "$out" | grep -qE ' [^ ]+/$' && note 'a directory reached the queue; the status call needs -uall'
+
+# Non-ASCII paths, both sides: git C-quotes them unless core.quotePath=false, and
+# a quoted, escaped path is not a path. The committed one comes through git diff,
+# the untracked one through git status.
+want_rank "src/Резюме.php" 4
+want_rank "assets/js/Кафе.js" 4
+printf '%s\n' "$out" | grep -q '\\[0-9]' && note 'a path reached the queue C-escaped; both git calls need core.quotePath=false'
+printf '%s\n' "$out" | grep -q ' "' && note 'a path reached the queue wrapped in quotes'
 
 # The rename: destination path, status R, and no "->" anywhere in the queue.
 [ -n "$(rank_of src/renamed.php)" ] || note 'a renamed file is missing from the queue under its new path'
