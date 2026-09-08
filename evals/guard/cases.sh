@@ -95,9 +95,16 @@ import { readFileSync } from "node:fs"
 import { pathToFileURL } from "node:url"
 const [pluginPath, casesPath, dir, label] = process.argv.slice(2)
 const mod = await import(pathToFileURL(pluginPath).href)
+let fails = 0
+// OpenCode plugin loader invokes every exported entity as a plugin factory.
+// Exporting non-plugin helper functions causes OpenCode to crash on startup.
+const extraneousExports = Object.keys(mod).filter(k => k !== "DevGuard" && k !== "default")
+if (extraneousExports.length > 0) {
+  fails++
+  console.log(`FAIL  ${label} plugin exports non-plugin entities: ${extraneousExports.join(", ")}`)
+}
 const hooks = await mod.DevGuard({ directory: dir })
 const hook = hooks["tool.execute.before"]
-let fails = 0
 for (const line of readFileSync(casesPath, "utf8").split("\n")) {
   if (!line || line.startsWith("#")) continue
   const i = line.indexOf("|")
