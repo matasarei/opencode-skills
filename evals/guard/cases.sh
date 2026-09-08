@@ -110,18 +110,46 @@ for (const line of readFileSync(casesPath, "utf8").split("\n")) {
 // Another tool's arguments are never read: an edit whose text mentions a push is not a push.
 try { await hook({ tool: "edit" }, { args: { command: "git push --force" } }) }
 catch { fails++; console.log(`FAIL  ${label} a non-bash tool was refused`) }
-// Grep patterns with unescaped backslashes (e.g. PHP namespaces) are sanitized
-const grepArgs = { pattern: "Company::class|models\\company\\.Company" }
+// Grep patterns with unescaped backslashes (e.g. namespaces, paths) are sanitized
+const grepArgs = { pattern: "Vendor\\Modules\\Resource" }
 await hook({ tool: "grep" }, { args: grepArgs })
-if (grepArgs.pattern !== "Company::class|models\\\\company\\.Company") {
+if (grepArgs.pattern !== "Vendor\\\\Modules\\\\Resource") {
   fails++
   console.log(`FAIL  ${label} grep pattern was not sanitized: ${grepArgs.pattern}`)
 }
-// Repeated identical edit call on an already-updated file is refused on retry
-const dummyFile = `${dir}/dummy.php`
+// Glob path sanitization (file path converted to parent directory)
+const globDummyFile = `${dir}/sample.txt`
 const { writeFileSync } = await import("node:fs")
-writeFileSync(dummyFile, "use CompanyBundle\\Entity\\Company;\n")
-const editArgs = { filePath: dummyFile, oldString: "use models\\company\\Company;", newString: "use CompanyBundle\\Entity\\Company;" }
+writeFileSync(globDummyFile, "hello\n")
+const globArgs = { path: globDummyFile, pattern: "*.txt" }
+await hook({ tool: "glob" }, { args: globArgs })
+if (globArgs.path !== dir) {
+  fails++
+  console.log(`FAIL  ${label} glob file path was not sanitized to dirname: ${globArgs.path}`)
+}
+// Bash timeout sanitization (seconds converted to ms, clamped to >= 30000, invalid removed)
+const bashArgs5 = { command: "ls", timeout: 5 }
+await hook({ tool: "bash" }, { args: bashArgs5 })
+if (bashArgs5.timeout !== 30000) {
+  fails++
+  console.log(`FAIL  ${label} bash timeout: 5 was not sanitized to 30000: ${bashArgs5.timeout}`)
+}
+const bashArgs60 = { command: "ls", timeout: 60 }
+await hook({ tool: "bash" }, { args: bashArgs60 })
+if (bashArgs60.timeout !== 60000) {
+  fails++
+  console.log(`FAIL  ${label} bash timeout: 60 was not sanitized to 60000: ${bashArgs60.timeout}`)
+}
+const bashArgsInvalid = { command: "ls", timeout: -1 }
+await hook({ tool: "bash" }, { args: bashArgsInvalid })
+if ("timeout" in bashArgsInvalid) {
+  fails++
+  console.log(`FAIL  ${label} invalid bash timeout was not deleted`)
+}
+// Repeated identical edit call on an already-updated file is refused on retry
+const dummyFile = `${dir}/dummy.txt`
+writeFileSync(dummyFile, "const AUTH_CONFIG = { enabled: true };\n")
+const editArgs = { filePath: dummyFile, oldString: "const AUTH_CONFIG = { enabled: false };", newString: "const AUTH_CONFIG = { enabled: true };" }
 await hook({ tool: "edit" }, { args: editArgs })
 let editRefused = false
 try { await hook({ tool: "edit" }, { args: editArgs }) }
