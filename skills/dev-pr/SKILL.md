@@ -1,6 +1,6 @@
 ---
 name: dev-pr
-description: Push this step's branch and open or update its pull request, stacked on the previous step's, the body written from the task file with the test line quoted. Never merges, commits or force-pushes.
+description: Push this step's branch and open or update its draft PR, stacked on the previous step's, the body written from the task file with the test line quoted. Never merges, commits or force-pushes.
 ---
 
 # Open the pull request for this step
@@ -37,17 +37,18 @@ Write `.devskills/pr-body.md`:
 
 ```
 git push -u origin <branch>
-gh pr create --base <base> --head <branch> --title "<title>" --body-file .devskills/pr-body.md [--draft]
+gh pr create --draft --base <base> --head <branch> --title "<title>" --body-file .devskills/pr-body.md
 ```
 
-`--draft` when a criterion is unmet or tests were not run. `pr:` already open → `gh pr edit <number> --body-file .devskills/pr-body.md`, **only** when its body still opens with your `Depends on` or `Step <n>` line; a body somebody edited by hand → show yours and ask. A hand-written title stays.
+Always pass `--draft` — every pull request is opened as a draft. `pr:` already open → `gh pr edit <number> --body-file .devskills/pr-body.md`, **only** when its body still opens with your `Depends on` or `Step <n>` line; a body somebody edited by hand → show yours and ask. A hand-written title stays.
 
 ## Step 5 — Report
 
-The URL, **created** or **updated**, `<base>` ← `<branch>`, commits, draft or ready, what the body claims about testing. Then: `Next: /new, then /dev-implement <task-file> --continue` — or, when the step header says the last step is done, "the plan is done: merge in step order; merging is yours."
+The URL, **created** or **updated**, `<base>` ← `<branch>`, commits, draft, what the body claims about testing. Then: `Next: /new, then /dev-implement <task-file> --continue` — or, when the step header says the last step is done, "the plan is done: merge in step order; merging is yours."
 
 ## Rules
 
+- **Always create pull requests as draft (`--draft`). Never create ready-for-review.**
 - **Never merge, never approve, never `gh pr ready` unasked, never enable auto-merge.** Opening it is where this stops.
 - **Never `--force`, `--amend`, `--no-verify`; never push to the base branch; never commit.**
 - Never overwrite a hand-written body or title without asking. Never claim a check that did not run.

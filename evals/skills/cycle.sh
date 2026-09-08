@@ -53,6 +53,7 @@ has dev-pr        'Depends on #'      'a stacked pull request names the one it s
 has dev-pr        '/new'              'after the pull request the context is cleared'
 has dev-pr        '--continue'        'and the next step is named'
 has dev-pr        'no session link'   'a private transcript URL is not attribution on a public repository'
+has dev-pr        '--draft'           'pull requests are always opened as draft'
 grep -q 'gh pr merge' "$skills/dev-pr/SKILL.md" && note 'dev-pr: names gh pr merge; opening is where it stops'
 has dev-pr-review '/dev-review'      'own changes go to dev-review, not here'
 has dev-pr-review 'gh pr view $ARGUMENTS' 'the pull request arrives injected, not fetched by the model'
