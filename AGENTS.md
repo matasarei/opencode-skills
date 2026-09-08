@@ -29,8 +29,8 @@ When developing, updating, or debugging skills in this repository:
    - **Lint**: Run `shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh` — 0 warnings allowed.
    - **Cycles & Frontmatter**: Run `bash evals/skills/cycle.sh` and `bash evals/skills/frontmatter.sh` to confirm skill handoffs hold.
 3. **Evals**:
-   - Every `lib/*.sh` script must have corresponding test cases in `evals/lib/<script>.sh`.
-   - Run the target test during iteration (`bash evals/lib/<script>.sh`), then run the full suite: `bash evals/run-all.sh` (all 18 suites must pass).
+   - Every file under `lib/` must have test cases in `evals/lib/`: `<script>.sh` for a shell script, and `steps.sh` for `steps.awk`. The plugin has `evals/guard/cases.sh`.
+   - Run the target test during iteration (`bash evals/lib/<script>.sh`), then run the full suite: `bash evals/run-all.sh` (all 20 suites must pass).
 4. **Sync Local Installation (Dogfooding)**:
    - **Crucial step**: Always run `./install.sh` after editing skills or scripts so `~/.config/opencode/` is updated. OpenCode executes installed files, not the working repo directly.
 5. **Verify Loaded in OpenCode CLI**:

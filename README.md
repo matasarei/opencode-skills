@@ -163,7 +163,7 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 * **Mechanical Evidence Verification**: `lib/findings-check.sh` validates quoted code against current files on disk, discarding hallucinated findings.
 * **Cross-Stack Route Verification**: `lib/http-check.sh` verifies HTTP routes and responses across tech stacks (validating connection status, HTTP codes, auth drops to login routes/inputs, empty responses / white screens of death, English framework error screens, required domain content assertions, and crash/traceback signatures across PHP, Python, Node, Java, Go, Ruby, and SQL engines).
 * **Size Cap**: Each `SKILL.md` is strictly capped at 90 lines and `4,500 bytes` (enforced by `evals/skills/size.sh`) to prevent context bloat.
-* **Testing & Evals**: The entire toolkit is covered by fixture suites. Run `bash evals/run-all.sh` to execute all 18 test suites, or scope to individual tests (`bash evals/lib/<script>.sh`). Lint with `shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh`. Run `./install.sh` to sync local changes into `~/.config/opencode/`, then verify skills load in OpenCode via `opencode debug skill` (or `opencode debug skill --print-logs`).
+* **Testing & Evals**: The entire toolkit is covered by fixture suites. Run `bash evals/run-all.sh` to execute all 20 test suites, or scope to individual tests (`bash evals/lib/<script>.sh`). Lint with `shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh`. Run `./install.sh` to sync local changes into `~/.config/opencode/`, then verify skills load in OpenCode via `opencode debug skill` (or `opencode debug skill --print-logs`).
 
 ---
 
