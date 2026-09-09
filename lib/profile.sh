@@ -400,10 +400,16 @@ for probe in \
   "bitbucket:bitbucket-pipelines.yml" \
   "azure:azure-pipelines.yml azure-pipelines.yaml"; do
   kind="${probe%%:*}"
+  # Every file the forge has, not the first: the ordinary GitHub layout is
+  # lint.yml beside test.yml, and stopping at the first one silently loses the
+  # test command to whichever sorts earlier. The loop below tries them in turn.
+  files=""
   for f in ${probe#*:}; do
-    [ -f "$f" ] || continue
-    CI_KIND="$kind"; CI_FILES="$f"; break 2
+    [ -f "$f" ] && files="${files:+$files }$f"
   done
+  # First forge with any file wins. GitHub before GitLab is deliberate: a
+  # repository carrying both is usually mirrored, and GitHub is the original.
+  [ -n "$files" ] && { CI_KIND="$kind"; CI_FILES="$files"; break; }
 done
 
 CI_TEST=""

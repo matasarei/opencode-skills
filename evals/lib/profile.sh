@@ -193,6 +193,20 @@ ci_case hostile    .gitlab-ci.yml "test:
   script:
     - go test ./...; rm -rf /"               gitlab     null
 
+# The ordinary GitHub layout is a lint workflow beside a test workflow. Stopping
+# at the first file found loses the test command to whichever sorts earlier —
+# every ci_case above has exactly one CI file, which is why that passed.
+multi="$work/ci-multi"; mkdir -p "$multi/.github/workflows"
+printf 'module x\ngo 1.22\n' > "$multi/go.mod"
+printf 'name: lint\njobs:\n  l:\n    steps:\n      - run: gofmt -l .\n' > "$multi/.github/workflows/aaa-lint.yml"
+printf 'name: test\njobs:\n  t:\n    steps:\n      - run: go test ./... -race\n' > "$multi/.github/workflows/zzz-test.yml"
+g "$multi" init -q -b main . && g "$multi" add -A >/dev/null 2>&1
+g "$multi" -c user.email=t@e commit -qm init --allow-empty
+run "$multi"
+[ "$(field_in ci runs)" = '"go test ./... -race"' ] \
+  || note "two workflows: runs = $(field_in ci runs), want the one from the second file"
+want test '"go test ./... -race"' 'two workflows, command in the second'
+
 # And CI beats the manifest default, which is the point of reading it at all.
 run "$work/ci-gitlab"
 want test '"go test ./... -race"' 'gitlab CI over the manifest default'
