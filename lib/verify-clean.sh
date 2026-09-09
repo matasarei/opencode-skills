@@ -19,8 +19,12 @@
 #   CLEAN PASS | OK (43 tests, 118 assertions)
 #   CLEAN FAIL | FAILURES! Tests: 43, Failures: 1.
 #   CLEAN MISSING — no test command in the profile
+#   CLEAN SETUP FAIL | <the installer's last line>
 #
-# Exit 0 pass, 1 fail, 2 nothing ran. Slower than test.sh by a clone, so it is
+# The profile's install command runs first, because a clone has no vendor/ or
+# node_modules/ — that is a clone's whole point, and it is what CI does too.
+#
+# Exit 0 pass, 1 fail, 2 nothing ran (no test command, or install failed). Slower than test.sh by a clone, so it is
 # not automatic: run it before a pull request, or when the profile says nothing
 # else ever will.
 
@@ -41,7 +45,7 @@ trap 'rm -rf "$TMP"' EXIT INT TERM
 
 # A local clone, then the exact commit: `git clone <path>` checks out whatever
 # the source's HEAD points at, which on a step branch is not this commit.
-if ! git clone -q "$PWD" "$TMP/repo" 2>/dev/null; then
+if ! git clone -q --no-hardlinks "$PWD" "$TMP/repo" 2>/dev/null; then
   echo "CLEAN MISSING — could not clone this repository" >&2
   exit 2
 fi
@@ -55,6 +59,22 @@ fi
 # being clean, not the profile being rediscovered.
 mkdir -p "$TMP/repo/.devskills"
 cp "$PROFILE" "$TMP/repo/.devskills/profile.json"
+
+# A clone carries committed files and nothing else, so vendor/, node_modules/
+# and every other ignored directory is absent. Without this the check reports a
+# failure for a project that is fine, which is the mirror image of the false
+# pass it exists to prevent — and a CI workflow runs `npm ci` before `npm test`
+# for the same reason. Skipped when the profile has no install command.
+INSTALL="$(sed -n 's/.*"install"[[:space:]]*:[[:space:]]*"\(.*\)",$/\1/p' "$PROFILE" 2>/dev/null | head -1 | sed 's/\\"/"/g')"
+if [ -n "$INSTALL" ] && [ "$INSTALL" != null ]; then
+  if ! setup="$(cd "$TMP/repo" && bash -c "$INSTALL" install 2>&1)"; then
+    reason="$(printf '%s\n' "$setup" | grep -v '^[[:space:]]*$' | tail -1)"
+    [ -n "$reason" ] || reason="(the installer printed nothing)"
+    printf 'CLEAN SETUP FAIL | %s\n' "$reason"
+    printf '%s\n' "$setup" | tail -20
+    exit 2
+  fi
+fi
 
 out="$(cd "$TMP/repo" && bash "$HERE/test.sh" 2>&1)"
 rc=$?

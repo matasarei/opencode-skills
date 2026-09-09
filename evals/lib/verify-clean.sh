@@ -68,8 +68,33 @@ g switch -q -c side && printf 'x\n' > "$repo/BAD" && g add -A && g commit -qm "b
 run
 [ "$rc" -eq 1 ] || note "on a branch: exit $rc, want 1 — it checked out main instead of HEAD"
 
+g switch -q main   # the case above ends on `side`, where BAD is committed
+
+# A clone has no vendor/ or node_modules/, so the profile's install command runs
+# first — otherwise the check fails every project whose dependencies are ignored,
+# which is the mirror image of the false pass it exists to prevent.
+printf 'deps/\n' > "$repo/.gitignore"
+printf '#!/bin/sh\nif [ ! -d deps ]; then echo "Error: dependencies not installed"; exit 1; fi\nif [ -f BAD ]; then echo "FAILURES! Tests: 1, Failures: 1."; exit 1; fi\necho "OK (1 test, 1 assertion)"\n' > "$repo/runner.sh"
+mkdir -p "$repo/deps"; printf 'x\n' > "$repo/deps/lib.txt"
+printf '{\n  "baseBranch": "main",\n  "install": "mkdir -p deps",\n  "test": "sh ./runner.sh",\n  "testScoped": null,\n  "timeoutTool": null\n}\n' > "$repo/.devskills/profile.json"
+g add -A && g commit -qm deps
+run
+[ "$rc" -eq 0 ] || note "gitignored dependencies: exit $rc, want 0 — install did not run in the clone"
+case "$(first)" in "CLEAN PASS"*) ;; *) note "gitignored dependencies: '$(first)'" ;; esac
+
+# An install that fails is not a test failure: nothing ran, so it exits 2.
+printf '{\n  "baseBranch": "main",\n  "install": "exit 3",\n  "test": "sh ./runner.sh",\n  "testScoped": null,\n  "timeoutTool": null\n}\n' > "$repo/.devskills/profile.json"
+g add -A && g commit -qm badinstall
+run
+[ "$rc" -eq 2 ] || note "failing install: exit $rc, want 2"
+case "$(first)" in "CLEAN SETUP FAIL"*) ;; *) note "failing install: '$(first)'" ;; esac
+printf '%s\n' "$out" | grep -q 'printed nothing' || note "failing install: a silent installer has no reason line: '$(first)'"
+
+# Back to something that works, so the cases below start from a known state.
+printf '{\n  "baseBranch": "main",\n  "install": "mkdir -p deps",\n  "test": "sh ./runner.sh",\n  "testScoped": null,\n  "timeoutTool": null\n}\n' > "$repo/.devskills/profile.json"
+g add -A && g commit -qm reinstall
+
 # No test command is MISSING, never a pass.
-g switch -q main
 printf '{\n  "baseBranch": "main",\n  "test": null,\n  "testScoped": null,\n  "timeoutTool": null\n}\n' > "$repo/.devskills/profile.json"
 run
 [ "$rc" -eq 2 ] || note "no test command: exit $rc, want 2"
