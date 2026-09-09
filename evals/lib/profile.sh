@@ -211,40 +211,36 @@ want test '"go test ./... -race"' 'two workflows, command in the second'
 run "$work/ci-gitlab"
 want test '"go test ./... -race"' 'gitlab CI over the manifest default'
 
-# With CI, a host toolchain is a footnote — something else runs the suite on a
-# clean machine afterwards. With none, this machine is the only thing that ever
-# will. Only that combination escalates exec.note, so all four are asserted:
-# a stub docker that answers is needed for the two container cases, because the
-# one at the top of this file refuses on purpose.
+# What will ever check this code, as a value a skill can branch on rather than a
+# paragraph in exec.note. A stub docker that answers is needed for the two
+# container cases, because the one at the top of this file refuses on purpose.
 okdocker="$work/okbin"; mkdir -p "$okdocker"
 printf '#!/bin/sh\nexit 0\n' > "$okdocker/docker"; chmod +x "$okdocker/docker"
 
-weak_case() { # weak_case <dir> <ci file or empty> <bin dir> <want escalated: yes|no>
-  d="$work/weak-$1"; mkdir -p "$d/.github/workflows"
-  # A node project, not a go one: the image table is keyed on `family`, and Go,
-  # Rust and the JVM are all `other`, so they can never reach exec.kind: image.
-  # Using go.mod here would make the two container cases untestable.
+verify_case() { # verify_case <dir> <ci file or empty> <bin dir> <want>
+  d="$work/verify-$1"; mkdir -p "$d/.github/workflows"
+  # A node project: the image table is keyed on `family`, and Go, Rust and the
+  # JVM are all `other`, so they could never reach exec.kind: image at all.
   printf '{"name":"w","private":true,"scripts":{"test":"node --test"}}\n' > "$d/package.json"
-  [ -n "$2" ] && printf 'jobs:\n  t:\n    steps:\n      - run: go test ./...\n' > "$d/$2"
+  [ -n "$2" ] && printf 'jobs:\n  t:\n    steps:\n      - run: npm test\n' > "$d/$2"
   g "$d" init -q -b main . && g "$d" add -A >/dev/null 2>&1
   g "$d" -c user.email=t@e commit -qm init --allow-empty
   out="$(cd "$d" && HOME="$nohome" PATH="$3:$PATH" bash "$profile" 2>&1)"
-  case "$(field_in exec note)" in
-    *"only thing that will ever run this suite"*) got=yes ;;
-    *) got=no ;;
-  esac
-  [ "$got" = "$4" ] || note "weakest configuration, $1: escalated=$got, want $4"
+  want verification "\"$4\"" "verification, $1"
 }
 
-weak_case ci-host    .github/workflows/ci.yml "$stub"     no
-weak_case none-host  ""                       "$stub"     yes
-weak_case ci-cont    .github/workflows/ci.yml "$okdocker" no
-weak_case none-cont  ""                       "$okdocker" no
+verify_case ci-cont   .github/workflows/ci.yml "$okdocker" ci+container
+verify_case ci-host   .github/workflows/ci.yml "$stub"     ci
+verify_case none-cont ""                       "$okdocker" container
+verify_case none-host ""                       "$stub"     local-only
 
-# The escalation replaces nothing: the original reason is still there to read.
-out="$(cd "$work/weak-none-host" && HOME="$nohome" PATH="$stub:$PATH" bash "$profile" --reprofile 2>&1)"
+# The prose escalation is gone: exec.note carries the actionable reason and
+# nothing else, so the field a skill branches on is the field, not English.
+out="$(cd "$work/verify-none-host" && HOME="$nohome" PATH="$stub:$PATH" bash "$profile" --reprofile 2>&1)"
+printf '%s\n' "$(field_in exec note)" | grep -q 'only thing that will ever' \
+  && note 'verification: the paragraph is back in exec.note'
 printf '%s\n' "$(field_in exec note)" | grep -q 'Docker not available' \
-  || note "weakest configuration: the original exec.note reason was dropped"
+  || note "verification: exec.note lost its actionable reason: $(field_in exec note)"
 
 # The cache is what is printed the second time, even after the tree changes.
 rm "$lib/phpunit.xml" "$lib/.github/workflows/ci.yml"

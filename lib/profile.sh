@@ -548,23 +548,29 @@ if [ "$HASDB" = "false" ]; then
   done
 fi
 
-# ------------------------------------------------ the weakest configuration ---
+# --------------------------------------------------------- 9 verification ---
 #
-# exec.note is set while the container is being resolved, long before CI is
-# known, so the two facts can only be put together here.
+# What will ever check this code, computed once from the two fields that decide
+# it. Both are already in the profile, but combining them is a derivation, and
+# derivations are what this file exists to take away from the model — the same
+# reason hasDatabase and timeoutTool are facts rather than hints.
 #
-# With CI, a host toolchain is a footnote: something else runs the suite on a
-# clean machine afterwards. With none, this machine is the only thing that ever
-# will, and a run can pass because of an uncommitted file, a stale install or a
-# tool that exists nowhere else. That is the case a container exists for, so say
-# it in the field the skills already read rather than leaving a developer to
-# notice two quiet fields and connect them.
-if [ "$CI_KIND" = none ] && [ "$EXEC_KIND" = host ]; then
-  WEAK="No CI and no container: this machine is the only thing that will ever run this suite, so passing here is the whole guarantee. Docker would give back the clean environment CI otherwise provides."
-  case "$EXEC_NOTE" in
-    null) EXEC_NOTE="$WEAK" ;;
-    *)    EXEC_NOTE="$WEAK $EXEC_NOTE" ;;
-  esac
+#   ci+container  CI re-runs it, and locally it runs in the target environment
+#   ci            CI is the clean-machine check
+#   container     no CI, but the container is the clean environment
+#   local-only    nothing will ever run this anywhere but here
+#
+# It also gives a skill something to branch on. The first version of this wrote
+# a paragraph into exec.note instead, which cost 195 characters on every read
+# and could only be acted on by grepping English.
+if [ "$CI_KIND" != none ] && [ "$EXEC_KIND" != host ]; then
+  VERIFICATION="ci+container"
+elif [ "$CI_KIND" != none ]; then
+  VERIFICATION="ci"
+elif [ "$EXEC_KIND" != host ]; then
+  VERIFICATION="container"
+else
+  VERIFICATION="local-only"
 fi
 
 # ----------------------------------------------------------------- notes -----
@@ -603,6 +609,7 @@ mkdir -p .devskills
   printf '  '; kv kind "$RUNTIME_KIND"; printf ',\n'
   printf '  '; kv how "$RUNTIME_HOW"; printf '\n'
   printf '  },\n'
+  kv verification "$VERIFICATION"; printf ',\n'
   kv hasDatabase "$HASDB";  printf ',\n'
   kv timeoutTool "$TIMEOUT"; printf ',\n'
   printf '  "contextTokens": %s,\n' "$CONTEXT"   # a number, so kv's quoting does not apply
