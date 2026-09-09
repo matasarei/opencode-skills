@@ -232,7 +232,7 @@ o="$(cd "$repo" && DEV_SKILLS_CONTEXT=131072 DEV_SKILLS_QUEUE_CAP=7 bash "$chang
 
 # An override set to nothing is not a cap of nothing: it derives, exactly as an
 # unset one does. Every other derived cap here reads empty as absent.
-o="$(cd "$repo" && DEV_SKILLS_CONTEXT=131072 DEV_SKILLS_QUEUE_CAP= bash "$changed" main 2>&1)"
+o="$(cd "$repo" && DEV_SKILLS_CONTEXT=131072 DEV_SKILLS_QUEUE_CAP='' bash "$changed" main 2>&1)"
 [ "$(shown_of "$o")" = 262 ] || note "an empty DEV_SKILLS_QUEUE_CAP: showed $(shown_of "$o"), want the derived 262"
 
 if [ "$fails" -eq 0 ]; then
