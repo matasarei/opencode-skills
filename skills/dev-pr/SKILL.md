@@ -14,7 +14,7 @@ Everything you need is injected below by `pr-info.sh`: the base, the existing pu
 - `uncommitted:` above 0 — list them and stop. **Never commit on the developer's behalf.**
 - `commits: 0` — nothing to propose.
 - `tested:` is `none`, `stale`, or shows `TEST FAIL`/`TEST MISSING`/`TEST TIMEOUT` — the body would have to claim a check nobody ran. Say what it says and stop; `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/test.sh` first, or `/dev-verify`.
-- `verification: local-only` and `clean:` is not a `CLEAN PASS` for this HEAD — no CI, no container: nothing else will ever run this suite. Run `verify-clean.sh` (same path) and stop.
+- `verification: local-only` and `clean:` is not a `CLEAN PASS` for **this HEAD** — stricter than `tested:` above: with no CI and no container it is the only check there is. Run `verify-clean.sh` (same path), stop.
 - `gh:` not logged in or not installed, or `forge:` is not `github` — gh cannot open a change anywhere else. Write the title and body (step 3) to `.devskills/pr-body.md`, print them with the `compare-url:` line below, say nothing was created, stop.
 - `pr:` shows `state` `MERGED` or `CLOSED` — say so and stop; do not push more onto it.
 
@@ -43,7 +43,7 @@ git push -u origin <branch>
 gh pr create --draft --base <base> --head <branch> --title "<title>" --body-file .devskills/pr-body.md
 ```
 
-Always `--draft`: every pull request opens as a draft. `pr:` already open → `gh pr edit <number> --body-file .devskills/pr-body.md`, **only** when its body still opens with your `Depends on` or `Step <n>` line; a body somebody edited by hand → show yours and ask. A hand-written title stays.
+Always `--draft`. `pr:` already open → `gh pr edit <number> --body-file .devskills/pr-body.md`, **only** when its body still opens with your `Depends on` or `Step <n>` line; a body somebody edited by hand → show yours and ask. A hand-written title stays.
 
 ## Step 5 — Report
 
