@@ -202,6 +202,34 @@ else
   printf 'changed: running as root, the unwritable TMPDIR case was skipped\n' >&2
 fi
 
+# The queue cap follows the context window too, but at its own rate: a queue
+# entry is one short line where a diff line is a line of source, so 6 per 1k --
+# diff.sh's rate -- would treble this queue rather than scale it. 2 per 1k keeps
+# the 200 this script has always used at the 100k fallback, exactly as diff.sh
+# keeps its 600, and gives 262/131/65 at 128k/64k/32k.
+g switch -q feature
+mkdir -p "$repo/src/gen"
+i=1; while [ "$i" -le 300 ]; do printf '<?php\n// %s\n' "$i" > "$repo/src/gen/f$i.php"; i=$((i + 1)); done
+g add -A && g commit -qm 'a wide change'
+
+shown_of() { printf '%s\n' "$1" | grep -cv '^\['; }
+want_queue() { # want_queue <env context> <expected cap> <label>
+  o="$(cd "$repo" && DEV_SKILLS_CONTEXT="$1" bash "$changed" main 2>&1)"
+  [ "$(shown_of "$o")" = "$2" ] || note "queue cap at $3: showed $(shown_of "$o"), want $2"
+  printf '%s\n' "$o" | grep -q '^\[TRUNCATED:' || note "queue cap at $3: truncation was not announced"
+}
+want_queue 131072 262 '128k'
+want_queue 65536  131 '64k'
+want_queue 32768   65 '32k'
+
+# Nothing declares a window: the 200 this script has always used.
+o="$(cd "$repo" && bash "$changed" main 2>&1)"
+[ "$(shown_of "$o")" = 200 ] || note "queue cap with no window declared: showed $(shown_of "$o"), want the unchanged 200"
+
+# DEV_SKILLS_QUEUE_CAP still wins over the derived default.
+o="$(cd "$repo" && DEV_SKILLS_CONTEXT=131072 DEV_SKILLS_QUEUE_CAP=7 bash "$changed" main 2>&1)"
+[ "$(shown_of "$o")" = 7 ] || note "DEV_SKILLS_QUEUE_CAP no longer wins: showed $(shown_of "$o"), want 7"
+
 if [ "$fails" -eq 0 ]; then
   printf 'changed: every rank follows its fixture, renames and untracked files included\n'
 else
