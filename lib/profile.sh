@@ -384,8 +384,36 @@ fi
 # The workflow is a file in the checkout, so the captured text is repository
 # input reaching a command. Only a known runner prefix is accepted, and a
 # capture carrying a shell metacharacter is refused outright.
+#
+# Which forge, as well as what it runs. Not every project has CI, and several
+# cannot: a repository on a private GitLab, a self-hosted forge, or no remote at
+# all. Knowing there is none is what lets the rest of the toolkit stop implying a
+# second opinion that is never coming.
+CI_KIND=none
+CI_FILES=""
+for probe in \
+  "github:.github/workflows/*.yml .github/workflows/*.yaml" \
+  "gitlab:.gitlab-ci.yml" \
+  "circle:.circleci/config.yml" \
+  "jenkins:Jenkinsfile" \
+  "woodpecker:.woodpecker.yml .woodpecker/*.yml" \
+  "bitbucket:bitbucket-pipelines.yml" \
+  "azure:azure-pipelines.yml azure-pipelines.yaml"; do
+  kind="${probe%%:*}"
+  # Every file the forge has, not the first: the ordinary GitHub layout is
+  # lint.yml beside test.yml, and stopping at the first one silently loses the
+  # test command to whichever sorts earlier. The loop below tries them in turn.
+  files=""
+  for f in ${probe#*:}; do
+    [ -f "$f" ] && files="${files:+$files }$f"
+  done
+  # First forge with any file wins. GitHub before GitLab is deliberate: a
+  # repository carrying both is usually mirrored, and GitHub is the original.
+  [ -n "$files" ] && { CI_KIND="$kind"; CI_FILES="$files"; break; }
+done
+
 CI_TEST=""
-for wf in .github/workflows/*.yml .github/workflows/*.yaml; do
+for wf in $CI_FILES; do
   [ -f "$wf" ] || continue
   CI_TEST="$(grep -hoE '(vendor/bin/phpunit|phpunit|pytest|npm (run )?test|yarn test|go test|cargo test|mvn [^"'"'"']*test|(\./)?gradlew? [^"'"'"']*test|dotnet test|bundle exec (rspec|rake test)|mix test|pnpm test)[^"'"'"']*' "$wf" 2>/dev/null | head -1)"
   [ -n "$CI_TEST" ] && break
@@ -548,6 +576,10 @@ mkdir -p .devskills
   kv test       "$TEST";        printf ',\n'
   kv testScoped "$TEST_SCOPED"; printf ',\n'
   kv build      "$BUILD";       printf ',\n'
+  printf '  "ci": {\n'
+  printf '  '; kv kind "$CI_KIND"; printf ',\n'
+  printf '  '; kv runs "${CI_TEST:-null}"; printf '\n'
+  printf '  },\n'
   printf '  "runtime": {\n'
   printf '  '; kv kind "$RUNTIME_KIND"; printf ',\n'
   printf '  '; kv how "$RUNTIME_HOW"; printf '\n'

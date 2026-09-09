@@ -26,8 +26,16 @@ note() { printf 'FAIL  %s\n' "$1"; fails=$((fails + 1)); }
 g() { git -C "$1" -c user.email=t@e -c user.name=t "${@:2}"; }
 field() { printf '%s\n' "$out" | sed -n "s/^ *\"$1\": *\(.*\)$/\1/p" | sed -n "${2:-1}p" | sed 's/,$//'; }
 want() { [ "$(field "$1")" = "$2" ] || note "$3: $1 = $(field "$1"), want $2"; }
-# "kind" appears twice — exec.kind first, runtime.kind second.
-want_runtime() { [ "$(field kind 2)" = "$1" ] || note "$2: runtime.kind = $(field kind 2), want $1"; }
+# A field inside a named object. Addressing "kind" by ordinal broke three
+# assertions the moment a third object with one was added; this does not.
+field_in() { # field_in <object> <key>
+  printf '%s\n' "$out" | awk -v o="\"$1\": {" -v k="\"$2\":" '
+    index($0, o) { inobj = 1; next }
+    inobj && /^  }/ { exit }
+    inobj && index($0, k) { sub(/^[^:]*:[[:space:]]*/, ""); sub(/,$/, ""); print; exit }
+  '
+}
+want_runtime() { [ "$(field_in runtime kind)" = "$1" ] || note "$2: runtime.kind = $(field_in runtime kind), want $1"; }
 
 # A docker that is installed but whose daemon never answers: the host fallback,
 # deterministically, whatever this machine has.
@@ -136,6 +144,72 @@ run "$evil"
 want test '"go test ./..."' 'hostile CI'
 printf '%s\n' "$out" | grep -q 'touch PWNED' && note 'hostile CI: the value reached the profile'
 printf '%s\n' "$out" | grep -q 'shell metacharacter was ignored' || note 'hostile CI: the refusal is not in notes'
+
+# CI is not only GitHub. A project on GitLab, Woodpecker or a self-hosted forge
+# declares its gating command somewhere else, and reading only .github/workflows
+# silently used the manifest default instead — dropping, in the fixture below,
+# the -race flag the project actually gates on.
+ci_case() { # ci_case <dir> <file> <content> <want kind> <want runs>
+  d="$work/ci-$1"; mkdir -p "$d/$(dirname "$2")" 2>/dev/null || mkdir -p "$d"
+  printf 'module x\ngo 1.22\n' > "$d/go.mod"
+  [ -n "$3" ] && printf '%s\n' "$3" > "$d/$2"
+  g "$d" init -q -b main . && g "$d" add -A >/dev/null 2>&1
+  g "$d" -c user.email=t@e commit -qm init --allow-empty
+  run "$d"
+  [ "$(field_in ci kind)" = "\"$4\"" ] || note "ci $1: kind = $(field_in ci kind), want \"$4\""
+  [ "$(field_in ci runs)" = "$5" ] || note "ci $1: runs = $(field_in ci runs), want $5"
+}
+
+GO='- run: go test ./... -race'
+ci_case github     .github/workflows/ci.yml "jobs:
+  t:
+    steps:
+      $GO"                                   github     '"go test ./... -race"'
+ci_case gitlab     .gitlab-ci.yml "test:
+  script:
+    - go test ./... -race"                   gitlab     '"go test ./... -race"'
+ci_case circle     .circleci/config.yml "jobs:
+  t:
+    steps:
+      $GO"                                   circle     '"go test ./... -race"'
+ci_case jenkins    Jenkinsfile 'sh "go test ./..."'          jenkins    '"go test ./..."'
+ci_case woodpecker .woodpecker.yml "steps:
+  - commands:
+      - go test ./..."                       woodpecker '"go test ./..."'
+ci_case bitbucket  bitbucket-pipelines.yml "pipelines:
+  default:
+    - step:
+        script:
+          - go test ./..."                   bitbucket  '"go test ./..."'
+ci_case azure      azure-pipelines.yml 'steps:
+  - script: go test ./...'                   azure      '"go test ./..."'
+
+# No CI at all is a fact about the project, reported as such.
+ci_case none       .none "" none null
+
+# A CI file is repository input reaching a command, like composer.json's
+# vendor-dir. The forge is still reported; the command is not used.
+ci_case hostile    .gitlab-ci.yml "test:
+  script:
+    - go test ./...; rm -rf /"               gitlab     null
+
+# The ordinary GitHub layout is a lint workflow beside a test workflow. Stopping
+# at the first file found loses the test command to whichever sorts earlier —
+# every ci_case above has exactly one CI file, which is why that passed.
+multi="$work/ci-multi"; mkdir -p "$multi/.github/workflows"
+printf 'module x\ngo 1.22\n' > "$multi/go.mod"
+printf 'name: lint\njobs:\n  l:\n    steps:\n      - run: gofmt -l .\n' > "$multi/.github/workflows/aaa-lint.yml"
+printf 'name: test\njobs:\n  t:\n    steps:\n      - run: go test ./... -race\n' > "$multi/.github/workflows/zzz-test.yml"
+g "$multi" init -q -b main . && g "$multi" add -A >/dev/null 2>&1
+g "$multi" -c user.email=t@e commit -qm init --allow-empty
+run "$multi"
+[ "$(field_in ci runs)" = '"go test ./... -race"' ] \
+  || note "two workflows: runs = $(field_in ci runs), want the one from the second file"
+want test '"go test ./... -race"' 'two workflows, command in the second'
+
+# And CI beats the manifest default, which is the point of reading it at all.
+run "$work/ci-gitlab"
+want test '"go test ./... -race"' 'gitlab CI over the manifest default'
 
 # The cache is what is printed the second time, even after the tree changes.
 rm "$lib/phpunit.xml" "$lib/.github/workflows/ci.yml"
