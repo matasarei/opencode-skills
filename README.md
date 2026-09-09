@@ -215,11 +215,13 @@ A stack not in this table still gets a real `test` command whenever its CI names
 ## Without CI, or without GitHub
 
 Not every project has CI, and several cannot: a repository on a private GitLab, a self-hosted
-forge, or no remote at all. **Six of the eight skills never touch a network** — `/dev-init`,
-`/dev-plan`, `/dev-implement`, `/dev-review`, `/dev-fix` and `/dev-verify` all work with no
-remote whatsoever. The guarantee was always local: `lib/test.sh` before the commit, `lib/lint.sh`
-over the changed files, `lib/findings-check.sh` deleting findings whose evidence is not in the
-code. CI is a second opinion, not the first one.
+forge, or no remote at all. **Six of the eight skills never need a remote** — `/dev-init`,
+`/dev-plan`, `/dev-implement`, `/dev-review`, `/dev-fix` and `/dev-verify` work in a repository
+that has never had one. Three of them reach the network only when you point them at it:
+`/dev-plan` and `/dev-fix` read an issue you name, `/dev-verify` checks a URL you pass. The
+guarantee was always local: `lib/test.sh` before the commit, `lib/lint.sh` over the changed
+files, `lib/findings-check.sh` deleting findings whose evidence is not in the code. CI is a
+second opinion, not the first one.
 
 `profile.sh` reports what will actually check a change, so the skills stop implying a second
 opinion that is never coming:
