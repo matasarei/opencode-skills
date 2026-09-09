@@ -24,7 +24,32 @@ BASEBR="$(sed -n 's/.*"baseBranch"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .
 say branch "${BRANCH:-(detached)}"
 say detached "$([ -z "$BRANCH" ] && echo yes || echo no)"
 say on-base "$([ "$BRANCH" = "$BASEBR" ] && echo yes || echo no)"
-say remote "$(git remote get-url origin 2>/dev/null || echo none)"
+REMOTE="$(git remote get-url origin 2>/dev/null || echo none)"
+say remote "$REMOTE"
+
+# Which forge, and the URL to open a change on it. gh only speaks GitHub, and
+# `gh auth status` reports "Logged in to github.com" whatever the remote is —
+# so a GitLab project got a cheerful auth line, "pr: none", and a compare URL
+# pointing at a repository that does not exist. The host decides, not gh.
+FORGE=other
+case "$REMOTE" in
+  none)                   FORGE=none ;;
+  *github.com[:/]*)       FORGE=github ;;
+  *gitlab*)               FORGE=gitlab ;;
+  *bitbucket.org[:/]*)    FORGE=bitbucket ;;
+  *gitea*|*codeberg.org*) FORGE=gitea ;;
+esac
+say forge "$FORGE"
+
+# owner/name from either shape: git@host:owner/name.git or https://host/owner/name
+SLUGPATH="$(printf '%s' "$REMOTE" | sed -E 's#^git@[^:]+:##; s#^ssh://[^/]+/##; s#^https?://[^/]+/##; s#\.git$##')"
+case "$FORGE" in
+  github)    say compare-url "https://github.com/$SLUGPATH/compare/<base>...<branch>?expand=1" ;;
+  gitlab)    say compare-url "$(printf '%s' "$REMOTE" | sed -E 's#^git@([^:]+):#https://\1/#; s#\.git$##')/-/merge_requests/new?merge_request%5Bsource_branch%5D=<branch>" ;;
+  bitbucket) say compare-url "https://bitbucket.org/$SLUGPATH/pull-requests/new?source=<branch>&dest=<base>" ;;
+  none)      say compare-url "none — this repository has no remote" ;;
+  *)         say compare-url "unknown — open the change on $REMOTE by hand" ;;
+esac
 
 # A step branch: the slug and the number come from the name.
 SLUG=""; STEP=""

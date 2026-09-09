@@ -168,6 +168,49 @@ case "$(say_tested)" in
 esac
 rm -f "$repo/.devskills/test-result"
 
+# Which forge, from the remote. gh only speaks GitHub, and `gh auth status`
+# says "Logged in to github.com" whatever the remote is — so a GitLab project
+# got a cheerful auth line and a compare URL for a repository that does not
+# exist. The host decides.
+forge_case() { # forge_case <remote or empty> <want forge> <want url contains>
+  d="$work/forge-$2-$RANDOM"; mkdir -p "$d/.devskills"
+  printf '{\n  "baseBranch": "main"\n}\n' > "$d/.devskills/profile.json"
+  git -C "$d" init -q -b main . 2>/dev/null
+  printf 'x\n' > "$d/f"
+  git -C "$d" -c user.email=t@e -c user.name=t add -A >/dev/null 2>&1
+  git -C "$d" -c user.email=t@e -c user.name=t commit -qm base >/dev/null 2>&1
+  git -C "$d" -c user.email=t@e -c user.name=t switch -qc feat 2>/dev/null
+  printf 'y\n' > "$d/f"
+  git -C "$d" -c user.email=t@e -c user.name=t add -A >/dev/null 2>&1
+  git -C "$d" -c user.email=t@e -c user.name=t commit -qm work >/dev/null 2>&1
+  [ -n "$1" ] && git -C "$d" remote add origin "$1"
+  o="$(cd "$d" && bash "$script" 2>/dev/null)"
+  got="$(printf '%s\n' "$o" | sed -n 's/^forge: //p')"
+  url="$(printf '%s\n' "$o" | sed -n 's/^compare-url: //p')"
+  [ "$got" = "$2" ] || note "forge for '${1:-no remote}': got '$got', want $2"
+  case "$url" in *"$3"*) ;; *) note "compare-url for '${1:-no remote}': '$url' does not contain '$3'" ;; esac
+}
+
+forge_case "https://github.com/acme/widget.git"    github    "github.com/acme/widget/compare/"
+forge_case "git@github.com:acme/widget.git"        github    "github.com/acme/widget/compare/"
+forge_case "git@gitlab.example.com:team/proj.git"  gitlab    "gitlab.example.com/team/proj/-/merge_requests/new"
+forge_case "git@bitbucket.org:t/p.git"             bitbucket "bitbucket.org/t/p/pull-requests/new"
+forge_case "git@git.example.org:x/y.git"           other     "open the change on"
+forge_case ""                                      none      "no remote"
+
+# A GitHub URL must never be printed for a remote that is not GitHub — that is
+# the whole defect: it points at a repository which does not exist.
+for r in "git@gitlab.example.com:team/proj.git" "git@git.example.org:x/y.git"; do
+  d="$work/nogh-$RANDOM"; mkdir -p "$d/.devskills"
+  printf '{\n  "baseBranch": "main"\n}\n' > "$d/.devskills/profile.json"
+  git -C "$d" init -q -b main . 2>/dev/null
+  printf 'x\n' > "$d/f"; git -C "$d" -c user.email=t@e -c user.name=t add -A >/dev/null 2>&1
+  git -C "$d" -c user.email=t@e -c user.name=t commit -qm base >/dev/null 2>&1
+  git -C "$d" remote add origin "$r"
+  printf '%s\n' "$(cd "$d" && bash "$script" 2>/dev/null | sed -n 's/^compare-url: //p')" \
+    | grep -q 'github.com' && note "compare-url for $r points at github.com"
+done
+
 if [ "$fails" -eq 0 ]; then
   printf 'pr-info: base, pull request, counts and unplanned paths follow the fixture\n'
 else

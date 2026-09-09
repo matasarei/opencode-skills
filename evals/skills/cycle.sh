@@ -77,6 +77,12 @@ grep -q 'git switch -c step/' "$skills/dev-implement/SKILL.md" \
 flat dev-implement | grep -q 'Tick step in task file' \
   && note 'dev-implement: ticking by hand is back'
 
+# gh only speaks GitHub. A skill that assumes it, on a repository hosted
+# anywhere else, prints a URL for a repository that does not exist.
+has dev-pr 'compare-url' 'the fallback URL comes from the remote, not from a hardcoded host'
+grep -q 'https://github.com/<owner>/<repo>/compare' "$skills/dev-pr/SKILL.md" \
+  && note 'dev-pr: the hardcoded github.com compare URL is back'
+
 # A pull request may not claim a check nobody ran.
 has dev-pr 'tested:' 'the pull request stops when nothing was proved for this code'
 flat dev-pr | grep -q 'Tests not run' \
