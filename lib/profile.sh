@@ -548,6 +548,25 @@ if [ "$HASDB" = "false" ]; then
   done
 fi
 
+# ------------------------------------------------ the weakest configuration ---
+#
+# exec.note is set while the container is being resolved, long before CI is
+# known, so the two facts can only be put together here.
+#
+# With CI, a host toolchain is a footnote: something else runs the suite on a
+# clean machine afterwards. With none, this machine is the only thing that ever
+# will, and a run can pass because of an uncommitted file, a stale install or a
+# tool that exists nowhere else. That is the case a container exists for, so say
+# it in the field the skills already read rather than leaving a developer to
+# notice two quiet fields and connect them.
+if [ "$CI_KIND" = none ] && [ "$EXEC_KIND" = host ]; then
+  WEAK="No CI and no container: this machine is the only thing that will ever run this suite, so passing here is the whole guarantee. Docker would give back the clean environment CI otherwise provides."
+  case "$EXEC_NOTE" in
+    null) EXEC_NOTE="$WEAK" ;;
+    *)    EXEC_NOTE="$WEAK $EXEC_NOTE" ;;
+  esac
+fi
+
 # ----------------------------------------------------------------- notes -----
 
 NOTES=""
