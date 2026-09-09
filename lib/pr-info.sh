@@ -31,13 +31,22 @@ say remote "$REMOTE"
 # `gh auth status` reports "Logged in to github.com" whatever the remote is —
 # so a GitLab project got a cheerful auth line, "pr: none", and a compare URL
 # pointing at a repository that does not exist. The host decides, not gh.
+# The host decides, so the host is what is matched. Against the whole remote,
+# `*gitlab*` claimed git@git.company.com:team/gitlab-migration.git — a repository
+# merely named after a migration — and handed it a GitLab URL that cannot work.
+# Both shapes reduce the same way: strip the scheme, strip any user@, cut at the
+# first : or / that begins the path or port.
+HOST="$(printf '%s' "$REMOTE" | sed -E 's#^[a-z]+://##; s#^[^@/]*@##; s#[:/].*$##')"
+[ "$REMOTE" = none ] && HOST=""
+say host "${HOST:-none}"
+
 FORGE=other
-case "$REMOTE" in
-  none)                   FORGE=none ;;
-  *github.com[:/]*)       FORGE=github ;;
-  *gitlab*)               FORGE=gitlab ;;
-  *bitbucket.org[:/]*)    FORGE=bitbucket ;;
-  *gitea*|*codeberg.org*) FORGE=gitea ;;
+case "$HOST" in
+  "")                   FORGE=none ;;
+  github.com)           FORGE=github ;;
+  *gitlab*)             FORGE=gitlab ;;
+  bitbucket.org)        FORGE=bitbucket ;;
+  *gitea*|codeberg.org) FORGE=gitea ;;
 esac
 say forge "$FORGE"
 
@@ -47,6 +56,7 @@ case "$FORGE" in
   github)    say compare-url "https://github.com/$SLUGPATH/compare/<base>...<branch>?expand=1" ;;
   gitlab)    say compare-url "$(printf '%s' "$REMOTE" | sed -E 's#^git@([^:]+):#https://\1/#; s#\.git$##')/-/merge_requests/new?merge_request%5Bsource_branch%5D=<branch>" ;;
   bitbucket) say compare-url "https://bitbucket.org/$SLUGPATH/pull-requests/new?source=<branch>&dest=<base>" ;;
+  gitea)     say compare-url "https://$HOST/$SLUGPATH/compare/<base>...<branch>" ;;
   none)      say compare-url "none — this repository has no remote" ;;
   *)         say compare-url "unknown — open the change on $REMOTE by hand" ;;
 esac

@@ -196,6 +196,12 @@ forge_case "git@github.com:acme/widget.git"        github    "github.com/acme/wi
 forge_case "git@gitlab.example.com:team/proj.git"  gitlab    "gitlab.example.com/team/proj/-/merge_requests/new"
 forge_case "git@bitbucket.org:t/p.git"             bitbucket "bitbucket.org/t/p/pull-requests/new"
 forge_case "git@git.example.org:x/y.git"           other     "open the change on"
+forge_case "https://codeberg.org/acme/widget.git"  gitea     "codeberg.org/acme/widget/compare/"
+# The host decides, not the path: a repository merely named after GitLab, on a
+# host that is not GitLab, must not be handed a merge-request URL. Every case
+# above has the forge in its host, which is why matching the whole remote passed.
+forge_case "git@git.company.com:team/gitlab-migration.git" other "open the change on"
+forge_case "https://github.com/acme/gitlab-tools.git"      github "github.com/acme/gitlab-tools/compare/"
 forge_case ""                                      none      "no remote"
 
 # A GitHub URL must never be printed for a remote that is not GitHub — that is
