@@ -234,8 +234,10 @@ opinion that is never coming:
 | `local-only` | **nothing will ever run this anywhere but here** |
 
 CI is detected from GitHub Actions, GitLab CI, CircleCI, Jenkins, Woodpecker, Bitbucket
-Pipelines and Azure Pipelines — and whatever the workflow runs becomes the `test` command,
-because that is what actually gates the project.
+Pipelines and Azure Pipelines — and where the workflow names a test runner `profile.sh`
+recognises, that becomes the `test` command, because it is what actually gates the project. A
+bespoke command is not: this repository's own workflow runs `bash evals/run-all.sh`, and its
+profile records `test: null`.
 
 **What you lose without CI is one thing: the clean-checkout check.** A local run can pass
 because of an uncommitted file, a stale install, or a tool that exists on your machine and
