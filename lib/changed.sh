@@ -148,6 +148,9 @@ rank_of() {
 # diff.sh's 6 per 1k would treble this queue rather than scale it. 2 per 1k keeps
 # the 200 this script has always used at the 100k fallback, and gives 262 at
 # 128k, 131 at 64k, 65 at 32k. DEV_SKILLS_QUEUE_CAP still wins over both.
+# `:-` on purpose: an override set to nothing derives, exactly as an unset one
+# does. It used to yield 200 because the default sat in the expansion; every
+# derived cap here now reads empty as absent, and they should agree.
 CAP="${DEV_SKILLS_QUEUE_CAP:-}"
 if [ -z "$CAP" ]; then
   CTX="${DEV_SKILLS_CONTEXT:-}"
