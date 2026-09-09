@@ -81,11 +81,18 @@ rc=$?
 
 verdict="$(printf '%s\n' "$out" | head -1)"
 case "$verdict" in
-  "TEST PASS | "*)  printf 'CLEAN PASS | %s\n' "${verdict#TEST PASS | }" ;;
-  "TEST FAIL | "*)  printf 'CLEAN FAIL | %s\n' "${verdict#TEST FAIL | }" ;;
-  "TEST MISSING"*)  printf 'CLEAN MISSING%s\n' "${verdict#TEST MISSING}" ;;
-  "TEST TIMEOUT"*)  printf 'CLEAN TIMEOUT%s\n' "${verdict#TEST TIMEOUT}" ;;
-  *)                printf 'CLEAN FAIL | %s\n' "$verdict" ;;
+  "TEST PASS | "*)  CLEAN="CLEAN PASS | ${verdict#TEST PASS | }" ;;
+  "TEST FAIL | "*)  CLEAN="CLEAN FAIL | ${verdict#TEST FAIL | }" ;;
+  "TEST MISSING"*)  CLEAN="CLEAN MISSING${verdict#TEST MISSING}" ;;
+  "TEST TIMEOUT"*)  CLEAN="CLEAN TIMEOUT${verdict#TEST TIMEOUT}" ;;
+  *)                CLEAN="CLEAN FAIL | $verdict" ;;
 esac
+printf '%s\n' "$CLEAN"
+
+# The receipt, in test.sh's shape and beside it. test.sh writes one so /dev-pr
+# cannot take the model's word that a suite ran; a repository whose only
+# clean-machine check is this script needs the same, or there is nothing for
+# /dev-pr to refuse on when verification is local-only.
+printf '%s %s\n' "$SHA" "$CLEAN" > .devskills/clean-result 2>/dev/null || true
 [ "$rc" -eq 0 ] || printf '%s\n' "$out" | tail -20
 exit "$rc"

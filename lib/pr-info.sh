@@ -161,22 +161,32 @@ say uncommitted "$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
 # What was actually proved, and for which commit. test.sh writes the receipt;
 # without it /dev-pr can only take the model's word that a suite ran, which is
 # how "tests pass" ends up in a body with nothing behind it.
-TESTED=none
-if [ -r .devskills/test-result ]; then
-  T_SHA="$(cut -d' ' -f1 .devskills/test-result 2>/dev/null)"
-  T_VERDICT="$(cut -d' ' -f2- .devskills/test-result 2>/dev/null)"
-  if [ -n "$T_SHA" ]; then
-    if [ "$T_SHA" = "$(git rev-parse HEAD 2>/dev/null)" ]; then
-      TESTED="$T_VERDICT (this HEAD)"
-    elif git merge-base --is-ancestor "$T_SHA" HEAD 2>/dev/null; then
-      BACK="$(git rev-list --count "$T_SHA..HEAD" 2>/dev/null)"
-      TESTED="$T_VERDICT (at $(git rev-parse --short "$T_SHA" 2>/dev/null), $BACK commit(s) back)"
-    else
-      TESTED="stale — recorded for $(git rev-parse --short "$T_SHA" 2>/dev/null), which is not behind HEAD"
-    fi
+# Two receipts, read the same way: test.sh's, and verify-clean.sh's. The second
+# matters when nothing else will ever run the suite — see verification: below.
+receipt() { # receipt <file>
+  [ -r "$1" ] || { printf 'none\n'; return; }
+  r_sha="$(cut -d' ' -f1 "$1" 2>/dev/null)"
+  r_verdict="$(cut -d' ' -f2- "$1" 2>/dev/null)"
+  [ -n "$r_sha" ] || { printf 'none\n'; return; }
+  if [ "$r_sha" = "$(git rev-parse HEAD 2>/dev/null)" ]; then
+    printf '%s (this HEAD)\n' "$r_verdict"
+  elif git merge-base --is-ancestor "$r_sha" HEAD 2>/dev/null; then
+    printf '%s (at %s, %s commit(s) back)\n' "$r_verdict" \
+      "$(git rev-parse --short "$r_sha" 2>/dev/null)" \
+      "$(git rev-list --count "$r_sha..HEAD" 2>/dev/null)"
+  else
+    printf 'stale — recorded for %s, which is not behind HEAD\n' \
+      "$(git rev-parse --short "$r_sha" 2>/dev/null)"
   fi
-fi
-say tested "$TESTED"
+}
+say tested "$(receipt .devskills/test-result)"
+
+# What will ever check this change besides the developer's own machine. When it
+# is local-only there is no CI and no container, so verify-clean.sh's receipt is
+# the only clean-environment evidence that can exist — which is why /dev-pr
+# refuses without it in that case, and only in that case.
+say verification "$(sed -n 's/.*"verification"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .devskills/profile.json 2>/dev/null | head -1 | grep . || echo unknown)"
+say clean "$(receipt .devskills/clean-result)"
 
 # The task file and the step, when there is one: the diff's paths that no
 # Create:/Modify:/Test: line of this step names are the coherence check.

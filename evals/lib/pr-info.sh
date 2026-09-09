@@ -214,6 +214,27 @@ case "$(say_tested)" in
 esac
 rm -f "$repo/.devskills/test-result"
 
+# verification: and clean: — what /dev-pr refuses on when nothing else will ever
+# run the suite. The receipt is read exactly as tested: is, so the staleness
+# cases above cover both; what is asserted here is that the two lines exist and
+# carry the profile's answer.
+g switch -q main
+printf '{ "baseBranch": "main", "verification": "local-only" }\n' > "$repo/.devskills/profile.json"
+rm -f "$repo/.devskills/clean-result"
+run
+want verification 'local-only' 'the profile says local-only'
+want clean 'none' 'no clean receipt yet'
+
+printf '%s CLEAN PASS | OK (3 tests)\n' "$(g rev-parse HEAD)" > "$repo/.devskills/clean-result"
+run
+want clean 'CLEAN PASS | OK (3 tests) (this HEAD)' 'a clean receipt for this HEAD'
+
+# A profile with no verification field at all must not read as a pass.
+printf '{ "baseBranch": "main" }\n' > "$repo/.devskills/profile.json"
+run
+want verification 'unknown' 'no verification field'
+rm -f "$repo/.devskills/clean-result"
+
 # Which forge, from the remote. gh only speaks GitHub, and `gh auth status`
 # says "Logged in to github.com" whatever the remote is — so a GitLab project
 # got a cheerful auth line and a compare URL for a repository that does not
