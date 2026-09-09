@@ -10,6 +10,11 @@
 #
 # Output: "<rank> <status> <path>" — rank 1 is highest risk. Read top-down and
 # stop when the budget is spent.
+#
+# Exit 0 listed something, 1 no such base branch, 2 you are on the base branch,
+# 3 nothing changed against it, 73 the scratch file could not be created. The
+# last one was 1 until it had its own code, which made "the base branch does not
+# exist" and "TMPDIR is not writable" indistinguishable to a caller.
 
 set -u
 
@@ -39,7 +44,7 @@ fi
 # makes the refusals below clean up: they each carried their own rm before, and
 # an interrupted run carried none at all.
 TMP="$(mktemp "${TMPDIR:-/tmp}/devskills-changed.XXXXXX" 2>/dev/null)" \
-  || { echo "ERROR: cannot create a scratch file in '${TMPDIR:-/tmp}'" >&2; exit 1; }
+  || { echo "ERROR: cannot create a scratch file in '${TMPDIR:-/tmp}'" >&2; exit 73; }
 trap 'rm -f "$TMP"' EXIT INT TERM
 
 # Committed changes plus anything not yet committed. Reviewing only what is

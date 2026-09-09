@@ -192,7 +192,7 @@ tmp="$work/tmp"; mkdir -p "$tmp"
 if [ "$(id -u)" != 0 ]; then
   ro="$work/ro"; mkdir -p "$ro"; chmod 500 "$ro"
   ( cd "$repo" && TMPDIR="$ro" bash "$changed" main >/dev/null 2>"$work/err" ); rc=$?
-  [ "$rc" -ne 0 ] || note 'an unwritable TMPDIR was ignored, so the scratch file was not going there'
+  [ "$rc" -eq 73 ] || note "an unwritable TMPDIR exited $rc, want 73 — and never 1, which means the base branch is missing"
   grep -qi 'scratch' "$work/err" \
     || note "unwritable TMPDIR: the error should name the scratch file, got '$(head -1 "$work/err")'"
   chmod 700 "$ro"
