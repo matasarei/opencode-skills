@@ -178,6 +178,26 @@ printf '%s\n' "$out" | grep -q '\.devskills' && note '.devskills/ files were lis
 ( cd "$repo" && bash "$changed" nope >/dev/null 2>&1 ); rc=$?
 [ "$rc" -eq 1 ] || note "a missing base exited $rc, want 1"
 
+# The scratch file. It used to be /tmp/devskills-changed.$$ — a directory the
+# environment could not move, and a name derived from the PID — while every
+# newer script in lib/ uses mktemp. Two things are asserted: nothing is left
+# behind, and TMPDIR actually decides where it goes.
+tmp="$work/tmp"; mkdir -p "$tmp"
+( cd "$repo" && TMPDIR="$tmp" bash "$changed" main >/dev/null 2>&1 )
+[ -z "$(ls -A "$tmp" 2>/dev/null)" ] || note "a scratch file was left behind in TMPDIR: $(ls -A "$tmp")"
+
+# The discriminating half: an unwritable TMPDIR has to stop the run, because a
+# script that quietly writes to /tmp instead was never honouring it. Skipped as
+# root, where the mode bits do not apply.
+if [ "$(id -u)" != 0 ]; then
+  ro="$work/ro"; mkdir -p "$ro"; chmod 500 "$ro"
+  ( cd "$repo" && TMPDIR="$ro" bash "$changed" main >/dev/null 2>"$work/err" ); rc=$?
+  [ "$rc" -ne 0 ] || note 'an unwritable TMPDIR was ignored, so the scratch file was not going there'
+  grep -qi 'scratch' "$work/err" \
+    || note "unwritable TMPDIR: the error should name the scratch file, got '$(head -1 "$work/err")'"
+  chmod 700 "$ro"
+fi
+
 if [ "$fails" -eq 0 ]; then
   printf 'changed: every rank follows its fixture, renames and untracked files included\n'
 else

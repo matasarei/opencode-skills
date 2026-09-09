@@ -33,6 +33,15 @@ if [ "$CURRENT" = "$BASE" ]; then
   exit 2
 fi
 
+# The scratch file: mktemp under TMPDIR, and a trap, matching verify-clean.sh.
+# The old name was hardcoded to /tmp and derived from the process id, so the
+# environment could not move it and anyone could guess it. The trap is also what
+# makes the refusals below clean up: they each carried their own rm before, and
+# an interrupted run carried none at all.
+TMP="$(mktemp "${TMPDIR:-/tmp}/devskills-changed.XXXXXX" 2>/dev/null)" \
+  || { echo "ERROR: cannot create a scratch file in '${TMPDIR:-/tmp}'" >&2; exit 1; }
+trap 'rm -f "$TMP"' EXIT INT TERM
+
 # Committed changes plus anything not yet committed. Reviewing only what is
 # committed misses the half you were about to commit.
 # A rename reaches us in two different shapes, and both used to yield a string that
@@ -60,11 +69,10 @@ fi
     | awk -F'\t' '{ if ($1 ~ /^[RC]/ && NF >= 3) print substr($1,1,1) "\t" $3; else if (NF >= 2) print $1 "\t" $2 }'
   git -c core.quotePath=false status --porcelain -uall 2>/dev/null \
     | sed 's/^ *//; s/^\([A-Z?]*\)[[:space:]]*/\1\t/; s/^\([A-Z?]*\)\t.* -> /\1\t/'
-} | awk -F'\t' 'NF>=2 && $2!="" {print $1"\t"$2}' | sort -u -k2 > /tmp/devskills-changed.$$
+} | awk -F'\t' 'NF>=2 && $2!="" {print $1"\t"$2}' | sort -u -k2 > "$TMP"
 
-if [ ! -s /tmp/devskills-changed.$$ ]; then
+if [ ! -s "$TMP" ]; then
   echo "ERROR: no changes against '$BASE'" >&2
-  rm -f /tmp/devskills-changed.$$
   exit 3
 fi
 
@@ -138,7 +146,7 @@ while IFS=$'\t' read -r status file; do
   rank="$(rank_of "$file" "$status")"
   [ "$rank" = "99" ] && continue
   printf '%s %s %s\n' "$rank" "$status" "$file"
-done < /tmp/devskills-changed.$$ | sort -n | awk -v cap="$CAP" '
+done < "$TMP" | sort -n | awk -v cap="$CAP" '
   { line[NR] = $0; rank[NR] = $1; if ($1 == 9) nine++ }
   END {
     for (i = 1; i <= NR; i++) {
@@ -150,4 +158,3 @@ done < /tmp/devskills-changed.$$ | sort -n | awk -v cap="$CAP" '
   }
 '
 
-rm -f /tmp/devskills-changed.$$
