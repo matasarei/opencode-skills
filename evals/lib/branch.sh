@@ -91,6 +91,9 @@ run .tasks/mytask.md 3
 [ "$(on)" = "step/mytask-3" ] || note "merged predecessor: on '$(on)', want step/mytask-3"
 printf '%s\n' "$out" | grep -q 'cut from main' \
   || note "merged predecessor: should come off the base branch, got '$out'"
+# And it has to say why, or "cut from main" on step 5 reads as a bug.
+printf '%s\n' "$out" | grep -q 'step/mytask-2 has already been merged' \
+  || note "merged predecessor: the line should name why it fell back, got '$out'"
 
 # Usage and missing input.
 run .tasks/nope.md 1; [ "$rc" -eq 66 ] || note "missing task file: exit $rc, want 66"
