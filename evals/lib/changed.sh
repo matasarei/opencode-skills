@@ -192,7 +192,7 @@ tmp="$work/tmp"; mkdir -p "$tmp"
 if [ "$(id -u)" != 0 ]; then
   ro="$work/ro"; mkdir -p "$ro"; chmod 500 "$ro"
   ( cd "$repo" && TMPDIR="$ro" bash "$changed" main >/dev/null 2>"$work/err" ); rc=$?
-  [ "$rc" -ne 0 ] || note 'an unwritable TMPDIR was ignored, so the scratch file was not going there'
+  [ "$rc" -eq 73 ] || note "an unwritable TMPDIR exited $rc, want 73 — and never 1, which means the base branch is missing"
   grep -qi 'scratch' "$work/err" \
     || note "unwritable TMPDIR: the error should name the scratch file, got '$(head -1 "$work/err")'"
   chmod 700 "$ro"
@@ -229,6 +229,11 @@ o="$(cd "$repo" && bash "$changed" main 2>&1)"
 # DEV_SKILLS_QUEUE_CAP still wins over the derived default.
 o="$(cd "$repo" && DEV_SKILLS_CONTEXT=131072 DEV_SKILLS_QUEUE_CAP=7 bash "$changed" main 2>&1)"
 [ "$(shown_of "$o")" = 7 ] || note "DEV_SKILLS_QUEUE_CAP no longer wins: showed $(shown_of "$o"), want 7"
+
+# An override set to nothing is not a cap of nothing: it derives, exactly as an
+# unset one does. Every other derived cap here reads empty as absent.
+o="$(cd "$repo" && DEV_SKILLS_CONTEXT=131072 DEV_SKILLS_QUEUE_CAP='' bash "$changed" main 2>&1)"
+[ "$(shown_of "$o")" = 262 ] || note "an empty DEV_SKILLS_QUEUE_CAP: showed $(shown_of "$o"), want the derived 262"
 
 if [ "$fails" -eq 0 ]; then
   printf 'changed: every rank follows its fixture, renames and untracked files included\n'
