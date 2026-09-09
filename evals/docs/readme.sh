@@ -50,7 +50,7 @@ for token in \
   'limit.context' \
   'verify-clean.sh' \
   'Without CI, or without GitHub' \
-  'local-only' \
+  'ci+container' \
   'compare-url' \
   '4,500 bytes'
 do
