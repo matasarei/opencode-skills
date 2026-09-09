@@ -63,14 +63,42 @@ if git show-ref --verify --quiet "refs/heads/$WANT"; then
   exit 0
 fi
 
-# The previous step's branch is the base when there is one, so the pull requests
-# stack; otherwise the repository's base branch.
-FROM="$BASE"
+# The previous step's branch is the base when there is one and it has not landed
+# yet, so the pull requests stack; otherwise the repository's base branch.
+#
+# Existence is not enough. A merged step branch is not deleted, so it answers yes
+# to "does it exist" while being exactly the wrong place to cut from: the new
+# step starts behind the base, and its pull request opens against a branch nobody
+# will merge again. That happened three times in one plan before this check.
+FROM="$BASE"; WHY=""
 if [ "$N" -gt 1 ]; then
   PREV="step/$SLUG-$((N - 1))"
-  if git show-ref --verify --quiet "refs/heads/$PREV" \
-  || git show-ref --verify --quiet "refs/remotes/origin/$PREV"; then
-    FROM="$PREV"
+  PREV_REF=""
+  if git show-ref --verify --quiet "refs/heads/$PREV"; then
+    PREV_REF="$PREV"
+  elif git show-ref --verify --quiet "refs/remotes/origin/$PREV"; then
+    PREV_REF="origin/$PREV"
+  fi
+
+  if [ -n "$PREV_REF" ]; then
+    # Both refs, because either can be the one that is ahead: the local base
+    # branch on a machine that has pulled, its remote-tracking copy on one that
+    # has not.
+    MERGED=no
+    for base_ref in "$BASE" "origin/$BASE"; do
+      git rev-parse --verify --quiet "$base_ref" >/dev/null 2>&1 || continue
+      if git merge-base --is-ancestor "$PREV_REF" "$base_ref" 2>/dev/null; then
+        MERGED=yes
+        break
+      fi
+    done
+
+    if [ "$MERGED" = no ]; then
+      FROM="$PREV"
+    else
+      # Say why, or the developer reads "cut from main" on step 5 as a bug.
+      WHY=" ($PREV has already been merged)"
+    fi
   fi
 fi
 
@@ -78,4 +106,4 @@ git switch -q -c "$WANT" "$FROM" 2>/dev/null || {
   echo "BRANCH refused — could not cut $WANT from '$FROM'; does it exist?" >&2
   exit 66
 }
-echo "BRANCH $WANT — cut from $FROM"
+echo "BRANCH $WANT — cut from $FROM$WHY"
