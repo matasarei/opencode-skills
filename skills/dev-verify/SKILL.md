@@ -58,6 +58,8 @@ Lead with exactly one: **Works** — the checks that matter passed and the chang
 
 **"Cannot tell" is a real verdict.** A confident "works" resting on three skipped checks is worse than no answer.
 
+`verification: local-only` — no CI, no container, so nothing will ever re-run this. Say so in the verdict.
+
 ## Rules
 
 - Local only. Never a live system, never production data, never a write to a pull request.

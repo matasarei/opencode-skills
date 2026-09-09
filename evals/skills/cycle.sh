@@ -90,6 +90,10 @@ has dev-review '/dev-fix .devskills/findings.md' 'a bare /dev-fix arrives with a
 has dev-fix    'FINDINGS'   'the mode is decided by the brief kind, not guessed'
 has dev-fix    'Never both' 'Mode A and Mode B must not both fire on one input'
 
+# verification: local-only is a computed fact, and a fact nothing reads is a
+# field nobody maintains. /dev-verify is where it changes what gets said.
+has dev-verify 'local-only' 'the one skill whose job is proving things must say when it is the only check'
+
 # A skill that writes must not also claim it never writes. Both review skills
 # maintain .devskills/findings.md — that file is the hallucination filter, and
 # an absolute the same page contradicts teaches the model the rules are soft.
