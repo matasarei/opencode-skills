@@ -37,7 +37,21 @@ SHA="$(git rev-parse HEAD 2>/dev/null)"
 
 [ -f .devskills/profile.json ] || bash "$HERE/profile.sh" >/dev/null 2>&1
 PROFILE="$PWD/.devskills/profile.json"
-[ -f "$PROFILE" ] || { echo "CLEAN MISSING — no profile to take the test command from" >&2; exit 2; }
+# The receipt, written on every path that reaches a verdict -- as test.sh does.
+# Writing it only at the end left the last passing receipt standing when a later
+# run failed its setup, and /dev-pr would have believed it.
+receipt() {
+  [ -n "$SHA" ] || return 0
+  mkdir -p .devskills 2>/dev/null || return 0
+  printf '%s %s\n' "$SHA" "$1" > .devskills/clean-result 2>/dev/null || true
+}
+fail_out() { # fail_out <verdict> <exit code>
+  printf '%s\n' "$1" >&2
+  receipt "$1"
+  exit "$2"
+}
+
+[ -f "$PROFILE" ] || fail_out "CLEAN MISSING — no profile to take the test command from" 2
 
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/verify-clean.XXXXXX")"
 # Even when the clone fails, even when the suite hangs and is killed.
@@ -46,12 +60,10 @@ trap 'rm -rf "$TMP"' EXIT INT TERM
 # A local clone, then the exact commit: `git clone <path>` checks out whatever
 # the source's HEAD points at, which on a step branch is not this commit.
 if ! git clone -q --no-hardlinks "$PWD" "$TMP/repo" 2>/dev/null; then
-  echo "CLEAN MISSING — could not clone this repository" >&2
-  exit 2
+  fail_out "CLEAN MISSING — could not clone this repository" 2
 fi
 if ! git -C "$TMP/repo" checkout -q --detach "$SHA" 2>/dev/null; then
-  echo "CLEAN MISSING — the clone does not have $SHA" >&2
-  exit 2
+  fail_out "CLEAN MISSING — the clone does not have $SHA" 2
 fi
 
 # The profile travels with it. Re-detecting inside the clone would be a second
@@ -71,6 +83,7 @@ if [ -n "$INSTALL" ] && [ "$INSTALL" != null ]; then
     reason="$(printf '%s\n' "$setup" | grep -v '^[[:space:]]*$' | tail -1)"
     [ -n "$reason" ] || reason="(the installer printed nothing)"
     printf 'CLEAN SETUP FAIL | %s\n' "$reason"
+    receipt "CLEAN SETUP FAIL | $reason"
     printf '%s\n' "$setup" | tail -20
     exit 2
   fi
@@ -93,6 +106,6 @@ printf '%s\n' "$CLEAN"
 # cannot take the model's word that a suite ran; a repository whose only
 # clean-machine check is this script needs the same, or there is nothing for
 # /dev-pr to refuse on when verification is local-only.
-printf '%s %s\n' "$SHA" "$CLEAN" > .devskills/clean-result 2>/dev/null || true
+receipt "$CLEAN"
 [ "$rc" -eq 0 ] || printf '%s\n' "$out" | tail -20
 exit "$rc"

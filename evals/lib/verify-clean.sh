@@ -126,6 +126,16 @@ case "$r_verdict" in
   *) note "the receipt carries '$r_verdict', want a CLEAN verdict in test.sh's shape" ;;
 esac
 
+# A failed run must replace the receipt, not leave the last passing one behind.
+# test.sh writes on every verdict path; this script wrote only at the end, so a
+# setup failure left "CLEAN PASS" standing and /dev-pr would have believed it.
+printf '{\n  "baseBranch": "main",\n  "install": "exit 3",\n  "test": "sh ./runner.sh",\n  "testScoped": null,\n  "timeoutTool": null\n}\n' > "$repo/.devskills/profile.json"
+( cd "$repo" && bash "$script" >/dev/null 2>&1 )
+case "$(cut -d' ' -f2- "$repo/.devskills/clean-result" 2>/dev/null)" in
+  "CLEAN SETUP FAIL"*) ;;
+  *) note "after a failed install the receipt still reads '$(cut -d' ' -f2- "$repo/.devskills/clean-result" 2>/dev/null)'" ;;
+esac
+
 if [ "$fails" -eq 0 ]; then
   printf 'verify-clean: checks HEAD and not the working tree, and cleans up after itself\n'
 else
