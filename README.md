@@ -212,6 +212,48 @@ A stack not in this table still gets a real `test` command whenever its CI names
 
 ---
 
+## Without CI, or without GitHub
+
+Not every project has CI, and several cannot: a repository on a private GitLab, a self-hosted
+forge, or no remote at all. **Six of the eight skills never need a remote** — `/dev-init`,
+`/dev-plan`, `/dev-implement`, `/dev-review`, `/dev-fix` and `/dev-verify` work in a repository
+that has never had one. Three of them reach the network only when you point them at it:
+`/dev-plan` and `/dev-fix` read an issue you name, `/dev-verify` checks a URL you pass. The
+guarantee was always local: `lib/test.sh` before the commit, `lib/lint.sh` over the changed
+files, `lib/findings-check.sh` deleting findings whose evidence is not in the code. CI is a
+second opinion, not the first one.
+
+`profile.sh` reports what will actually check a change, so the skills stop implying a second
+opinion that is never coming:
+
+| `verification` | Means |
+|---|---|
+| `ci+container` | CI re-runs it, and locally it runs in the target environment |
+| `ci` | CI is the clean-machine check |
+| `container` | no CI, but the container is the clean environment |
+| `local-only` | **nothing will ever run this anywhere but here** |
+
+CI is detected from GitHub Actions, GitLab CI, CircleCI, Jenkins, Woodpecker, Bitbucket
+Pipelines and Azure Pipelines — and where the workflow names a test runner `profile.sh`
+recognises, that becomes the `test` command, because it is what actually gates the project. A
+bespoke command is not: this repository's own workflow runs `bash evals/run-all.sh`, and its
+profile records `test: null`.
+
+**What you lose without CI is one thing: the clean-checkout check.** A local run can pass
+because of an uncommitted file, a stale install, or a tool that exists on your machine and
+nowhere else — one of this repository's own suites passed on macOS and failed on Ubuntu for
+exactly that reason. `lib/verify-clean.sh` is the substitute — **The Clean-Clone Check** below
+says how it works. **When `verification` is `local-only`, a container matters more than usual** —
+it is the only clean environment you have.
+
+`/dev-pr` follows the remote rather than assuming GitHub. `pr-info.sh` reports `host:`, `forge:`
+(`github`, `gitlab`, `bitbucket`, `gitea`, `other`, `none`) and a `compare-url:` built for that
+forge, so a GitLab project gets a merge-request URL and an unknown host gets an honest sentence
+instead of a GitHub link that cannot work. `gh` only speaks GitHub, so anywhere else `/dev-pr`
+writes the body to `.devskills/pr-body.md` and hands you the URL.
+
+---
+
 ## Mechanics & Guardrails
 
 * **The Guard (`lib/dev-guard.js`)**: An OpenCode plugin that intercepts bash commands and blocks dangerous actions: force pushes, amended commits, skipped git hooks, pushes to `main`/`master`, and unauthorized `gh pr merge`. Verified against 43 test cases in `evals/guard/cases.sh`.
