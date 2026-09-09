@@ -72,12 +72,43 @@ say slug "${SLUG:-none}"
 say step "${STEP:-none}"
 
 # The base: the previous step's branch when it exists on origin (or locally,
-# before the first push), else the base branch.
+# before the first push) and has not been merged yet, else the base branch.
+#
+# Existence alone is the wrong test. A merged step branch is not deleted, so it
+# looks exactly like one still waiting for review — and stacking on it opens the
+# pull request against a base nobody will merge again, leaving the change where
+# no review reaches it. That cost this repository two recovery pull requests
+# before this check existed. Once the predecessor is an ancestor of the base
+# branch it has landed, and the base branch is the answer.
 BASE="$BASEBR"; BASE_KIND=base
 if [ -n "$STEP" ] && [ "$STEP" -gt 1 ]; then
   PREV="step/$SLUG-$((STEP - 1))"
   if git ls-remote --exit-code --heads origin "$PREV" >/dev/null 2>&1 || git show-ref --verify --quiet "refs/heads/$PREV"; then
-    BASE="$PREV"; BASE_KIND=step
+    # Ancestry needs a ref this repository can actually resolve: the local
+    # branch, else its remote-tracking copy. A predecessor that exists only on
+    # origin with no tracking ref cannot be tested, and stays a base — the
+    # conservative answer, and the behaviour that was there before.
+    PREV_REF=""
+    if git show-ref --verify --quiet "refs/heads/$PREV"; then
+      PREV_REF="$PREV"
+    elif git show-ref --verify --quiet "refs/remotes/origin/$PREV"; then
+      PREV_REF="origin/$PREV"
+    fi
+
+    MERGED=no
+    if [ -n "$PREV_REF" ]; then
+      # Both, because either can be ahead: the local base branch on a machine
+      # that has pulled, the remote one on a machine that has not.
+      for base_ref in "$BASEBR" "origin/$BASEBR"; do
+        git rev-parse --verify --quiet "$base_ref" >/dev/null 2>&1 || continue
+        if git merge-base --is-ancestor "$PREV_REF" "$base_ref" 2>/dev/null; then
+          MERGED=yes
+          break
+        fi
+      done
+    fi
+
+    [ "$MERGED" = no ] && { BASE="$PREV"; BASE_KIND=step; }
   fi
 fi
 say base "$BASE"
