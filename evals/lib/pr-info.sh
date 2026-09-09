@@ -120,6 +120,19 @@ printf '%s\n' "$out" | grep -q '^--- step$' || note 'step 2: the step block is n
 printf '%s\n' "$out" | grep -q '^2\. \[ \] Two$' || note 'step 2: the step line is missing after --- step'
 printf '%s\n' "$out" | grep -q 'it works' || note 'step 2: the criteria are missing after --- step'
 
+# Once the predecessor is merged it is not a base any more. A branch that has
+# landed still exists on origin, so "does it exist" cannot tell the two apart —
+# and stacking on a merged branch opens the pull request against a base nobody
+# will merge again, which is how work goes missing.
+g switch -q main
+g merge -q --no-ff step/x-1 -m 'merge step 1'
+g push -q origin main
+g switch -q step/x-2
+run
+want base 'main' 'predecessor already merged'
+want base-kind 'base' 'predecessor already merged'
+want base-pr 'none' 'predecessor already merged'
+
 # The task file may be given explicitly; a missing previous branch falls back to main.
 run .tasks/x.md
 want task-file '.tasks/x.md' 'explicit task file'
