@@ -49,6 +49,9 @@ for token in \
   'What each window buys' \
   'limit.context' \
   'verify-clean.sh' \
+  'Without CI, or without GitHub' \
+  'local-only' \
+  'compare-url' \
   '4,500 bytes'
 do
   grep -qF -- "$token" "$readme" || note "README never mentions $token"

@@ -116,7 +116,11 @@ Node is chosen deliberately: it is not PHP. Several skills grew up around a PHP 
 non-PHP testbed catches assumptions that a PHP one hides. If your change targets a specific
 stack, test on that stack **as well**, not instead.
 
-A GitHub remote is required — `/dev-pr` and `/dev-pr-review` cannot be tested without one.
+A GitHub remote is required to test `/dev-pr` and `/dev-pr-review` **end to end** — `gh` only
+speaks GitHub. Everything else works without one, and that is worth testing too: point the
+testbed at a GitLab remote (or remove `origin` entirely) and check that `/dev-pr` reports the
+right `forge:` and a `compare-url:` for that host rather than a GitHub link. See **Without CI,
+or without GitHub** in the README.
 
 **Before every test run:**
 
