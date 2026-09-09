@@ -79,6 +79,19 @@ run .tasks/mytask.md 2
 [ "$rc" -eq 0 ] || note "dirty tree, already on it: exit $rc, want 0"
 rm -f "$repo/wip.txt"
 
+# A predecessor that has already been merged is not a base any more. It is still
+# a local branch, so "does it exist" says yes and the step gets cut from a branch
+# that has landed -- four commits behind, and its pull request opens against a
+# base nobody will merge again. This happened three times in one plan before the
+# check existed.
+g switch -q main
+g merge -q --no-ff step/mytask-2 -m 'merge step 2'
+run .tasks/mytask.md 3
+[ "$rc" -eq 0 ] || note "merged predecessor: exit $rc, want 0"
+[ "$(on)" = "step/mytask-3" ] || note "merged predecessor: on '$(on)', want step/mytask-3"
+printf '%s\n' "$out" | grep -q 'cut from main' \
+  || note "merged predecessor: should come off the base branch, got '$out'"
+
 # Usage and missing input.
 run .tasks/nope.md 1; [ "$rc" -eq 66 ] || note "missing task file: exit $rc, want 66"
 run .tasks/mytask.md x; [ "$rc" -eq 64 ] || note "bad step number: exit $rc, want 64"
