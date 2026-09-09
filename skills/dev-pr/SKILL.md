@@ -14,7 +14,7 @@ Everything you need is injected below by `pr-info.sh`: the base, the existing pu
 - `uncommitted:` above 0 — list them and stop. **Never commit on the developer's behalf.**
 - `commits: 0` — nothing to propose.
 - `tested:` is `none`, `stale`, or shows `TEST FAIL`/`TEST MISSING`/`TEST TIMEOUT` — the body would have to claim a check nobody ran. Say what `tested:` says and stop; `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/test.sh` first, or `/dev-verify`.
-- `gh:` not logged in or not installed — write the title and body (step 3) to `.devskills/pr-body.md`, print them with the compare URL `https://github.com/<owner>/<repo>/compare/<base>...<branch>?expand=1`, say nothing was created, stop.
+- `gh:` not logged in or not installed, or `forge:` is not `github` — gh cannot open a change anywhere else. Write the title and body (step 3) to `.devskills/pr-body.md`, print them with the `compare-url:` line below, say nothing was created, stop.
 - `pr:` shows `state` `MERGED` or `CLOSED` — say so and stop; do not push more onto it.
 
 ## Step 2 — Does the diff match the step?
