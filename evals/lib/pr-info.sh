@@ -120,6 +120,52 @@ printf '%s\n' "$out" | grep -q '^--- step$' || note 'step 2: the step block is n
 printf '%s\n' "$out" | grep -q '^2\. \[ \] Two$' || note 'step 2: the step line is missing after --- step'
 printf '%s\n' "$out" | grep -q 'it works' || note 'step 2: the criteria are missing after --- step'
 
+# Once the predecessor is merged it is not a base any more. A branch that has
+# landed still exists on origin, so "does it exist" cannot tell the two apart —
+# and stacking on a merged branch opens the pull request against a base nobody
+# will merge again, which is how work goes missing.
+g switch -q main
+g merge -q --no-ff step/x-1 -m 'merge step 1'
+g push -q origin main
+g switch -q step/x-2
+run
+want base 'main' 'predecessor already merged'
+want base-kind 'base' 'predecessor already merged'
+want base-pr 'none' 'predecessor already merged'
+
+# ...but a predecessor whose ancestry cannot be tested stays a base. `ls-remote`
+# answers for the remote, so a branch can be known to exist while this clone has
+# no ref for it -- neither the branch nor a remote-tracking copy -- and there is
+# then nothing to ask `merge-base` about. The conservative answer is the one that
+# was there before the ancestry check: treat it as unmerged and stack on it.
+#
+# This case pins that choice, and with it the cost it accepts: a predecessor that
+# has in fact already landed will still be chosen on a clone that has never
+# fetched it. Changing the fallback should break this case and be a decision, not
+# a side effect.
+clone2="$work/clone2"
+git clone -q "$work/origin.git" "$clone2"
+git -C "$clone2" -c user.email=t@e -c user.name=t switch -qc step/y-1 >/dev/null 2>&1
+printf 'y1\n' > "$clone2/y.txt"
+git -C "$clone2" -c user.email=t@e -c user.name=t add -A
+git -C "$clone2" -c user.email=t@e -c user.name=t commit -qm 'step y1'
+git -C "$clone2" push -q origin step/y-1
+
+g switch -q main
+g switch -qc step/y-2
+printf 'y2\n' > "$repo/y2.txt"; g add -A; g commit -qm 'step y2'
+# The premise: origin has it, this clone has no ref for it either way.
+git -C "$repo" ls-remote --exit-code --heads origin step/y-1 >/dev/null 2>&1 \
+  || note 'untestable predecessor: the fixture failed to put step/y-1 on origin'
+g show-ref --verify --quiet refs/heads/step/y-1 \
+  && note 'untestable predecessor: the fixture has a local step/y-1, so nothing is untestable'
+g show-ref --verify --quiet refs/remotes/origin/step/y-1 \
+  && note 'untestable predecessor: the fixture has a tracking ref, so ancestry is testable'
+run
+want base 'step/y-1' 'predecessor exists on origin but cannot be resolved here'
+want base-kind 'step' 'predecessor exists on origin but cannot be resolved here'
+g switch -q step/x-2
+
 # The task file may be given explicitly; a missing previous branch falls back to main.
 run .tasks/x.md
 want task-file '.tasks/x.md' 'explicit task file'
