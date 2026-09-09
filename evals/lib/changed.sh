@@ -196,6 +196,10 @@ if [ "$(id -u)" != 0 ]; then
   grep -qi 'scratch' "$work/err" \
     || note "unwritable TMPDIR: the error should name the scratch file, got '$(head -1 "$work/err")'"
   chmod 700 "$ro"
+else
+  # Named, not silent: this is the only case here that tells the fix from the
+  # code it replaced, so a run that skips it has proved nothing about TMPDIR.
+  printf 'changed: running as root, the unwritable TMPDIR case was skipped\n' >&2
 fi
 
 if [ "$fails" -eq 0 ]; then
