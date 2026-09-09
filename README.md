@@ -242,8 +242,8 @@ profile records `test: null`.
 **What you lose without CI is one thing: the clean-checkout check.** A local run can pass
 because of an uncommitted file, a stale install, or a tool that exists on your machine and
 nowhere else — one of this repository's own suites passed on macOS and failed on Ubuntu for
-exactly that reason. `lib/verify-clean.sh` is the substitute: it clones HEAD, installs, and runs
-the suite there. **When `verification` is `local-only`, a container matters more than usual** —
+exactly that reason. `lib/verify-clean.sh` is the substitute — **The Clean-Clone Check** below
+says how it works. **When `verification` is `local-only`, a container matters more than usual** —
 it is the only clean environment you have.
 
 `/dev-pr` follows the remote rather than assuming GitHub. `pr-info.sh` reports `host:`, `forge:`
