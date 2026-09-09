@@ -138,8 +138,19 @@ rank_of() {
 # Rank 9 is vendored and build output — never part of the change — so a handful
 # is listed and a pile is counted. Everything else is capped last-first, because
 # the queue is ordered by risk and the tail is what matters least.
-CAP="${DEV_SKILLS_QUEUE_CAP:-200}"
-case "$CAP" in ''|*[!0-9]*) CAP=200 ;; esac
+# The cap follows the context window, as diff.sh's does -- but at its own rate.
+# A queue entry is one short line where a diff line is a line of source, so
+# diff.sh's 6 per 1k would treble this queue rather than scale it. 2 per 1k keeps
+# the 200 this script has always used at the 100k fallback, and gives 262 at
+# 128k, 131 at 64k, 65 at 32k. DEV_SKILLS_QUEUE_CAP still wins over both.
+CAP="${DEV_SKILLS_QUEUE_CAP:-}"
+if [ -z "$CAP" ]; then
+  CTX="${DEV_SKILLS_CONTEXT:-}"
+  [ -z "$CTX" ] && CTX="$(sed -n 's/.*"contextTokens"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' .devskills/profile.json 2>/dev/null | head -1)"
+  case "$CTX" in ''|*[!0-9]*) CTX=100000 ;; esac
+  CAP=$(( CTX * 2 / 1000 ))
+fi
+case "$CAP" in ''|*[!0-9]*|0) CAP=200 ;; esac
 
 while IFS=$'\t' read -r status file; do
   [ -z "$file" ] && continue

@@ -57,6 +57,42 @@ printf '%s\n' "$out" | grep -q '^\[TRUNCATED: showed 20 of [0-9]* diff lines\. [
 total="$(printf '%s\n' "$out" | sed -n 's/^\[TRUNCATED: showed 20 of \([0-9]*\) diff lines.*/\1/p')"
 [ -n "$total" ] && [ "$total" -gt 100 ] || note "over the cap: total '$total' should exceed the 100 added lines"
 
+# The cap follows the context window, the way step-budget.sh's does. A block of
+# 600 diff lines is roughly 24,000 bytes -- five times the prompt it is injected
+# into -- so a 32k session handed the same block as a 128k one spends a sixth of
+# its window on it. Six lines per 1k of context: half the step budget, so the
+# diff costs about what the step it reviews costs.
+seq 1 800 > "$work/huge.txt"; g add huge.txt; g commit -qm huge
+
+cap_of() { # cap_of <the "showed N of M" number>
+  printf '%s\n' "$1" | sed -n 's/^\[TRUNCATED: showed \([0-9]*\) of .*/\1/p'
+}
+want_cap() { # want_cap <env context> <expected cap> <label>
+  o="$(cd "$work" && DEV_SKILLS_CONTEXT="$1" bash "$diffsh" main)"
+  [ "$(cap_of "$o")" = "$2" ] || note "$3: cap $(cap_of "$o"), want $2"
+}
+want_cap 131072 786 '128k'
+want_cap 65536  393 '64k'
+want_cap 32768  196 '32k'
+
+# Nothing declares a window: the 100k fallback keeps the 600 this script always
+# had, so a repository with no profile sees no change at all.
+o="$(cd "$work" && bash "$diffsh" main)"
+[ "$(cap_of "$o")" = 600 ] || note "no window declared: cap $(cap_of "$o"), want the unchanged 600"
+
+# The profile supplies it when the environment does not.
+mkdir -p "$work/.devskills"
+printf '{ "contextTokens": 32768 }\n' > "$work/.devskills/profile.json"
+o="$(cd "$work" && bash "$diffsh" main)"
+[ "$(cap_of "$o")" = 196 ] || note "from the profile: cap $(cap_of "$o"), want 196"
+# ...and the environment still wins over it.
+o="$(cd "$work" && DEV_SKILLS_CONTEXT=131072 bash "$diffsh" main)"
+[ "$(cap_of "$o")" = 786 ] || note "environment over profile: cap $(cap_of "$o"), want 786"
+# ...and an explicit argument wins over both.
+o="$(cd "$work" && DEV_SKILLS_CONTEXT=131072 bash "$diffsh" main 20)"
+[ "$(cap_of "$o")" = 20 ] || note "explicit argument: cap $(cap_of "$o"), want 20"
+rm -rf "$work/.devskills"
+
 # A base that does not exist is an error, not an empty diff.
 ( cd "$work" && bash "$diffsh" nope >/dev/null 2>&1 ); rc=$?
 [ "$rc" -eq 1 ] || note "a missing base exited $rc, want 1"
