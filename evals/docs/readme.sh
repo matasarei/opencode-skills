@@ -48,6 +48,7 @@ for token in \
   'Cargo.toml' \
   'What each window buys' \
   'limit.context' \
+  'verify-clean.sh' \
   '4,500 bytes'
 do
   grep -qF -- "$token" "$readme" || note "README never mentions $token"
