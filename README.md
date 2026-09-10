@@ -223,8 +223,9 @@ A stack not in this table still gets a real `test` command whenever its CI names
 Not every project has CI, and several cannot: a repository on a private GitLab, a self-hosted
 forge, or no remote at all. **Seven of the nine skills never need a remote** — `/dev-init`,
 `/dev-plan`, `/dev-plan-manual`, `/dev-implement`, `/dev-review`, `/dev-fix` and `/dev-verify`
-work in a repository that has never had one. Three of them reach the network only when you point them at it:
-`/dev-plan` and `/dev-fix` read an issue you name, `/dev-verify` checks a URL you pass. The
+work in a repository that has never had one. Four of them reach the network only when you point
+them at it: `/dev-plan`, `/dev-plan-manual` and `/dev-fix` read an issue you name, `/dev-verify`
+checks a URL you pass. The
 guarantee was always local: `lib/test.sh` before the commit, `lib/lint.sh` over the changed
 files, `lib/findings-check.sh` deleting findings whose evidence is not in the code. CI is a
 second opinion, not the first one.
