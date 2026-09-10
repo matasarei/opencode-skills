@@ -85,7 +85,10 @@ fi
 
 echo
 echo "Done. Type '/skills' in OpenCode to see and select installed skills:"
-echo "  /dev-init /dev-plan /dev-implement /dev-review /dev-fix /dev-pr /dev-pr-review /dev-verify"
+# In cycle order, not glob order: the hint teaches the sequence, which is worth
+# more than a list that sorts itself. evals/skills/install-hint.sh fails when a
+# skill is missing from it, so the order stays hand-written and the set cannot.
+echo "  /dev-init /dev-plan /dev-plan-manual /dev-implement /dev-review /dev-fix /dev-pr /dev-pr-review /dev-verify"
 echo
 echo "The guard is at $TARGET/plugins/dev-guard.js. It refuses, before they run:"
 echo "  git push --force, git commit --amend, --no-verify, a push to the base branch,"
