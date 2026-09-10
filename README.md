@@ -127,6 +127,7 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
 |---|---|---|
 | `/dev-init` | Detects project stack and writes repo conventions to `AGENTS.md` | Yes (`AGENTS.md`) |
 | `/dev-plan <request>` | Investigates code, sizes steps against budget, writes `.tasks/*.md` | No |
+| `/dev-plan-manual <request>` | Plans work **you** write by hand, one walkthrough at a time as you reach it | No |
 | `/dev-implement <task>` | Builds one discrete step from the task file, ticks it off, and stops | Yes |
 | `/dev-review` | Runs 12 yes/no checks on changed files with mechanical quote verification | No |
 | `/dev-fix [<issue>\|<file>]` | Plans verified bug fixes into `.tasks/`, or applies post-review findings | Yes |
@@ -146,14 +147,19 @@ Local models perform best in agentic loops when **reasoning is turned OFF by def
                                       │                 │                         │
                                       └─────────────────┴── (next: --continue) ───┘
                                                             (pre-step: /compact or /new)
+
+   /dev-plan-manual ──▶ you write the code ──▶ /dev-review ──▶ you fix it by hand
+        ▲                 (you commit it)                          │
+        └──────────────── (next: --continue) ──────────────────────┘
 ```
 
 1. **Initialize (once per repo)**: `/dev-init` inspects the project, writes build/test/lint commands and stack conventions to `AGENTS.md`.
 2. **Plan**: `/dev-plan` resolves input via `plan-input.sh`, validates referenced paths with `plan-check.sh`, and sizes each step using `step-budget.sh` against `contextTokens`, read from your `opencode.jsonc` and overridable with `DEV_SKILLS_CONTEXT`. Shared parsing is handled by `steps.awk`. For targeted bug fixes, `/dev-fix <issue>` investigates root cause and produces a verified plan in `.tasks/fix-<slug>.md`.
-3. **Build**: `/dev-implement` injects exactly one step via `task-step.sh` onto a stacked branch named `step/<slug>-<n>`.
-4. **Review**: `/dev-review` runs 12 mechanical checks against changed files. If clean, proceed directly to `/dev-pr`. If unfixed blockers or warnings survive, hand off to `/dev-fix` to apply verified findings with one commit per finding.
-5. **Push & PR**: `/dev-pr` pushes the branch and opens the PR (annotated with `Depends on #` for stacked dependencies).
-6. **Next Step**: Continue to the next step with `/dev-implement <task-file> --continue`. Choose a context management pre-step based on your session: run `/compact` (or stay in the session) to keep conversational context while pruning raw tool outputs, or run `/new` for a fresh session when context has ballooned (>60k–80k tokens) or when starting fresh. Inter-step repository discoveries persist in `.devskills/learned.md`.
+3. **Or plan it for yourself**: `/dev-plan-manual` writes the same task file marked `**Mode:** manual`, then one step's walkthrough at a time as you reach it — anchors, the pattern in this repository to copy the shape of, and why, but never a body you could paste. It is for a repository that does not accept generated code, and for learning a codebase by changing it. `/dev-implement` refuses a plan carrying that marker, `/dev-review` reads hand-written code unchanged and hands its findings back to you rather than to `/dev-fix`, and `branch.sh` refuses the next step until you have committed the last one yourself.
+4. **Build**: `/dev-implement` injects exactly one step via `task-step.sh` onto a stacked branch named `step/<slug>-<n>`.
+5. **Review**: `/dev-review` runs 12 mechanical checks against changed files. If clean, proceed directly to `/dev-pr`. If unfixed blockers or warnings survive, hand off to `/dev-fix` to apply verified findings with one commit per finding.
+6. **Push & PR**: `/dev-pr` pushes the branch and opens the PR (annotated with `Depends on #` for stacked dependencies).
+7. **Next Step**: Continue to the next step with `/dev-implement <task-file> --continue`. Choose a context management pre-step based on your session: run `/compact` (or stay in the session) to keep conversational context while pruning raw tool outputs, or run `/new` for a fresh session when context has ballooned (>60k–80k tokens) or when starting fresh. Inter-step repository discoveries persist in `.devskills/learned.md`.
 
 ---
 
@@ -215,9 +221,9 @@ A stack not in this table still gets a real `test` command whenever its CI names
 ## Without CI, or without GitHub
 
 Not every project has CI, and several cannot: a repository on a private GitLab, a self-hosted
-forge, or no remote at all. **Six of the eight skills never need a remote** — `/dev-init`,
-`/dev-plan`, `/dev-implement`, `/dev-review`, `/dev-fix` and `/dev-verify` work in a repository
-that has never had one. Three of them reach the network only when you point them at it:
+forge, or no remote at all. **Seven of the nine skills never need a remote** — `/dev-init`,
+`/dev-plan`, `/dev-plan-manual`, `/dev-implement`, `/dev-review`, `/dev-fix` and `/dev-verify`
+work in a repository that has never had one. Three of them reach the network only when you point them at it:
 `/dev-plan` and `/dev-fix` read an issue you name, `/dev-verify` checks a URL you pass. The
 guarantee was always local: `lib/test.sh` before the commit, `lib/lint.sh` over the changed
 files, `lib/findings-check.sh` deleting findings whose evidence is not in the code. CI is a
