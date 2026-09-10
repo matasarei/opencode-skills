@@ -9,7 +9,7 @@ description: Plan work you write by hand — PR-sized steps, then one walkthroug
 
 ## Which mode — the blocks below decide
 
-- brief says `EMPTY` → ask what to plan, and stop.
+- brief says `EMPTY` → ask what to plan, stop.
 - the step block prints `**Mode:** manual` → **B, coach** it.
 - anything else (`TEXT`, `FILE`, `ISSUE`, `no such file`) → **A, plan**.
 
@@ -56,15 +56,15 @@ Never `Create:`, `Modify:` or `Test:` in a walkthrough — `steps.awk` reads tho
 3. Print it. Then: run the profile's test and lint, **commit this step yourself**, and tick it —
    `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/tick.sh <task-file> <n> "<what landed>"`.
    Run it for them only when they say it is done.
-4. Log it: one line in `## Session log` (keep 10), every question asked in `## Q&A` as `- Q: … — A: … [answered|assumed] (<date>)` — what a new session reads after `/compact`.
+4. Log it: one line in `## Session log` (keep 10), each new question in `## Q&A` as `- Q: … — A: … [answered|assumed] (<date>)` — what a new session reads after `/compact`.
 
-`Next: /dev-review` — fix what it finds **by hand**, commit, then `/dev-plan-manual <task-file> --continue`.
+`Next: /dev-review` — fix what it finds **by hand**, commit, then `/dev-plan-manual <file> --continue`.
 
 ## Rules
 
-- Never write, edit or generate code, never commit. The task file is all it writes.
-- One step, one commit — yours. `branch.sh` refuses the next until you have made it.
-- `/dev-implement` refuses a plan marked `**Mode:** manual`; that marker is the whole point.
+- Never write, edit or generate code, never commit. The task file and the step branch are all it touches.
+- One step, one commit — yours. `branch.sh` refuses the next until you make it.
+- `/dev-implement` refuses a plan marked `**Mode:** manual` — that marker is the point.
 - Absolute paths. English or Ukrainian.
 
 ---
