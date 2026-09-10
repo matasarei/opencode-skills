@@ -33,6 +33,21 @@ has dev-implement 'learned.md'        'the next run inherits what this one found
 has dev-implement 'tail -20'          'the learned notes are capped'
 has dev-implement 'step-budget.sh'    'an OVER step is said, not refused'
 grep -q -- '--all' "$skills/dev-implement/SKILL.md" && note 'dev-implement: --all is back, and it contradicts one step per run'
+# dev-plan-manual: the plan nobody but the developer implements. Its two modes
+# are decided by the injected blocks, not by the model, and its whole reason to
+# exist is that it never writes the code — so both are asserted here.
+has dev-plan-manual 'plan-input.sh $ARGUMENTS' 'the brief arrives resolved, not guessed at'
+has dev-plan-manual 'task-step.sh $ARGUMENTS'  'coach mode needs the step injected, like /dev-implement'
+has dev-plan-manual '**Mode:** manual'   'the marker is what tells the two modes apart'
+has dev-plan-manual 'branch.sh'          'the step gets its own branch before a line is typed'
+has dev-plan-manual 'tick.sh'            'a finished step is ticked by script, not by hand'
+has dev-plan-manual '/dev-review'        'hand-written code is reviewed like any other'
+has dev-plan-manual 'No production code' 'the one absolute this skill exists to keep'
+has dev-plan-manual 'commit this step yourself' 'the developer is warned to commit every step'
+has dev-plan-manual 'plan-check.sh'      'a manual plan is path-checked like any other'
+flat dev-plan-manual | grep -q '/dev-implement' \
+  || note 'dev-plan-manual: never says /dev-implement refuses a manual plan'
+
 has dev-review    'Ready to push'    'the first line of the report is the verdict'
 has dev-review    '/dev-fix'          'what survived the filter goes to dev-fix'
 has dev-review    '.devskills/reports/' 'a report lands in the ignored directory, not at the root'
