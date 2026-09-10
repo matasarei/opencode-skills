@@ -133,6 +133,23 @@ printf '# Loose\n\n1. [ ] first\n   - Modify: `a/b.php`\n2. [ ] second\n' > "$wo
 run loose.md --count
 [ "$out" = '0 of 2 done' ] || note "no Steps heading: got '$out'"
 
+# A manual plan carries "**Mode:** manual" and /dev-implement has to see it —
+# a step handed over without the marker is one it will build for the developer
+# who asked to write it themselves. The marker travels beside the Type line.
+sed 's/^\*\*Type:\*\* feature/**Type:** feature\n**Mode:** manual/' "$work/plan.md" > "$work/manual.md"
+run manual.md --next
+[ "$rc" -eq 0 ] || note "manual: exit $rc, want 0"
+printf '%s\n' "$out" | grep -q '^\*\*Mode:\*\* manual$' || note 'manual: the Mode line did not travel with the step'
+printf '%s\n' "$out" | grep -q '^\*\*Type:\*\* feature$' || note 'manual: the Type line went missing beside it'
+printf '%s\n' "$out" | grep -q '^## Step 2 of 3 (1 done)$' || note 'manual: the step header is wrong'
+
+# And a plan without one is untouched: no blank line, no stray label, nothing
+# for a model to read as a mode it does not have.
+run plan.md --next
+printf '%s\n' "$out" | grep -q 'Mode:' && note 'no marker: a Mode line appeared anyway'
+[ "$(printf '%s\n' "$out" | sed -n '2p')" = '**Type:** feature' ] || note 'no marker: the Type line moved'
+[ "$(printf '%s\n' "$out" | sed -n '3p')" = '' ] || note 'no marker: the blank line after Type is gone'
+
 if [ "$fails" -eq 0 ]; then
   printf 'task-step: one step at a time, only real steps, with what the builder needs\n'
 else
