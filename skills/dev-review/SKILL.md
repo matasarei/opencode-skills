@@ -1,6 +1,6 @@
 ---
 name: dev-review
-description: Review your own changes before /dev-pr — twelve yes/no checks per file, worst-risk first, every finding a quoted line verified by a script. Never edits, commits or pushes.
+description: Review your own changes before /dev-pr — twelve yes/no checks per file, worst-risk first, every finding verified by a script. Never edits, commits or pushes.
 ---
 
 # Review your own work
@@ -9,7 +9,7 @@ Never edit the code under review, never commit, push or post. What this *does* w
 
 ## How to run this
 
-**First, empty `.devskills/findings.md`** (`: > .devskills/findings.md`) — it is appended to; a leftover would be reported as this run's.
+**First, empty `.devskills/findings.md`** (`: > .devskills/findings.md`) — it is appended to; a leftover reads as this run's.
 
 Then work the queue at the bottom **one file per step** — do not batch, do not skim ahead. For each, in queue order: read it; answer the checks below yes or no, about that file only; every YES appends one line to `.devskills/findings.md`.
 
@@ -60,7 +60,7 @@ SEVERITY | path:line | one sentence on what breaks | EVIDENCE: <the exact line f
 2. Verify: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/findings-check.sh .devskills/findings.md`
 3. **Report only what step 2 printed.**
 
-Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N warnings` — then the surviving findings, blockers first, the files judged from the diff alone, and whether lint ran. A report file only on a blocker or when asked: `.devskills/reports/review-<branch-slug>-<UTC>.md`, path printed. Then: `Next: /dev-fix .devskills/findings.md` when anything survived; `Next: /dev-pr` when nothing did. **Manual plan below** → hand-written code: end at `.devskills/findings.md`, theirs to fix by hand; `/dev-fix` named once as theirs to run.
+Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N warnings` — then the findings, blockers first, the files judged from the diff alone, and whether lint ran. A report file only on a blocker or when asked: `.devskills/reports/review-<branch-slug>-<UTC>.md`, path printed. Then: `Next: /dev-fix .devskills/findings.md` when anything survived; `Next: /dev-pr` when nothing did. **Manual plan below, not `(none)`** → hand-written code: the findings are theirs to fix by hand; `/dev-fix` named once as theirs to run.
 
 ## Rules
 
@@ -77,7 +77,7 @@ Profile:
 
 Manual plan:
 
-!`grep -l '^\*\*Mode:\*\* manual' .tasks/*.md 2>/dev/null | head -1`
+!`grep -l '^\*\*Mode:\*\* manual' .tasks/*.md 2>/dev/null | head -1 | grep . || echo "(none)"`
 
 Queue — rank 1 is highest risk, top-down:
 
