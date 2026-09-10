@@ -33,6 +33,10 @@ has dev-implement 'learned.md'        'the next run inherits what this one found
 has dev-implement 'tail -20'          'the learned notes are capped'
 has dev-implement 'step-budget.sh'    'an OVER step is said, not refused'
 grep -q -- '--all' "$skills/dev-implement/SKILL.md" && note 'dev-implement: --all is back, and it contradicts one step per run'
+# A plan marked manual is one the developer asked to write themselves. Building
+# it for them is the one failure this whole feature exists to prevent.
+has dev-implement '**Mode:** manual'    'a manual plan must be refused, not built'
+has dev-implement '/dev-plan-manual'    'and the refusal has to name where that plan is continued'
 # dev-plan-manual: the plan nobody but the developer implements. Its two modes
 # are decided by the injected blocks, not by the model, and its whole reason to
 # exist is that it never writes the code — so both are asserted here.

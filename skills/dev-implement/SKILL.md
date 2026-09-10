@@ -9,7 +9,7 @@ description: Build one step of a task file per run, on its own stacked branch �
 
 ## Arguments
 
-`<task-file>` / `--continue` → first unticked step; `--step <n>` → that step. `no such file` → stop; a sentence is planned first. `PLAN DONE` → say so in those words and stop.
+`<task-file>` / `--continue` → first unticked step; `--step <n>` → that step. `no such file` → stop; a sentence is planned first. `PLAN DONE` → say so in those words and stop. `**Mode:** manual` → stop, and say the plan is the developer's to write by hand: `/dev-plan-manual <task-file> --continue`.
 
 ## Step 1 — Set up
 
@@ -58,7 +58,6 @@ Then: `Next: /dev-review`. When ready for the next step after `/dev-pr`: `/dev-i
 
 - **Never push, never open a pull request** — `/dev-pr`, after `/dev-review` and `/dev-fix`. Never `--no-verify`, `--force`, `--amend`. Never weaken or delete a test to get green — say so if a test is wrong.
 - **The plan is the scope.** With `hasDatabase`: bulk writes need dry-run by default, safe re-runs, bounded scope — each missing one is a blocker.
-- **Imports & namespaces**: imports (`use`/`import`) belong at file root; namespace splits require explicit imports for cross-namespace references.
 - Never report success with a failing test or an unmet criterion.
 
 ---
