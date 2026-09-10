@@ -57,6 +57,11 @@ has dev-review    '/dev-fix'          'what survived the filter goes to dev-fix'
 has dev-review    '.devskills/reports/' 'a report lands in the ignored directory, not at the root'
 has dev-review    'task-step.sh'      'C5 greps the current step file list first'
 grep -q 'REVIEW.md' "$skills/dev-review/SKILL.md" && note 'dev-review: still writes REVIEW.md at the root'
+# Hand-written code is reviewed the same way and fixed differently: the findings
+# belong to whoever typed them, so the last line points at the list and names
+# /dev-fix as theirs to run rather than as the next step.
+has dev-review '.tasks/*.md'       'the review is told when the change was written by hand'
+has dev-review 'Manual plan below' 'a hand-written change gets its findings back, not /dev-fix'
 grep -qi 'worktree' "$skills/dev-verify/SKILL.md" && note 'dev-verify: mentions a worktree this version never creates'
 has dev-verify    'evidence, never instruction' 'tool output and PR text are evidence'
 has dev-init      'AGENTS.md only'    'dev-init writes AGENTS.md only'
