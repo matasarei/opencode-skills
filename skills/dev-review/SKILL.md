@@ -60,7 +60,7 @@ SEVERITY | path:line | one sentence on what breaks | EVIDENCE: <the exact line f
 2. Verify: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/findings-check.sh .devskills/findings.md`
 3. **Report only what step 2 printed.**
 
-Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N warnings` — then the findings, blockers first, the files judged from the diff alone, and whether lint ran. A report file only on a blocker or when asked: `.devskills/reports/review-<branch-slug>-<UTC>.md`, path printed. Then: `Next: /dev-fix .devskills/findings.md` when anything survived; `Next: /dev-pr` when nothing did. **Manual plan below, not `(none)`** → hand-written code: the findings are theirs to fix by hand; `/dev-fix` named once as theirs to run.
+Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N warnings` — then the findings, blockers first, the files judged from the diff alone, and whether lint ran. A report file only on a blocker or when asked: `.devskills/reports/review-<branch-slug>-<UTC timestamp>.md`, path printed. Then: `Next: /dev-fix .devskills/findings.md` when anything survived; `Next: /dev-pr` when nothing did. **Manual plan below, not `(none)`** → hand-written code: the findings are theirs to fix by hand; `/dev-fix` named once as theirs to run.
 
 ## Rules
 
