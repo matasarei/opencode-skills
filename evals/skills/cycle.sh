@@ -49,7 +49,7 @@ has dev-plan-manual '/dev-review'        'hand-written code is reviewed like any
 has dev-plan-manual 'No production code' 'the one absolute this skill exists to keep'
 has dev-plan-manual 'commit this step yourself' 'the developer is warned to commit every step'
 has dev-plan-manual 'plan-check.sh'      'a manual plan is path-checked like any other'
-has dev-plan-manual 'into `## Q&A`'     'the answers a session gives must outlive it'
+has dev-plan-manual 'into ## Q&A'       'the answers a session gives must outlive it'
 flat dev-plan-manual | grep -q '/dev-implement' \
   || note 'dev-plan-manual: never says /dev-implement refuses a manual plan'
 
