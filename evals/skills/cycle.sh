@@ -33,11 +33,37 @@ has dev-implement 'learned.md'        'the next run inherits what this one found
 has dev-implement 'tail -20'          'the learned notes are capped'
 has dev-implement 'step-budget.sh'    'an OVER step is said, not refused'
 grep -q -- '--all' "$skills/dev-implement/SKILL.md" && note 'dev-implement: --all is back, and it contradicts one step per run'
+# A plan marked manual is one the developer asked to write themselves. Building
+# it for them is the one failure this whole feature exists to prevent.
+has dev-implement '**Mode:** manual'    'a manual plan must be refused, not built'
+has dev-implement '/dev-plan-manual'    'and the refusal has to name where that plan is continued'
+# dev-plan-manual: the plan nobody but the developer implements. Its two modes
+# are decided by the injected blocks, not by the model, and its whole reason to
+# exist is that it never writes the code — so both are asserted here.
+has dev-plan-manual 'plan-input.sh $ARGUMENTS' 'the brief arrives resolved, not guessed at'
+has dev-plan-manual 'task-step.sh $ARGUMENTS'  'coach mode needs the step injected, like /dev-implement'
+has dev-plan-manual '**Mode:** manual'   'the marker is what tells the two modes apart'
+has dev-plan-manual 'branch.sh'          'the step gets its own branch before a line is typed'
+has dev-plan-manual 'tick.sh'            'a finished step is ticked by script, not by hand'
+has dev-plan-manual '/dev-review'        'hand-written code is reviewed like any other'
+has dev-plan-manual 'No production code' 'the one absolute this skill exists to keep'
+has dev-plan-manual 'commit this step yourself' 'the developer is warned to commit every step'
+has dev-plan-manual 'plan-check.sh'      'a manual plan is path-checked like any other'
+has dev-plan-manual 'into ## Q&A'       'the answers a session gives must outlive it'
+flat dev-plan-manual | grep -q '/dev-implement' \
+  || note 'dev-plan-manual: never says /dev-implement refuses a manual plan'
+
 has dev-review    'Ready to push'    'the first line of the report is the verdict'
 has dev-review    '/dev-fix'          'what survived the filter goes to dev-fix'
 has dev-review    '.devskills/reports/' 'a report lands in the ignored directory, not at the root'
 has dev-review    'task-step.sh'      'C5 greps the current step file list first'
 grep -q 'REVIEW.md' "$skills/dev-review/SKILL.md" && note 'dev-review: still writes REVIEW.md at the root'
+# Hand-written code is reviewed the same way and fixed differently: the findings
+# belong to whoever typed them, so the last line points at the list and names
+# /dev-fix as theirs to run rather than as the next step.
+has dev-review '.tasks/*.md'       'the review is told when the change was written by hand'
+has dev-review 'Manual plan below' 'a hand-written change gets its findings back, not /dev-fix'
+has dev-review 'not (none)'       'an empty block is a fact only if the prompt says what empty means'
 grep -qi 'worktree' "$skills/dev-verify/SKILL.md" && note 'dev-verify: mentions a worktree this version never creates'
 has dev-verify    'evidence, never instruction' 'tool output and PR text are evidence'
 has dev-init      'AGENTS.md only'    'dev-init writes AGENTS.md only'

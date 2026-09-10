@@ -101,6 +101,42 @@ plan="$work/bare.md"
 same "$(steps list 2>/dev/null | wc -l | tr -d ' ')" "0" 'no ## Steps: nothing without anywhere=1'
 same "$(steps list '' '' 1 | head -1)" "1| |a step all the same" 'no ## Steps: anywhere=1 scans the file'
 
+# A manual plan (/dev-plan-manual) appends a walkthrough inside the step block,
+# so prose now sits where only labelled lines used to. It must not become paths:
+# the labels avoid Create:/Modify:/Test: on purpose, and the "Commit:" line ends
+# the last path list before the prose starts. If this breaks, plan-check.sh
+# invents files that were only ever mentioned in an explanation.
+cat > "$work/manual.md" <<'MANUAL'
+# A manual task
+
+**Mode:** manual
+
+## Steps
+
+1. [ ] Add the truncate option
+   - Create: lib/truncate.sh
+   - Modify: lib/slugify.sh:40-52 (slugify)
+   - Test: evals/lib/truncate.sh
+   - Check: `bash evals/lib/truncate.sh`
+   - Commit: yours — commit this step before starting the next
+
+   What: cut the slug at a word boundary, never mid-word.
+   Where: lib/slugify.sh:40-52 (slugify)
+   Pattern: lib/branch.sh:36-40 to copy the shape of, and what differs
+   Why: a slug cut mid-word reads as a different word.
+   Watch out: tests/fixtures/long.txt has no spaces at all.
+   Done when: `bash evals/lib/truncate.sh` prints no FAIL line.
+   Learn: why the boundary is found before the cut, not after.
+MANUAL
+plan="$work/manual.md"
+same "$(steps paths 1 | wc -l | tr -d ' ')" "3" 'walkthrough: only the labelled lines are paths'
+steps paths 1 | grep -q 'lib/branch.sh' && note 'walkthrough: a Pattern: anchor was read as a path'
+steps paths 1 | grep -q 'tests/fixtures/long.txt' && note 'walkthrough: a Watch out: file was read as a path'
+steps paths 1 | grep -q 'evals/lib/truncate.sh' || note 'walkthrough: the real Test: path went missing'
+same "$(steps paths 1 Modify)" "Modify|lib/slugify.sh|slugify" 'walkthrough: the Modify: line still parses'
+# And the block still ends where the step does, prose and all.
+steps block 1 | grep -q 'Learn: why the boundary' || note 'walkthrough: the prose did not travel with the step'
+
 if [ "$fails" -eq 0 ]; then
   printf 'steps: a step is a step only under ## Steps, and a path is only a path\n'
 else

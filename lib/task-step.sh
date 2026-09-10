@@ -67,6 +67,11 @@ esac
 
 grep -m1 '^# ' "$FILE"
 grep -m1 '^\*\*Type:\*\*' "$FILE"
+# "**Mode:** manual" marks a plan the developer implements by hand, and it has
+# to reach whoever is handed the step: /dev-implement refuses such a plan rather
+# than building it for them. Printed only when the file has one, so an ordinary
+# plan's output is unchanged.
+grep -m1 '^\*\*Mode:\*\*' "$FILE" || :
 echo
 section 'Acceptance criteria'
 echo

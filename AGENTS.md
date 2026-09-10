@@ -52,5 +52,6 @@ When developing, updating, or debugging skills in this repository:
 
 - **Skills picker**: In OpenCode, skills load via the `/skills` picker (not the root slash autocomplete).
 - **Step cycle:** `/dev-init` → `/dev-plan` → `/dev-implement` → `/dev-review` → `/dev-pr`. Each step runs on a stacked branch (`step/<slug>-<n>`).
+- **Manual cycle:** `/dev-plan-manual` → you write the code and commit it → `/dev-review` → you fix it by hand. The plan carries `**Mode:** manual`; `/dev-implement` refuses one.
 - **Learned facts** persist across sessions in `.devskills/learned.md`.
 - **Model config:** `opencode.jsonc` sets reasoning OFF by default (`reasoning_effort: none`) to avoid local model latency in agent loops. Toggle via `/variant on`.

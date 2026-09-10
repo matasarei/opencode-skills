@@ -1,23 +1,23 @@
 ---
 name: dev-review
-description: Review your own changes before /dev-pr — twelve yes/no checks per file, worst-risk first, every finding a quoted line verified by a script. Never touches the code, commits or pushes.
+description: Review your own changes before /dev-pr — twelve yes/no checks per file, worst-risk first, every finding verified by a script. Never edits, commits or pushes.
 ---
 
 # Review your own work
 
-Never edit the code under review, never commit, push or post. What this *does* write is its own workspace — `.devskills/findings.md`, and a report — because a finding a script can re-verify beats one only you have read. You list; `/dev-fix` applies.
+Never edit the code under review, never commit, push or post. What this *does* write is its own workspace: `.devskills/findings.md`, and a report. You list; `/dev-fix` applies.
 
 ## How to run this
 
-**First, empty `.devskills/findings.md`** (`: > .devskills/findings.md`) — it is appended to, and a leftover file would be reported as this run's.
+**First, empty `.devskills/findings.md`** (`: > .devskills/findings.md`) — it is appended to; a leftover reads as this run's.
 
-Then work the queue at the bottom **one file per step**. Do not batch, do not skim ahead. For each file, in queue order: read it; answer the checks below, yes or no, about that file only; for every YES append one line to `.devskills/findings.md`; next file.
+Then work the queue at the bottom **one file per step** — do not batch, do not skim ahead. For each, in queue order: read it; answer the checks below yes or no, about that file only; every YES appends one line to `.devskills/findings.md`.
 
-Read at most the **top 3 files** in full. Judge the rest from the diff, and name them in the report as judged-from-diff.
+Read at most the **top 3 files** in full; judge the rest from the diff, and name them as judged-from-diff.
 
 ## The checks
 
-Answer yes or no. Do not weigh, rank, or reconsider — just answer.
+Answer yes or no. Do not weigh, rank or reconsider — just answer.
 
 - **C1 SECRET** — does the diff add a password, key, token or credential?
 - **C2 SCOPE** — does it write to the database without bounded scope (an explicit id set or range)?
@@ -32,17 +32,17 @@ Answer yes or no. Do not weigh, rank, or reconsider — just answer.
 - **C11 TEST** — does it add logic with no test, or a test whose assertion proves nothing (e.g. status 200 without checking content/state)?
 - **C12 ERROR** — does it add a throw, guard or error return that nothing tests?
 
-**Severity is fixed**: C1–C8 → `BLOCKER`; C9–C12 → `WARNING`. Do not choose it yourself.
+**Severity is fixed**: C1–C8 `BLOCKER`, C9–C12 `WARNING`. Do not choose it yourself.
 
 ## C5 is grep, not judgement
 
-For every renamed or removed symbol, grep the files the current step names first — `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/task-step.sh <task-file> --paths <n>` lists them — then run:
+For every renamed or removed symbol, grep the files the current step names — `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/task-step.sh <task-file> --paths <n>` lists them — then run:
 
 ```
 bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/callers.sh "<oldname>"
 ```
 
-Any surviving caller in code, tests/ or views/ is a BLOCKER. Do not reason about whether it is reachable — report what callers.sh found.
+Any surviving caller in code, tests/ or views/ is a BLOCKER. Do not reason about reachability — report what callers.sh found.
 
 ## The output line
 
@@ -52,7 +52,7 @@ One line per finding in `.devskills/findings.md`, exactly this shape:
 SEVERITY | path:line | one sentence on what breaks | EVIDENCE: <the exact line from the file>
 ```
 
-**EVIDENCE is copied, character for character.** If you cannot copy a line that proves the finding, do not write the finding — an unverifiable one is deleted below. One sentence; no diff dumps.
+**EVIDENCE is copied, character for character.** If you cannot copy a line that proves the finding, do not write it — an unverifiable one is deleted below. One sentence; no diff dumps.
 
 ## Finish
 
@@ -60,11 +60,11 @@ SEVERITY | path:line | one sentence on what breaks | EVIDENCE: <the exact line f
 2. Verify: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/findings-check.sh .devskills/findings.md`
 3. **Report only what step 2 printed.**
 
-Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N warnings` — then the surviving findings, blockers first, the files judged from the diff alone, and whether lint ran. A report file only on a blocker, or when asked: `.devskills/reports/review-<branch-slug>-<UTC timestamp>.md`, path printed. Then: `Next: /dev-fix .devskills/findings.md` when anything survived; `Next: /dev-pr` when nothing did.
+Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N warnings` — then the findings, blockers first, the files judged from the diff alone, and whether lint ran. A report file only on a blocker or when asked: `.devskills/reports/review-<branch-slug>-<UTC timestamp>.md`, path printed. Then: `Next: /dev-fix .devskills/findings.md` when anything survived; `Next: /dev-pr` when nothing did. **Manual plan below, not `(none)`** → hand-written code: the findings are theirs to fix by hand; `/dev-fix` named once as theirs to run.
 
 ## Rules
 
-- Absolute paths. English or Ukrainian; quote code in its original language.
+- Absolute paths. English or Ukrainian; quote code in its own language.
 - No tests in the repository at all → say it once, never per file, never as "tests pass".
 
 ---
@@ -75,7 +75,11 @@ Profile:
 
 !`bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/profile.sh`
 
-Queue — rank 1 is highest risk, read top-down:
+Manual plan:
+
+!`grep -l '^\*\*Mode:\*\* manual' .tasks/*.md 2>/dev/null | head -1 | grep . || echo "(none)"`
+
+Queue — rank 1 is highest risk, top-down:
 
 !`bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/changed.sh`
 

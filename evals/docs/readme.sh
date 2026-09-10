@@ -21,6 +21,8 @@ note() { printf 'FAIL  %s\n' "$1"; fails=$((fails + 1)); }
 for token in \
   '/dev-fix' \
   '/dev-pr' \
+  '/dev-plan-manual' \
+  '**Mode:** manual' \
   'contextTokens' \
   'DEV_SKILLS_CONTEXT' \
   'step-budget.sh' \
@@ -66,6 +68,7 @@ grep -qE '(all|execute all) [0-9]+ (test )?suites' "$readme" && note 'README har
 agents="$root/AGENTS.md"
 [ -f "$agents" ] && grep -qE 'all [0-9]+ suites' "$agents" && note 'AGENTS.md hard-codes a suite count'
 grep -q 'seven `dev-` commands' "$readme" && note 'README still counts seven commands'
+grep -q 'Six of the eight skills' "$readme" && note 'README still counts eight skills; dev-plan-manual makes nine'
 grep -q 'REVIEW.md' "$readme" && note 'README still names REVIEW.md at the root'
 
 if [ "$fails" -eq 0 ]; then

@@ -9,7 +9,7 @@ description: Build one step of a task file per run, on its own stacked branch �
 
 ## Arguments
 
-`<task-file>` / `--continue` → first unticked step; `--step <n>` → that step. `no such file` → stop; a sentence is planned first. `PLAN DONE` → say so in those words and stop.
+`<task-file>` / `--continue` → first unticked step; `--step <n>` → that step. `no such file` → stop; a sentence is planned first. `PLAN DONE` → say so in those words and stop. `**Mode:** manual` → stop, and say the plan is the developer's to write by hand: `/dev-plan-manual <task-file> --continue`.
 
 ## Step 1 — Set up
 
@@ -29,7 +29,7 @@ bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh <task-file
 **Shell before reading.** `wc -l` before opening; `sed -n 'a,bp'` for ranges; `grep -rn` for symbols. Read whole file only when `wc -l` is under 300. Copy tool output; never retype it.
 
 1. Open `Modify:` paths first, at lines named. **Check before edit**: if path status or `git diff` shows file is already modified with required change, do not re-edit.
-2. Make change. Match file naming, structure, comment style, CRLF/LF line endings. Imports (`use`/`import`) strictly at file root under namespace, never in method/function bodies. Namespace splits require explicit `use` imports for cross-class callers.
+2. Make change. Match file naming, structure, comment style, CRLF/LF line endings. Imports (`use`/`import`) strictly at file root under namespace, never in method/function bodies. Namespace splits require explicit `use` imports for cross-namespace references.
 3. Check now: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh <file>`; run scoped test if one covers it. Syntax errors must be resolved before committing.
 
 **A file no step line names is the signal to stop.** A **blocker** (error or failing test) → fix first, own commit, say so. Plan cannot reach goal → stop, write new steps into task file, wait. Note anything else in report; never edit. The one test: does an criterion fail without it?
@@ -58,7 +58,6 @@ Then: `Next: /dev-review`. When ready for the next step after `/dev-pr`: `/dev-i
 
 - **Never push, never open a pull request** — `/dev-pr`, after `/dev-review` and `/dev-fix`. Never `--no-verify`, `--force`, `--amend`. Never weaken or delete a test to get green — say so if a test is wrong.
 - **The plan is the scope.** With `hasDatabase`: bulk writes need dry-run by default, safe re-runs, bounded scope — each missing one is a blocker.
-- **Imports & namespaces**: imports (`use`/`import`) belong at file root; namespace splits require explicit imports for cross-namespace references.
 - Never report success with a failing test or an unmet criterion.
 
 ---
