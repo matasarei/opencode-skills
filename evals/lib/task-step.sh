@@ -143,6 +143,13 @@ printf '%s\n' "$out" | grep -q '^\*\*Mode:\*\* manual$' || note 'manual: the Mod
 printf '%s\n' "$out" | grep -q '^\*\*Type:\*\* feature$' || note 'manual: the Type line went missing beside it'
 printf '%s\n' "$out" | grep -q '^## Step 2 of 3 (1 done)$' || note 'manual: the step header is wrong'
 
+# Any other mode travels too, verbatim: the script reports what the file says
+# and leaves "is this one manual?" to the skill reading it, so a mode nobody has
+# invented yet does not need a change here.
+sed 's/^\*\*Type:\*\* feature/**Type:** feature\n**Mode:** paired/' "$work/plan.md" > "$work/other.md"
+run other.md --next
+printf '%s\n' "$out" | grep -q '^\*\*Mode:\*\* paired$' || note 'other mode: the Mode line was not printed verbatim'
+
 # And a plan without one is untouched: no blank line, no stray label, nothing
 # for a model to read as a mode it does not have.
 run plan.md --next
