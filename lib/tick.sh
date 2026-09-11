@@ -8,14 +8,17 @@
 #
 #   tick.sh <task-file> <n> [<what landed>]
 #
-# Only the canonical shape is ticked: "N. [ ] title" under ## Steps, which is
-# what /dev-plan writes and what steps.awk, task-step.sh, plan-check.sh and
-# step-budget.sh all parse. A different shape is reported, not guessed at.
+# steps.awk does the ticking (mode=tick), so whatever shape the parser accepts
+# is ticked the way the parser reads it: the box right after the number becomes
+# "[x]", a header with no box there ("**3.** title", "### Step 3 — title",
+# "1. Add [ ] rendering") gets " [x]" put after its number, and a box later in
+# the title is left alone.
 #
 # Exit 0 ticked, 3 already ticked (not an error — say so and move on),
 # 64 usage, 66 no such file or step.
 
 set -u
+HERE="$(cd "$(dirname "$0")" && pwd)"
 
 FILE="${1:-}"; N="${2:-}"; NOTE="${3:-}"
 usage() { echo "usage: tick.sh <task-file> <n> [<what landed>]" >&2; exit 64; }
@@ -25,31 +28,16 @@ case "$N" in ''|*[!0-9]*) usage ;; esac
 
 # The step header, by line number, so the note is appended to the right line even
 # when a later step's title repeats the words.
-HIT="$(grep -n "^${N}\. \[[ xX]\]" "$FILE" | head -1)"
-if [ -z "$HIT" ]; then
-  if grep -q "^${N}\. " "$FILE"; then
-    echo "step $N in $FILE is not in the '$N. [ ] title' shape, so it was not ticked" >&2
-    grep -n "^${N}\. " "$FILE" | head -1 >&2
-  else
-    echo "no step $N in $FILE" >&2
-  fi
-  exit 66
-fi
-
-LNO="${HIT%%:*}"
-case "$HIT" in
-  *"[x]"*|*"[X]"*)
-    echo "step $N was already ticked — nothing to do"
-    exit 3 ;;
-esac
+ANY=0; grep -q '^## Steps' "$FILE" || ANY=1
+LNO="$(awk -v mode=lineno -v n="$N" -v anywhere="$ANY" -f "$HERE/steps.awk" "$FILE")"
+[ -n "$LNO" ] || { echo "no step $N in $FILE" >&2; exit 66; }
 
 TMP="$FILE.tick.$$"
-awk -v n="$LNO" -v note="$NOTE" '
-  NR == n {
-    sub(/\[ \]/, "[x]")
-    if (note != "") $0 = $0 " — " note
-  }
-  { print }
-' "$FILE" > "$TMP" && mv "$TMP" "$FILE" || { rm -f "$TMP"; echo "could not write $FILE" >&2; exit 66; }
+awk -v mode=tick -v n="$N" -v note="$NOTE" -v anywhere="$ANY" -f "$HERE/steps.awk" "$FILE" > "$TMP"
+case $? in
+  0) mv "$TMP" "$FILE" || { rm -f "$TMP"; echo "could not write $FILE" >&2; exit 66; } ;;
+  3) rm -f "$TMP"; echo "step $N was already ticked — nothing to do"; exit 3 ;;
+  *) rm -f "$TMP"; echo "no step $N in $FILE" >&2; exit 66 ;;
+esac
 
 sed -n "${LNO}p" "$FILE"

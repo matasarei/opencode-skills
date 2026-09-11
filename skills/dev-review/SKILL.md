@@ -64,7 +64,7 @@ Lead with one line — `Ready to push` / `N blockers first` / `Ready, with N war
 
 ## Rules
 
-- Absolute paths. English or Ukrainian; quote code in its own language.
+- Absolute paths. English; quote code in its own language.
 - No tests in the repository at all → say it once, never per file, never as "tests pass".
 
 ---

@@ -54,7 +54,7 @@ The URL, **created** or **updated**, `<base>` ← `<branch>`, commits, draft, wh
 - **Never merge, never approve, never `gh pr ready` unasked, never enable auto-merge.** Opening it is where this stops.
 - **Never `--force`, `--amend`, `--no-verify`; never push to the base branch; never commit.**
 - Never overwrite a hand-written body or title without asking. Never claim a check that did not run.
-- Titles in English; the body may be English or Ukrainian, matching the repository.
+- Title and body in English.
 
 ---
 

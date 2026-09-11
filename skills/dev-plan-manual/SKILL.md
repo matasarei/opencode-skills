@@ -65,7 +65,7 @@ Never `Create:`, `Modify:` or `Test:` in a walkthrough — `steps.awk` reads tho
 - Never write, edit or generate code, never commit. It touches only the task file and the step branch.
 - One step, one commit — yours. `branch.sh` refuses the next until it exists.
 - `/dev-implement` refuses a plan marked `**Mode:** manual` — the marker is the point.
-- Absolute paths, under the root. English or Ukrainian.
+- Absolute paths, under the root. English.
 
 ---
 

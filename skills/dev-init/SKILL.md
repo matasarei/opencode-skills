@@ -68,7 +68,7 @@ Write `AGENTS.md`. Never create `CLAUDE.md` stubs — OpenCode targets `AGENTS.m
 
 - **Only `AGENTS.md`.** Never write `CLAUDE.md`. No source, no config, no commits. Never invent a command. Never copy a secret into the file.
 - **Under ~120 lines** including the family block; the surplus belongs in the repository's own documentation.
-- English or Ukrainian, matching the repository. A monorepo gets one file at the root, noting which directory each command applies to. Already correct → say so and stop; no reformatting.
+- English. A monorepo gets one file at the root, noting which directory each command applies to. Already correct → say so and stop; no reformatting.
 
 ---
 

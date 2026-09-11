@@ -73,6 +73,12 @@ grep -m1 '^\*\*Type:\*\*' "$FILE"
 # plan's output is unchanged.
 grep -m1 '^\*\*Mode:\*\*' "$FILE" || :
 echo
+# The path, resolved here (--continue with no file picks the newest), because
+# nothing else in the prompt carries it and .tasks/ is hidden from a glob: a fresh session was seen running
+# branch.sh on an invented path and then building with no branch at all.
+echo "**Task file:** $FILE"
+echo
+echo
 section 'Acceptance criteria'
 echo
 section 'Do not touch'

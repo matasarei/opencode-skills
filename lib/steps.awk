@@ -7,10 +7,25 @@
 # block — is not a step. A file with no "## Steps" heading at all is scanned
 # whole (the caller passes -v anywhere=1).
 #
+# "N. [ ] title" is what /dev-plan is told to write, and a local model writes
+# it a little differently each time: "Step 1. [ ] title", "#### Step 1. [ ]",
+# "**1.** title", "### Step 3 — title", "5) title", "step 7: title", "STEP 8."
+# Two plans in one week were invisible for the word "Step" alone, so the header
+# is read loosely: optional heading marks, optional bold, an optional Step
+# word (any case), the number, then ".", ":" or ")" (or just a space after a heading or
+# the Step word), an optional [ ]/[x], an optional dash, the title. A number
+# alone on a plain line ("3 files changed", "1.5 ratio", "2026-09-11") is not a
+# step. What is written back is still the canonical shape.
+#
 #   awk -v mode=list                      -f steps.awk file → "N|x|title" per step (x, or a space)
 #   awk -v mode=block -v n=3              -f steps.awk file → the lines of step 3
 #   awk -v mode=paths -v n=3 [-v kinds="Modify Test"] -f steps.awk file
 #                                                       → "Kind|path|symbol" per path in those lines
+#   awk -v mode=lineno -v n=3             -f steps.awk file → the line number of step 3's header
+#   awk -v mode=tick -v n=3 [-v note=…]   -f steps.awk file → the whole file, step 3's header
+#                                                       ticked ("[ ]" → "[x]", or " [x]" put after
+#                                                       the number when there is no box) and the
+#                                                       note appended; exit 3 when already ticked
 #
 # Paths come from the "- Create:", "- Modify:" and "- Test:" lines: items are
 # split at top-level commas (a comma inside parentheses does not split), the
@@ -58,45 +73,65 @@ function emit(kind, line,   parts, np, i, chunk, tok, sym) {
   }
 }
 
-function is_step_header(line) {
-  if (line ~ /^[0-9]+\. \[[ xX]\]/) return 1
-  if (line ~ /^[0-9]+\.[[:space:]]/) return 2
-  if (line ~ /^###[[:space:]]+(Step[[:space:]]+)?[0-9]+/) return 3
-  return 0
+# Reads a step header into num, status and title. Returns 1 for a step, 0 for
+# anything else. See the shapes in the header comment.
+function parse_header(line,   s, loose, i) {
+  s = line; loose = 0
+  if (sub(/^#+[[:space:]]+/, "", s)) loose = 1
+  sub(/^\*\*[[:space:]]*/, "", s)
+  if (sub(/^[Ss][Tt][Ee][Pp][[:space:]]+/, "", s)) loose = 1
+  if (s !~ /^[0-9]+/) return 0
+  match(s, /^[0-9]+/); num = substr(s, 1, RLENGTH); s = substr(s, RLENGTH + 1)
+  # After the number: ".", ":" or ")" then a break — or, after a heading mark or
+  # the Step word, whitespace or the end is enough.
+  if (s ~ /^[.:)]([[:space:]]|\*\*|\[|$)/) sub(/^[.:)]/, "", s)
+  else if (!(loose && (s == "" || s ~ /^[[:space:]]/))) return 0
+  status = " "
+  for (i = 0; i < 4; i++) {
+    sub(/^[[:space:]]+/, "", s)
+    if (s ~ /^\*\*/) sub(/^\*\*/, "", s)
+    else if (s ~ /^\[[ xX]\]/) { if (s ~ /^\[[xX]\]/) status = "x"; sub(/^\[[ xX]\]/, "", s) }
+    else if (s ~ /^[—–-]([[:space:]]|$)/) sub(/^[—–-]/, "", s)
+    else break
+  }
+  sub(/^[[:space:]]+/, "", s); title = s
+  gsub(/\*\*/, "", title); sub(/[[:space:]]*:[[:space:]]*$/, "", title); sub(/[[:space:]]+$/, "", title)
+  return 1
 }
 
-/^## / { insteps = (anywhere + 0) || ($0 == "## Steps"); on = 0; next }
-/^```/ { if (insteps) fence = !fence; next }
-!insteps || fence { next }
+# Ticks the header in $0. The box is the one the parser reads as the status:
+# right after the number (and a bold number's closing **), never one later in
+# the title. Returns 1 when it ticked, 0 when the step was already ticked.
+function tick_header(   pre, rest, sp) {
+  match($0, /^(#+[[:space:]]+)?(\*\*[[:space:]]*)?([Ss][Tt][Ee][Pp][[:space:]]+)?[0-9]+[.:)]?/)
+  pre = substr($0, 1, RLENGTH); rest = substr($0, RLENGTH + 1)
+  if (pre ~ /^(#+[[:space:]]+)?\*\*/ && rest ~ /^[[:space:]]*\*\*/) { sub(/^[[:space:]]*\*\*/, "", rest); pre = pre "**" }
+  match(rest, /^[[:space:]]*/); sp = substr(rest, 1, RLENGTH); rest = substr(rest, RLENGTH + 1)
+  if (rest ~ /^\[[xX]\]/) return 0
+  if (rest ~ /^\[ \]/) $0 = pre sp "[x]" substr(rest, 4)
+  else $0 = pre " [x]" (rest == "" ? "" : " " rest)
+  return 1
+}
+
+# "## Step 3 …" is a step written as a heading, not the end of the ## Steps section.
+/^## / && !parse_header($0) { insteps = (anywhere + 0) || ($0 == "## Steps"); on = 0; if (mode == "tick") print; next }
+/^```/ { if (insteps) fence = !fence; if (mode == "tick") print; next }
+!insteps || fence { if (mode == "tick") print; next }
+
+mode == "tick" {
+  if (parse_header($0) && num == n) {
+    if (tick_header()) { ticked = 1; if (note != "") $0 = $0 " — " note } else already = 1
+  }
+  print; next
+}
 
 {
-  m = is_step_header($0)
-  if (m > 0) {
-    if (m == 1) {
-      match($0, /^[0-9]+/)
-      num = substr($0, RSTART, RLENGTH)
-      status = ($0 ~ /^[0-9]+\. \[[xX]\]/) ? "x" : " "
-      title = $0; sub(/^[0-9]+\. \[[ xX]\][[:space:]]*/, "", title)
-    } else if (m == 2) {
-      match($0, /^[0-9]+/)
-      num = substr($0, RSTART, RLENGTH)
-      status = ($0 ~ /\[[xX]\]/) ? "x" : " "
-      title = $0; sub(/^[0-9]+\.[[:space:]]+/, "", title)
-      sub(/^\[[ xX]\][[:space:]]*/, "", title)
-      sub(/^\*\*[[:space:]]*/, "", title); sub(/[[:space:]]*\*\*$/, "", title)
-    } else if (m == 3) {
-      line = $0; sub(/^###[[:space:]]+(Step[[:space:]]+)?/, "", line)
-      match(line, /^[0-9]+/)
-      num = substr(line, RSTART, RLENGTH)
-      status = ($0 ~ /\[[xX]\]/) ? "x" : " "
-      title = line; sub(/^[0-9]+[[:space:]]*[:.—–-][[:space:]]*/, "", title)
-      sub(/^\[[ xX]\][[:space:]]*/, "", title)
-      sub(/^\*\*[[:space:]]*/, "", title); sub(/[[:space:]]*\*\*$/, "", title)
-    }
+  if (parse_header($0)) {
     if (mode == "list") {
       print num "|" status "|" title
       next
     }
+    if (mode == "lineno") { if (num == n) { print NR; exit }; next }
     on = (num == n)
     cur_kind = ""
     if (num != n) next
@@ -108,14 +143,14 @@ function is_step_header(line) {
 mode == "block" { print; next }
 mode == "paths" {
   line = $0
-  # Check if line has a label like - Create:, - **Create:**, - Test:, etc.
-  if (match(line, /^[[:space:]]*-?[[:space:]]*(\*{2})?([A-Za-z]+)(\*{2})?:/)) {
+  # A label line: "- Create:", "- **Create**:", "- **Create:**", "Test:" …
+  if (match(line, /^[[:space:]]*-?[[:space:]]*(\*{2})?([A-Za-z]+)(\*{2})?:(\*{2})?/)) {
     label = substr(line, RSTART, RLENGTH)
     sub(/^[[:space:]]*-?[[:space:]]*(\*{2})?/, "", label)
     sub(/(\*{2})?:.*/, "", label)
     if (is_kind[label]) {
       cur_kind = label
-      sub(/^[[:space:]]*-?[[:space:]]*(\*{2})?[A-Za-z]+(\*{2})?:[[:space:]]*/, "", line)
+      sub(/^[[:space:]]*-?[[:space:]]*(\*{2})?[A-Za-z]+(\*{2})?:(\*{2})?[[:space:]]*/, "", line)
       if (line ~ /[^[:space:]]/) emit(cur_kind, line)
     } else {
       cur_kind = ""
@@ -130,3 +165,5 @@ mode == "paths" {
     cur_kind = ""
   }
 }
+
+END { if (mode == "tick") exit (ticked ? 0 : (already ? 3 : 66)) }
