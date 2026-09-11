@@ -44,6 +44,12 @@ grep -q -- '--review' "$plan" && note 'dev-plan: --review is back; judging a pro
 # next trim can take it.
 impl="$skills/dev-implement/SKILL.md"
 flat "$impl" | grep -q 'NO STEPS → stop' || note 'dev-implement: no rule to stop on NO STEPS'
+# The three sentences the 2026-09-11 runs lacked: an unlisted branch.sh answer
+# let a run commit on master; a bare "scoped test" and a bare script name each
+# sent the model to read scripts instead of running them.
+flat "$impl" | grep -q 'any other answer (no such file, no step, usage:) → quote it and stop' || note 'dev-implement: no rule for a branch.sh answer other than BRANCH'
+flat "$impl" | grep -q 'test.sh --scoped <name>' || note 'dev-implement: the scoped test command is not spelled out'
+flat "$impl" | grep -q 'never cat them' || note 'dev-implement: no rule against reading the dev-lib scripts'
 
 # The manual plan keeps the same step shape — task-step.sh, step-budget.sh and
 # plan-check.sh parse it the same way — plus the two lines that are only its:
