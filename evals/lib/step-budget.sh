@@ -82,6 +82,7 @@ CTX=64000 run --paths src/big.php src/nope.php
 
 # Errors are errors: no such step, no such file, no arguments.
 CTX=100000 run plan.md 9;   [ "$rc" -eq 66 ] || note "no such step: exit $rc, want 66"
+printf '%s\n' "$out" | grep -q 'N. \[ \] title' || note "no such step: the message should show the step shape, got '$out'"
 CTX=100000 run nope.md 1;   [ "$rc" -eq 66 ] || note "no such file: exit $rc, want 66"
 CTX=100000 run;             [ "$rc" -eq 64 ] || note "no arguments: exit $rc, want 64"
 CTX=100000 run --paths;     [ "$rc" -eq 64 ] || note "--paths with nothing: exit $rc, want 64"
