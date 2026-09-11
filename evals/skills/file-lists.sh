@@ -40,7 +40,7 @@ grep -q -- '--review' "$plan" && note 'dev-plan: --review is back; judging a pro
 # /dev-implement is handed the step by task-step.sh, which prints NO STEPS when
 # the plan is not in the shape steps.awk reads. The skill has to stop on that
 # line — a run that went on once rewrote the plan's headings with sed and lost
-# fifteen steps — and the rule sits three bytes under the size cap, where the
+# fifteen steps — and the rule sits a few bytes under the size cap, where the
 # next trim can take it.
 impl="$skills/dev-implement/SKILL.md"
 flat "$impl" | grep -q 'NO STEPS → stop' || note 'dev-implement: no rule to stop on NO STEPS'
