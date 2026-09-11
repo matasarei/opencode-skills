@@ -20,7 +20,7 @@
 #   BRANCH step/<slug>-3 — switched to it (it already existed)
 #
 # Exit 0 on the branch, 3 refused (uncommitted work that a switch would carry
-# across), 64 usage, 66 no such file, 69 not a git repository.
+# across), 64 usage, 66 no such file or step, 69 not a git repository.
 
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -31,6 +31,13 @@ usage() { echo "usage: branch.sh <task-file> <n>" >&2; exit 64; }
 case "$N" in ''|*[!0-9]*) usage ;; esac
 [ -f "$FILE" ] || { echo "no such file: $FILE" >&2; exit 66; }
 git rev-parse --git-dir >/dev/null 2>&1 || { echo "not a git repository" >&2; exit 69; }
+
+# A branch for a step the file does not have is a branch for nothing — and a
+# plan whose steps are not in the shape steps.awk reads got one before anything
+# said so. What counts as a step is lib/steps.awk, the same as everywhere else.
+ANY=0; grep -q '^## Steps' "$FILE" || ANY=1
+awk -v mode=list -v anywhere="$ANY" -f "$HERE/steps.awk" "$FILE" | grep -q "^$N|" \
+  || { echo "no step $N in $FILE — steps are numbered lines under ## Steps: N. [ ] title" >&2; exit 66; }
 
 SLUG="$(basename "$FILE")"; SLUG="${SLUG%.md}"
 WANT="step/$SLUG-$N"

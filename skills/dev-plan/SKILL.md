@@ -55,7 +55,7 @@ bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh .tasks/<sl
 
 `plan-check.sh` must exit 0; fix any missing steps or bad paths. Paste each step's `Budget:` line in. OVER → split when a split exists; otherwise keep it and write `OVER — kept: <reason>` — the cap is a recommendation.
 
-In chat: absolute path, summary verbatim, what was `[assumed]`, and `Next: /dev-implement .tasks/<slug>.md` — one step per run (resuming after `/dev-pr`: `/dev-implement <task-file> --continue`, pre-step: `/new` or `/compact`).
+In chat: absolute path, plan-check's last line and summary verbatim, what was `[assumed]`, and `Next: /dev-implement .tasks/<slug>.md` — one step per run (resuming after `/dev-pr`: `/dev-implement <task-file> --continue`, pre-step: `/new` or `/compact`).
 
 ## Rules
 
@@ -78,7 +78,7 @@ Profile:
 
 !`bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/profile.sh`
 
-Learned notes (possibly stale):
+Learned notes:
 
 !`tail -20 .devskills/learned.md 2>/dev/null || echo "(none)"`
 

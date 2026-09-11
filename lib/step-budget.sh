@@ -49,7 +49,7 @@ case "${1:-}" in
     [ -f "$FILE" ] || { echo "no such file: $FILE" >&2; exit 66; }
     case "$N" in ''|*[!0-9]*) usage ;; esac
     any=0; grep -q '^## Steps' "$FILE" || any=1
-    awk -v mode=list -v anywhere="$any" -f "$HERE/steps.awk" "$FILE" | grep -q "^$N|" || { echo "no step $N in $FILE" >&2; exit 66; }
+    awk -v mode=list -v anywhere="$any" -f "$HERE/steps.awk" "$FILE" | grep -q "^$N|" || { echo "no step $N in $FILE — steps are numbered lines under ## Steps: N. [ ] title" >&2; exit 66; }
     LIST="$(paths_of_step "$FILE" "$N")"
     ;;
 esac
