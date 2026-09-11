@@ -43,7 +43,7 @@ grep -q -- '--review' "$plan" && note 'dev-plan: --review is back; judging a pro
 # fifteen steps — and the rule sits a few bytes under the size cap, where the
 # next trim can take it.
 impl="$skills/dev-implement/SKILL.md"
-flat "$impl" | grep -q 'NO STEPS → stop' || note 'dev-implement: no rule to stop on NO STEPS'
+flat "$impl" | grep -q 'NO STEPS → print Next: /dev-plan <task-file> and stop' || note 'dev-implement: NO STEPS must print the Next: line and stop, nothing else'
 
 # The manual plan keeps the same step shape — task-step.sh, step-budget.sh and
 # plan-check.sh parse it the same way — plus the two lines that are only its:
