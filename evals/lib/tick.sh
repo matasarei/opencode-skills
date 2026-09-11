@@ -86,11 +86,17 @@ bash "$tick" "$plan" 9 >/dev/null 2>&1; [ $? -eq 66 ] || note 'missing step: wan
 bash "$tick" "$work/nope.md" 1 >/dev/null 2>&1; [ $? -eq 66 ] || note 'missing file: want exit 66'
 bash "$tick" "$plan" x >/dev/null 2>&1; [ $? -eq 64 ] || note 'bad step number: want exit 64'
 
-# A step written in a shape the parsers do not read is reported, not guessed at.
-printf '# T\n\n## Steps\n\n1. **Do it**\n   - Create: none\n' > "$work/odd.md"
-out="$(bash "$tick" "$work/odd.md" 1 2>&1)"; rc=$?
-[ "$rc" -eq 66 ] || note "odd shape: exit $rc, want 66"
-printf '%s\n' "$out" | grep -q 'not in the' || note "odd shape: '$out'"
+# A header without a box is ticked by putting one after its number; the other
+# shapes a model writes are ticked in place.
+printf '# T\n\n## Steps\n\n1. **Do it**\n   - Create: none\nStep 2. [ ] the favourite\n### Step 3 — dash title\n' > "$work/odd.md"
+out="$(bash "$tick" "$work/odd.md" 1 "done" 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] || note "odd shape: exit $rc, want 0 ($out)"
+grep -q '^1\. \[x\] \*\*Do it\*\* — done$' "$work/odd.md" || note "odd shape: line is '$(grep -m1 '^1\.' "$work/odd.md")'"
+bash "$tick" "$work/odd.md" 2 >/dev/null 2>&1 || note 'Step-word shape: not ticked'
+grep -q '^Step 2\. \[x\] the favourite$' "$work/odd.md" || note "Step-word shape: line is '$(grep -m1 '^Step 2' "$work/odd.md")'"
+bash "$tick" "$work/odd.md" 3 "ok" >/dev/null 2>&1 || note 'heading shape: not ticked'
+grep -q '^### Step 3 \[x\] — dash title — ok$' "$work/odd.md" || note "heading shape: line is '$(grep -m1 '^### Step 3' "$work/odd.md")'"
+[ "$(bash "$step" "$work/odd.md" --count)" = "3 of 3 done" ] || note "odd shapes: --count says '$(bash "$step" "$work/odd.md" --count)'"
 
 if [ "$fails" -eq 0 ]; then
   printf 'tick: the right line, only that line, and the next step follows\n'

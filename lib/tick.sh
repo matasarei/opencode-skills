@@ -8,14 +8,15 @@
 #
 #   tick.sh <task-file> <n> [<what landed>]
 #
-# Only the canonical shape is ticked: "N. [ ] title" under ## Steps, which is
-# what /dev-plan writes and what steps.awk, task-step.sh, plan-check.sh and
-# step-budget.sh all parse. A different shape is reported, not guessed at.
+# The step is found through steps.awk, so whatever shape the parser accepts is
+# ticked: "[ ]" becomes "[x]", and a header with no box at all ("**3.** title",
+# "### Step 3 — title") gets " [x]" after its number.
 #
 # Exit 0 ticked, 3 already ticked (not an error — say so and move on),
 # 64 usage, 66 no such file or step.
 
 set -u
+HERE="$(cd "$(dirname "$0")" && pwd)"
 
 FILE="${1:-}"; N="${2:-}"; NOTE="${3:-}"
 usage() { echo "usage: tick.sh <task-file> <n> [<what landed>]" >&2; exit 64; }
@@ -25,19 +26,11 @@ case "$N" in ''|*[!0-9]*) usage ;; esac
 
 # The step header, by line number, so the note is appended to the right line even
 # when a later step's title repeats the words.
-HIT="$(grep -n "^${N}\. \[[ xX]\]" "$FILE" | head -1)"
-if [ -z "$HIT" ]; then
-  if grep -q "^${N}\. " "$FILE"; then
-    echo "step $N in $FILE is not in the '$N. [ ] title' shape, so it was not ticked" >&2
-    grep -n "^${N}\. " "$FILE" | head -1 >&2
-  else
-    echo "no step $N in $FILE" >&2
-  fi
-  exit 66
-fi
+ANY=0; grep -q '^## Steps' "$FILE" || ANY=1
+LNO="$(awk -v mode=lineno -v n="$N" -v anywhere="$ANY" -f "$HERE/steps.awk" "$FILE")"
+[ -n "$LNO" ] || { echo "no step $N in $FILE" >&2; exit 66; }
 
-LNO="${HIT%%:*}"
-case "$HIT" in
+case "$(sed -n "${LNO}p" "$FILE")" in
   *"[x]"*|*"[X]"*)
     echo "step $N was already ticked — nothing to do"
     exit 3 ;;
@@ -46,7 +39,9 @@ esac
 TMP="$FILE.tick.$$"
 awk -v n="$LNO" -v note="$NOTE" '
   NR == n {
-    sub(/\[ \]/, "[x]")
+    if ($0 ~ /\[ \]/) sub(/\[ \]/, "[x]")
+    else if (match($0, /^(#+[[:space:]]+)?(\*\*[[:space:]]*)?([Ss][Tt][Ee][Pp][[:space:]]+|Крок[[:space:]]+|крок[[:space:]]+)?[0-9]+[.:)]?(\*\*)?/))
+      $0 = substr($0, 1, RLENGTH) " [x]" substr($0, RLENGTH + 1)
     if (note != "") $0 = $0 " — " note
   }
   { print }
