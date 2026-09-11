@@ -60,7 +60,7 @@ In chat: absolute path, plan-check's last line and summary verbatim, what was `[
 ## Rules
 
 - No production code; production is read-only, by a human. With `hasDatabase`: dry-run by default, safe re-runs, bounded scope.
-- Ask in the chat, not in the plan. Absolute paths, under the root. English or Ukrainian.
+- Ask in the chat, not in the plan. Absolute paths, under the root. English.
 
 ---
 
