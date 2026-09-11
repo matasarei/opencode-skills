@@ -9,7 +9,7 @@ description: Build one step of a task file per run, on its own stacked branch �
 
 ## Arguments
 
-`<task-file>` / `--continue` → first unticked step; `--step <n>` → that step. `no such file` → stop; a sentence is planned first. `PLAN DONE` → say so in those words and stop. `NO STEPS` → stop: the steps are not `N. [ ]` lines, `/dev-plan` rewrites them — never reshape the file yourself. `**Mode:** manual` → stop; it is written by hand: `/dev-plan-manual <task-file> --continue`.
+`<task-file>` / `--continue` → first unticked step; `--step <n>` → that step. `no such file` → stop; a sentence is planned first. `PLAN DONE` → say so in those words and stop. `NO STEPS` → print `Next: /dev-plan <task-file>` and stop; never plan or reshape the file here. `**Mode:** manual` → stop; it is written by hand: `/dev-plan-manual <task-file> --continue`.
 
 ## Step 1 — Set up
 
