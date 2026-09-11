@@ -195,7 +195,7 @@ version:
 ```bash
 bash evals/run-all.sh                                                   # every suite
 shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh   # 0 warnings
-bash evals/skills/size.sh                                               # 90 lines / 4,500 bytes per skill
+bash evals/skills/size.sh                                               # 90 lines / 5,000 bytes per skill
 ```
 
 Two rules that catch most contributions:
@@ -302,7 +302,7 @@ merged here without its final commit because of exactly that gap.
   `shellcheck --severity=warning` clean. Match the surrounding file over any style guide.
 - **Comments explain why, not what.** The scripts here are dense with *why* — a comment saying
   what the next line does is noise; one saying what breaks without it is the point.
-- **`SKILL.md` is a prompt, not documentation.** Under 90 lines and 4,500 bytes, description on
+- **`SKILL.md` is a prompt, not documentation.** Under 90 lines and 5,000 bytes, description on
   one line under 200 characters. Rationale belongs in the README. Adding a paragraph means
   removing one — the cap is the reason a step fits in a 64k window.
 - **English** for everything: identifiers, commit messages, titles, bodies and the plans.
