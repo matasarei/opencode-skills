@@ -13,9 +13,9 @@ description: Build one step of a task file per run, on its own stacked branch �
 
 ## Step 1 — Set up
 
-Uncommitted changes not yours → stop and ask. Resuming (`--continue`) → check path status below: changes matching this step are in-progress work, not foreign edits.
+Uncommitted changes not yours → stop and ask. Resuming (`--continue`) → the path status below tells in-progress work from foreign edits.
 
-**Branch** — `step/<slug>-<n>`, stacked on the previous. Run it, do not derive it:
+**Branch** — stacked on the previous. Run it, never derive it; `<task-file>` is the `**Task file:**` line below (`.tasks/` is hidden from globs):
 
 ```
 bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/branch.sh <task-file> <n>
@@ -26,10 +26,10 @@ bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh <task-file
 
 ## Step 2 — Build
 
-**Shell before reading.** `wc -l` before opening; `sed -n 'a,bp'` for ranges; `grep -rn` for symbols. Read a whole file only under 300 lines. Copy tool output; never retype it.
+**Shell before reading.** `wc -l` before opening; `sed -n 'a,bp'` for ranges; `grep -rn` for symbols. Whole file only under 300 lines. Copy tool output; never retype it.
 
 1. Open `Modify:` paths first, at lines named. **Check before edit**: if path status or `git diff` shows the change already made, do not re-edit.
-2. Make change. Match file naming, structure, comment style, CRLF/LF line endings. Imports (`use`/`import`) strictly at file root under namespace, never in method/function bodies. Namespace splits require explicit `use` imports for cross-namespace references.
+2. Make change. Match naming, structure, comment style, line endings. Imports (`use`/`import`) at file root under namespace, never in method/function bodies. Namespace splits require explicit `use` imports for cross-namespace references.
 3. Check now: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh <file>`; run scoped test if one covers it. Fix syntax errors before committing.
 
 **A file no step line names is the signal to stop.** A **blocker** (error or failing test) → fix first, own commit, say so. Plan cannot reach goal → stop, write new steps into task file, wait. Note anything else in report; never edit. The one test: does a criterion fail without it?
