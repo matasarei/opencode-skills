@@ -71,7 +71,7 @@ Never `Create:`, `Modify:` or `Test:` in a walkthrough — `steps.awk` reads tho
 
 ## This repository
 
-Root (the plan lives under it, never `~`), then brief:
+Root (never `~`), then the brief; its kind is on line 2:
 
 !`pwd; bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/plan-input.sh $ARGUMENTS 2>&1`
 
