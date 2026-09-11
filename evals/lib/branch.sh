@@ -110,6 +110,7 @@ printf '# T\n\n## Steps\n\n#### Step 1. [ ] one\n' > "$repo/.tasks/shape.md"
 run .tasks/shape.md 1
 [ "$rc" -eq 66 ] || note "wrong step shape: exit $rc, want 66"
 [ "$(on)" = "main" ] || note "wrong step shape: it cut a branch anyway, on '$(on)'"
+printf '%s\n' "$out" | grep -q 'N. \[ \] title' || note "wrong step shape: the message should show the step shape, got '$out'"
 
 if [ "$fails" -eq 0 ]; then
   printf 'branch: step 1 off the base, later steps off their predecessor, no re-cutting\n'
