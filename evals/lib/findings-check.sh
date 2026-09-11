@@ -78,6 +78,10 @@ out3="$(cd "$work" && bash "$check" "the export blows up when a department has n
 [ "$(wc -l < "$work/err3" | tr -d ' ')" = 1 ] || note "a sentence argument: stderr should be one line"
 grep -q 'department' "$work/err3" && note 'a sentence argument: the sentence was echoed back as a path'
 grep -q 'no findings file' "$work/err3" || note "a sentence argument: stderr should still say no findings file, got '$(cat "$work/err3")'"
+# An issue URL is a brief too — /dev-fix accepts one — and it has slashes and dots.
+( cd "$work" && bash "$check" "https://github.com/o/r/issues/3" >/dev/null 2>"$work/err4" )
+grep -q 'github' "$work/err4" && note 'a URL argument: the URL was echoed back as a path'
+grep -q 'brief' "$work/err4" || note "a URL argument: should be named a brief, got '$(cat "$work/err4")'"
 
 if [ "$fails" -eq 0 ]; then
   printf 'findings-check: keeps what the file proves, drops the rest\n'

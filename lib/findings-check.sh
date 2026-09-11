@@ -24,7 +24,7 @@ FILE="${1:-.devskills/findings.md}"
 # second time, so a non-path argument is named for what it is.
 if [ ! -f "$FILE" ]; then
   case "$FILE" in
-    *' '*) echo "no findings file — the argument is a brief, not a path" >&2 ;;
+    *' '*|http://*|https://*) echo "no findings file — the argument is a brief, not a path" >&2 ;;
     */*|*.*) echo "no findings file at $FILE" >&2 ;;
     *) echo "no findings file — the argument is a brief, not a path" >&2 ;;
   esac
