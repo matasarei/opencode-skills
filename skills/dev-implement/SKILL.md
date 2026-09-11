@@ -15,7 +15,7 @@ description: Build one step of a task file per run, on its own stacked branch �
 
 Uncommitted changes not yours → stop and ask. Resuming (`--continue`) → the path status below tells in-progress work from foreign edits.
 
-**Branch** — stacked on the previous. Run it, never derive it; `<task-file>` is the `**Task file:**` line below (`.tasks/` is hidden from globs):
+**Branch** — `step/<slug>-<n>`, stacked on the previous. Run it, never derive it; `<task-file>` is the `**Task file:**` line below (`.tasks/` is hidden from globs):
 
 ```
 bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/branch.sh <task-file> <n>
@@ -52,13 +52,13 @@ Tick it — `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/tick.sh <tas
 
 What landed, criteria met or not, files changed, quoted test line, what was left alone. One line at most for next run appended to `.devskills/learned.md`, then `tail -20` it back into place.
 
-Then: `Next: /dev-review`. When ready for the next step after `/dev-pr`: `/dev-implement <task-file> --continue` (pre-step: `/new` or `/compact`; the task file and branch are the state).
+Then: `Next: /dev-review`. After `/dev-pr`, the next step: `/dev-implement <task-file> --continue` (pre-step: `/new` or `/compact`; the task file and branch are the state).
 
 ## Rules
 
 - **Never push, never open a pull request** — `/dev-pr`, after `/dev-review` and `/dev-fix`. Never `--no-verify`, `--force`, `--amend`. Never weaken or delete a test to get green — say so if a test is wrong.
 - **The plan is the scope.** With `hasDatabase`: bulk writes need dry-run by default, safe re-runs, bounded scope — each missing one is a blocker.
-- Never report success with a failing test or an unmet criterion.
+- Never report success with a failing test or unmet criterion.
 
 ---
 
