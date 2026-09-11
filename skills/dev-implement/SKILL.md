@@ -22,7 +22,7 @@ bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/branch.sh <task-file> <n>
 bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh <task-file> <n>
 ```
 
-`BRANCH …` and you are on it; `BRANCH refused` → say so and stop. OVER budget → say so and suggest `/new` before `/dev-review`; never refuse the step.
+`BRANCH …` and you are on it; `BRANCH refused` → say so and stop; any other answer (`no such file`, `no step`, `usage:`) → quote it and stop. OVER budget → say so and suggest `/new` before `/dev-review`; never refuse the step.
 
 ## Step 2 — Build
 
@@ -30,7 +30,7 @@ bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh <task-file
 
 1. Open `Modify:` paths first, at lines named. **Check before edit**: if path status or `git diff` shows the change already made, do not re-edit.
 2. Make change. Match naming, structure, comment style, line endings. Imports (`use`/`import`) at file root under namespace, never in method/function bodies. Namespace splits require explicit `use` imports for cross-namespace references.
-3. Check now: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh <file>`; run scoped test if one covers it. Fix syntax errors before committing.
+3. Check now: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh <file>`; run `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/test.sh --scoped <name>` when a test covers it. Fix syntax errors before committing.
 
 **A file no step line names is the signal to stop.** A **blocker** (error or failing test) → fix first, own commit, say so. Plan cannot reach goal → stop, write new steps into task file, wait. Note anything else in report; never edit. The one test: does a criterion fail without it?
 
@@ -59,6 +59,7 @@ Then: `Next: /dev-review`. After `/dev-pr`, the next step: `/dev-implement <task
 - **Never push, never open a pull request** — `/dev-pr`, after `/dev-review` and `/dev-fix`. Never `--no-verify`, `--force`, `--amend`. Never weaken or delete a test to get green — say so if a test is wrong.
 - **The plan is the scope.** With `hasDatabase`: bulk writes need dry-run by default, safe re-runs, bounded scope — each missing one is a blocker.
 - Never report success with a failing test or unmet criterion.
+- Run the dev-lib scripts; never `cat` them — their output is the fact.
 
 ---
 
