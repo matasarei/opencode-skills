@@ -156,16 +156,16 @@ Step 1. [ ] the model's favourite
 5) paren
 ## Step 6: colon title
 step 7: lowercase
-Крок 8. [ ] ukrainian
+STEP 8. [ ] upper case
 3 files changed
 1.5 ratio
 2026-09-11 a date
 PLAN
-same "$(steps list | tr '\n' ';')" "1| |the model's favourite;2|x|a deep heading, ticked — landed;3| |bold number;4| |dash title;5| |paren;6| |colon title;7| |lowercase;8| |ukrainian;" 'shapes: the step list'
+same "$(steps list | tr '\n' ';')" "1| |the model's favourite;2|x|a deep heading, ticked — landed;3| |bold number;4| |dash title;5| |paren;6| |colon title;7| |lowercase;8| |upper case;" 'shapes: the step list'
 same "$(steps paths 1 | tr '\n' ';')" "Create|a/b.php|;Create|a/c.php|;" 'shapes: paths from a "- **Create:**" label with the colon inside the bold'
 same "$(steps paths 2 | tr '\n' ';')" "Modify|c/d.php|;" 'shapes: paths under a #### heading step'
 same "$(awk -v mode=lineno -v n=6 -f "$awkf" "$plan")" "13" 'shapes: lineno of the "## Step 6" heading'
-same "$(steps block 8 | head -1)" "Крок 8. [ ] ukrainian" 'shapes: block of the last step starts at its header'
+same "$(steps block 8 | head -1)" "STEP 8. [ ] upper case" 'shapes: block of the last step starts at its header'
 
 if [ "$fails" -eq 0 ]; then
   printf 'steps: a step is a step only under ## Steps, and a path is only a path\n'

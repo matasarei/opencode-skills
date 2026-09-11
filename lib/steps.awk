@@ -9,10 +9,10 @@
 #
 # "N. [ ] title" is what /dev-plan is told to write, and a local model writes
 # it a little differently each time: "Step 1. [ ] title", "#### Step 1. [ ]",
-# "**1.** title", "### Step 3 — title", "5) title", "step 7: title", "Крок 8."
+# "**1.** title", "### Step 3 — title", "5) title", "step 7: title", "STEP 8."
 # Two plans in one week were invisible for the word "Step" alone, so the header
-# is read loosely: optional heading marks, optional bold, an optional Step/Крок
-# word, the number, then ".", ":" or ")" (or just a space after a heading or
+# is read loosely: optional heading marks, optional bold, an optional Step
+# word (any case), the number, then ".", ":" or ")" (or just a space after a heading or
 # the Step word), an optional [ ]/[x], an optional dash, the title. A number
 # alone on a plain line ("3 files changed", "1.5 ratio", "2026-09-11") is not a
 # step. What is written back is still the canonical shape.
@@ -75,7 +75,7 @@ function parse_header(line,   s, loose, i) {
   s = line; loose = 0
   if (sub(/^#+[[:space:]]+/, "", s)) loose = 1
   sub(/^\*\*[[:space:]]*/, "", s)
-  if (sub(/^([Ss][Tt][Ee][Pp]|Крок|крок)[[:space:]]+/, "", s)) loose = 1
+  if (sub(/^[Ss][Tt][Ee][Pp][[:space:]]+/, "", s)) loose = 1
   if (s !~ /^[0-9]+/) return 0
   match(s, /^[0-9]+/); num = substr(s, 1, RLENGTH); s = substr(s, RLENGTH + 1)
   # After the number: ".", ":" or ")" then a break — or, after a heading mark or

@@ -40,7 +40,7 @@ TMP="$FILE.tick.$$"
 awk -v n="$LNO" -v note="$NOTE" '
   NR == n {
     if ($0 ~ /\[ \]/) sub(/\[ \]/, "[x]")
-    else if (match($0, /^(#+[[:space:]]+)?(\*\*[[:space:]]*)?([Ss][Tt][Ee][Pp][[:space:]]+|Крок[[:space:]]+|крок[[:space:]]+)?[0-9]+[.:)]?(\*\*)?/))
+    else if (match($0, /^(#+[[:space:]]+)?(\*\*[[:space:]]*)?([Ss][Tt][Ee][Pp][[:space:]]+)?[0-9]+[.:)]?(\*\*)?/))
       $0 = substr($0, 1, RLENGTH) " [x]" substr($0, RLENGTH + 1)
     if (note != "") $0 = $0 " — " note
   }
