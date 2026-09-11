@@ -33,7 +33,7 @@ Ask **once in chat** (max 4 questions with recommended answers) only what code c
 
 **One step = one PR-sized build for `/dev-implement`** (build, review, fix, PR).
 - **Step size**: Max 3–5 files per step. Never write vague summaries like "flip 20 consumers" — list every single file. Split large tasks into sequential slices (3–5 files each). For refactors, include steps updating `tests/` and `views/` callers.
-- **Format**: Strictly `N. [ ] <title>` (e.g. `1. [ ] ...`). Numbered `N. [ ]`, never `- [ ]`, never bold numbers like `1. **...**` (scripts parse it):
+- **Format**: Strictly `N. [ ] <title>`. Numbered `N. [ ]`, never `- [ ]`, never bold numbers like `1. **...**` (scripts parse it):
 
 ```markdown
 3. [ ] <what the step does, one line>
@@ -44,7 +44,7 @@ Ask **once in chat** (max 4 questions with recommended answers) only what code c
    - Budget: <the line step-budget.sh printed>
 ```
 
-Save to `.tasks/<slug>.md` (git-ignored), sections: `# <title>`; `**Type:**`, `**Asked:**` verbatim; `## Summary` — finding, what to do, risk; `## Cause`|`Design`|`Answer`|`Strategy`; `## Acceptance criteria` — `- [ ]` lines; `## Steps`; `## How to check it` — exact commands; `## Do not touch` — what stays, and why; `## Evidence` — **Code**, **Data** (tagged), **Decided in the chat** (`[answered]`|`[assumed]`), **Still open**. Pure question: answer is deliverable, no steps.
+Save to `<root>/.tasks/<slug>.md` (root printed below; never `~`), sections: `# <title>`; `**Type:**`, `**Asked:**` verbatim; `## Summary` — finding, what to do, risk; `## Cause`|`Design`|`Answer`|`Strategy`; `## Acceptance criteria` — `- [ ]` lines; `## Steps`; `## How to check it` — exact commands; `## Do not touch` — what stays, and why; `## Evidence` — **Code**, **Data** (tagged), **Decided in the chat** (`[answered]`|`[assumed]`), **Still open**. Pure question: answer is deliverable, no steps.
 
 ## Step 5 — Check the plan, then hand off
 
@@ -60,11 +60,15 @@ In chat: absolute path, summary verbatim, what was `[assumed]`, and `Next: /dev-
 ## Rules
 
 - No production code; production is read-only, by a human. With `hasDatabase`: dry-run by default, safe re-runs, bounded scope.
-- Ask in the chat, not in the plan. Absolute paths. English or Ukrainian.
+- Ask in the chat, not in the plan. Absolute paths, under the root. English or Ukrainian.
 
 ---
 
 ## This repository
+
+Root — the plan goes under it, never `~`:
+
+!`pwd`
 
 Brief:
 
@@ -74,7 +78,7 @@ Profile:
 
 !`bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/profile.sh`
 
-Learned notes (evidence, possibly stale):
+Learned notes (possibly stale):
 
 !`tail -20 .devskills/learned.md 2>/dev/null || echo "(none)"`
 
