@@ -51,6 +51,12 @@ flat "$impl" | grep -q 'any other answer (no such file, no step, usage:) → quo
 flat "$impl" | grep -q 'test.sh --scoped <name>' || note 'dev-implement: the scoped test command is not spelled out'
 flat "$impl" | grep -q 'never cat them' || note 'dev-implement: no rule against reading the dev-lib scripts'
 
+# /dev-fix's Mode B names its lint and scoped-test commands in full: a bare
+# "lint.sh <path>" and a bare "testScoped" sent a model to read scripts.
+fix="$skills/dev-fix/SKILL.md"
+grep -q 'dev-lib}/lint.sh <path>' "$fix" || note 'dev-fix: Mode B does not spell the lint command'
+grep -q 'dev-lib}/test.sh --scoped <name>' "$fix" || note 'dev-fix: Mode B does not spell the scoped test command'
+
 # The manual plan keeps the same step shape — task-step.sh, step-budget.sh and
 # plan-check.sh parse it the same way — plus the two lines that are only its:
 # the commit the developer owes, and the walkthrough that is not written yet.

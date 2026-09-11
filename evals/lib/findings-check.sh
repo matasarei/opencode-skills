@@ -69,6 +69,16 @@ printf '%s\n' "$err" | grep -q '^findings: 2 verified, 4 dropped as unverifiable
 [ "$rc" -eq 0 ] || note "a missing findings file exited $rc, want 0"
 grep -q 'no findings file' "$work/err2" || note 'a missing findings file should say so on stderr'
 
+# /dev-fix injects this script with its $ARGUMENTS, which is a sentence when the
+# brief is one: stdout stays empty, stderr says so once, and the sentence is
+# not echoed back as a filename into the block the model reads.
+out3="$(cd "$work" && bash "$check" "the export blows up when a department has no head" 2>"$work/err3")"; rc=$?
+[ "$rc" -eq 0 ] || note "a sentence argument: exit $rc, want 0"
+[ -z "$out3" ] || note "a sentence argument: stdout should be empty, got '$out3'"
+[ "$(wc -l < "$work/err3" | tr -d ' ')" = 1 ] || note "a sentence argument: stderr should be one line"
+grep -q 'department' "$work/err3" && note 'a sentence argument: the sentence was echoed back as a path'
+grep -q 'no findings file' "$work/err3" || note "a sentence argument: stderr should still say no findings file, got '$(cat "$work/err3")'"
+
 if [ "$fails" -eq 0 ]; then
   printf 'findings-check: keeps what the file proves, drops the rest\n'
 else

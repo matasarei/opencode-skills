@@ -31,7 +31,7 @@ When the brief is a sentence, `#<issue>`, or a bug report:
 When the brief said `FINDINGS` or `EMPTY` — the verified list is injected below from `findings-check.sh`. Never re-plan these as a task file; they are already located and checked.
 
 1. **Which to take**: BLOCKER and WARNING in file order; NIT and SMELL listed and left.
-2. **Fix**: smallest change per finding; `sed -n '<line-15>,<line+15>p' <path>`. Lint with `lint.sh <path>` and run `testScoped`.
+2. **Fix**: smallest change per finding; `sed -n '<line-15>,<line+15>p' <path>`. Lint with `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh <path>`, then `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/test.sh --scoped <name>`.
 3. **Commit**: `git commit -m "Fix: <the finding's sentence>"`. Hook failure skips finding. Never `--no-verify`.
 4. **Prove it**: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/findings-check.sh <findings-file>`, then `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/test.sh` — quote its verdict line.
 5. **Report**: row per finding (fixed `<sha>` | resolved | skipped | left). Append repo trap to `.devskills/learned.md`, then `tail -20` back into place.
