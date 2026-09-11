@@ -99,6 +99,18 @@ printf '%s\n' "$out" | grep -q 'step/mytask-2 has already been merged' \
 run .tasks/nope.md 1; [ "$rc" -eq 66 ] || note "missing task file: exit $rc, want 66"
 run .tasks/mytask.md x; [ "$rc" -eq 64 ] || note "bad step number: exit $rc, want 64"
 
+# A step the file does not have gets no branch — and the message says what a
+# step looks like, because a plan in the wrong shape is how this happens.
+g switch -q main
+run .tasks/mytask.md 9
+[ "$rc" -eq 66 ] || note "missing step: exit $rc, want 66"
+[ "$(on)" = "main" ] || note "missing step: it cut a branch anyway, on '$(on)'"
+printf '%s\n' "$out" | grep -q 'N. \[ \] title' || note "missing step: the message should show the step shape, got '$out'"
+printf '# T\n\n## Steps\n\n#### Step 1. [ ] one\n' > "$repo/.tasks/shape.md"
+run .tasks/shape.md 1
+[ "$rc" -eq 66 ] || note "wrong step shape: exit $rc, want 66"
+[ "$(on)" = "main" ] || note "wrong step shape: it cut a branch anyway, on '$(on)'"
+
 if [ "$fails" -eq 0 ]; then
   printf 'branch: step 1 off the base, later steps off their predecessor, no re-cutting\n'
 else
