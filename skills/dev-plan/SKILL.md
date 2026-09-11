@@ -61,6 +61,7 @@ In chat: absolute path, plan-check's last line and summary verbatim, what was `[
 
 - No production code; production is read-only, by a human. With `hasDatabase`: dry-run by default, safe re-runs, bounded scope.
 - Ask in the chat, not in the plan. Absolute paths, under the root. English.
+- Run the dev-lib scripts; never `cat` them — their output is the fact.
 
 ---
 

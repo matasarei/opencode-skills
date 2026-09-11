@@ -34,7 +34,7 @@ Then write `<root>/.tasks/manual-<slug>.md` (root printed below; never `~`): `# 
    Walkthrough: written when you reach this step.
 ```
 
-`plan-check.sh <file>` must exit 0; paste each step's `step-budget.sh` line in. `Next: /dev-plan-manual <file> --continue`.
+`bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/plan-check.sh <file>` must exit 0; paste each step's `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh <file> <n>` line in. `Next: /dev-plan-manual <file> --continue`.
 
 ## Mode B — coach one step
 
