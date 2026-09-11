@@ -9,7 +9,7 @@ description: Build one step of a task file per run, on its own stacked branch �
 
 ## Arguments
 
-`<task-file>` / `--continue` → first unticked step; `--step <n>` → that step. `no such file` → stop; a sentence is planned first. `PLAN DONE` → say so in those words and stop. `**Mode:** manual` → stop, and say the plan is the developer's to write by hand: `/dev-plan-manual <task-file> --continue`.
+`<task-file>` / `--continue` → first unticked step; `--step <n>` → that step. `no such file` → stop; a sentence is planned first. `PLAN DONE` → say so in those words and stop. `NO STEPS` → stop: the steps are not `N. [ ]` lines, `/dev-plan` rewrites them — never reshape the file yourself. `**Mode:** manual` → stop; it is written by hand: `/dev-plan-manual <task-file> --continue`.
 
 ## Step 1 — Set up
 
@@ -26,13 +26,13 @@ bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh <task-file
 
 ## Step 2 — Build
 
-**Shell before reading.** `wc -l` before opening; `sed -n 'a,bp'` for ranges; `grep -rn` for symbols. Read whole file only when `wc -l` is under 300. Copy tool output; never retype it.
+**Shell before reading.** `wc -l` before opening; `sed -n 'a,bp'` for ranges; `grep -rn` for symbols. Read a whole file only under 300 lines. Copy tool output; never retype it.
 
-1. Open `Modify:` paths first, at lines named. **Check before edit**: if path status or `git diff` shows file is already modified with required change, do not re-edit.
+1. Open `Modify:` paths first, at lines named. **Check before edit**: if path status or `git diff` shows the change already made, do not re-edit.
 2. Make change. Match file naming, structure, comment style, CRLF/LF line endings. Imports (`use`/`import`) strictly at file root under namespace, never in method/function bodies. Namespace splits require explicit `use` imports for cross-namespace references.
-3. Check now: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh <file>`; run scoped test if one covers it. Syntax errors must be resolved before committing.
+3. Check now: `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/lint.sh <file>`; run scoped test if one covers it. Fix syntax errors before committing.
 
-**A file no step line names is the signal to stop.** A **blocker** (error or failing test) → fix first, own commit, say so. Plan cannot reach goal → stop, write new steps into task file, wait. Note anything else in report; never edit. The one test: does an criterion fail without it?
+**A file no step line names is the signal to stop.** A **blocker** (error or failing test) → fix first, own commit, say so. Plan cannot reach goal → stop, write new steps into task file, wait. Note anything else in report; never edit. The one test: does a criterion fail without it?
 
 ## Step 3 — Prove it
 
@@ -42,7 +42,7 @@ Run the step's `Check:` command, then:
 bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/test.sh
 ```
 
-**Quote its verdict line**: it carries the runner's own summary, and already chose the command and bounded the run. `TEST FAIL` → fix, re-run, **at most three rounds**, then report. `TEST MISSING` is not a pass. `exec.kind: host` → say results are against host.
+**Quote its verdict line**: it carries the runner's summary and already chose and bounded the run. `TEST FAIL` → fix, re-run, **at most three rounds**, then report. `TEST MISSING` is not a pass. `exec.kind: host` → say results are against host.
 
 ## Step 4 — Tick and commit
 
@@ -52,7 +52,7 @@ Tick it — `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/tick.sh <tas
 
 What landed, criteria met or not, files changed, quoted test line, what was left alone. One line at most for next run appended to `.devskills/learned.md`, then `tail -20` it back into place.
 
-Then: `Next: /dev-review`. When ready for the next step after `/dev-pr`: `/dev-implement <task-file> --continue` (pre-step: `/new` or `/compact` to manage context; the task file and branch are the state).
+Then: `Next: /dev-review`. When ready for the next step after `/dev-pr`: `/dev-implement <task-file> --continue` (pre-step: `/new` or `/compact`; the task file and branch are the state).
 
 ## Rules
 
