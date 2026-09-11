@@ -98,6 +98,16 @@ bash "$tick" "$work/odd.md" 3 "ok" >/dev/null 2>&1 || note 'heading shape: not t
 grep -q '^### Step 3 \[x\] — dash title — ok$' "$work/odd.md" || note "heading shape: line is '$(grep -m1 '^### Step 3' "$work/odd.md")'"
 [ "$(bash "$step" "$work/odd.md" --count)" = "3 of 3 done" ] || note "odd shapes: --count says '$(bash "$step" "$work/odd.md" --count)'"
 
+# A box inside the title is not the status box: the tick goes after the number
+# and the title keeps its box, and "[X]" in a title does not mean already ticked.
+printf '# T\n\n## Steps\n\n1. Add [ ] checkbox rendering\n2. Support [X] as a tick\n' > "$work/box.md"
+bash "$tick" "$work/box.md" 1 "done" >/dev/null 2>&1 || note 'box in title: not ticked'
+grep -q '^1\. \[x\] Add \[ \] checkbox rendering — done$' "$work/box.md" || note "box in title: line is '$(grep -m1 '^1\.' "$work/box.md")'"
+out="$(bash "$tick" "$work/box.md" 2 2>&1)"; rc=$?
+[ "$rc" -eq 0 ] || note "[X] in title: exit $rc, want 0 ($out)"
+grep -q '^2\. \[x\] Support \[X\] as a tick$' "$work/box.md" || note "[X] in title: line is '$(grep -m1 '^2\.' "$work/box.md")'"
+[ "$(bash "$step" "$work/box.md" --count)" = "2 of 2 done" ] || note "box in title: --count says '$(bash "$step" "$work/box.md" --count)'"
+
 if [ "$fails" -eq 0 ]; then
   printf 'tick: the right line, only that line, and the next step follows\n'
 else

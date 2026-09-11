@@ -22,6 +22,10 @@
 #   awk -v mode=paths -v n=3 [-v kinds="Modify Test"] -f steps.awk file
 #                                                       → "Kind|path|symbol" per path in those lines
 #   awk -v mode=lineno -v n=3             -f steps.awk file → the line number of step 3's header
+#   awk -v mode=tick -v n=3 [-v note=…]   -f steps.awk file → the whole file, step 3's header
+#                                                       ticked ("[ ]" → "[x]", or " [x]" put after
+#                                                       the number when there is no box) and the
+#                                                       note appended; exit 3 when already ticked
 #
 # Paths come from the "- Create:", "- Modify:" and "- Test:" lines: items are
 # split at top-level commas (a comma inside parentheses does not split), the
@@ -95,10 +99,31 @@ function parse_header(line,   s, loose, i) {
   return 1
 }
 
+# Ticks the header in $0. The box is the one the parser reads as the status:
+# right after the number (and a bold number's closing **), never one later in
+# the title. Returns 1 when it ticked, 0 when the step was already ticked.
+function tick_header(   pre, rest, sp) {
+  match($0, /^(#+[[:space:]]+)?(\*\*[[:space:]]*)?([Ss][Tt][Ee][Pp][[:space:]]+)?[0-9]+[.:)]?/)
+  pre = substr($0, 1, RLENGTH); rest = substr($0, RLENGTH + 1)
+  if (pre ~ /^(#+[[:space:]]+)?\*\*/ && rest ~ /^[[:space:]]*\*\*/) { sub(/^[[:space:]]*\*\*/, "", rest); pre = pre "**" }
+  match(rest, /^[[:space:]]*/); sp = substr(rest, 1, RLENGTH); rest = substr(rest, RLENGTH + 1)
+  if (rest ~ /^\[[xX]\]/) return 0
+  if (rest ~ /^\[ \]/) $0 = pre sp "[x]" substr(rest, 4)
+  else $0 = pre " [x]" (rest == "" ? "" : " " rest)
+  return 1
+}
+
 # "## Step 3 …" is a step written as a heading, not the end of the ## Steps section.
-/^## / && !parse_header($0) { insteps = (anywhere + 0) || ($0 == "## Steps"); on = 0; next }
-/^```/ { if (insteps) fence = !fence; next }
-!insteps || fence { next }
+/^## / && !parse_header($0) { insteps = (anywhere + 0) || ($0 == "## Steps"); on = 0; if (mode == "tick") print; next }
+/^```/ { if (insteps) fence = !fence; if (mode == "tick") print; next }
+!insteps || fence { if (mode == "tick") print; next }
+
+mode == "tick" {
+  if (parse_header($0) && num == n) {
+    if (tick_header()) { ticked = 1; if (note != "") $0 = $0 " — " note } else already = 1
+  }
+  print; next
+}
 
 {
   if (parse_header($0)) {
@@ -140,3 +165,5 @@ mode == "paths" {
     cur_kind = ""
   }
 }
+
+END { if (mode == "tick") exit (ticked ? 0 : (already ? 3 : 66)) }

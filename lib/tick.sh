@@ -8,9 +8,11 @@
 #
 #   tick.sh <task-file> <n> [<what landed>]
 #
-# The step is found through steps.awk, so whatever shape the parser accepts is
-# ticked: "[ ]" becomes "[x]", and a header with no box at all ("**3.** title",
-# "### Step 3 — title") gets " [x]" after its number.
+# steps.awk does the ticking (mode=tick), so whatever shape the parser accepts
+# is ticked the way the parser reads it: the box right after the number becomes
+# "[x]", a header with no box there ("**3.** title", "### Step 3 — title",
+# "1. Add [ ] rendering") gets " [x]" put after its number, and a box later in
+# the title is left alone.
 #
 # Exit 0 ticked, 3 already ticked (not an error — say so and move on),
 # 64 usage, 66 no such file or step.
@@ -30,21 +32,12 @@ ANY=0; grep -q '^## Steps' "$FILE" || ANY=1
 LNO="$(awk -v mode=lineno -v n="$N" -v anywhere="$ANY" -f "$HERE/steps.awk" "$FILE")"
 [ -n "$LNO" ] || { echo "no step $N in $FILE" >&2; exit 66; }
 
-case "$(sed -n "${LNO}p" "$FILE")" in
-  *"[x]"*|*"[X]"*)
-    echo "step $N was already ticked — nothing to do"
-    exit 3 ;;
-esac
-
 TMP="$FILE.tick.$$"
-awk -v n="$LNO" -v note="$NOTE" '
-  NR == n {
-    if ($0 ~ /\[ \]/) sub(/\[ \]/, "[x]")
-    else if (match($0, /^(#+[[:space:]]+)?(\*\*[[:space:]]*)?([Ss][Tt][Ee][Pp][[:space:]]+)?[0-9]+[.:)]?(\*\*)?/))
-      $0 = substr($0, 1, RLENGTH) " [x]" substr($0, RLENGTH + 1)
-    if (note != "") $0 = $0 " — " note
-  }
-  { print }
-' "$FILE" > "$TMP" && mv "$TMP" "$FILE" || { rm -f "$TMP"; echo "could not write $FILE" >&2; exit 66; }
+awk -v mode=tick -v n="$N" -v note="$NOTE" -v anywhere="$ANY" -f "$HERE/steps.awk" "$FILE" > "$TMP"
+case $? in
+  0) mv "$TMP" "$FILE" || { rm -f "$TMP"; echo "could not write $FILE" >&2; exit 66; } ;;
+  3) rm -f "$TMP"; echo "step $N was already ticked — nothing to do"; exit 3 ;;
+  *) rm -f "$TMP"; echo "no step $N in $FILE" >&2; exit 66 ;;
+esac
 
 sed -n "${LNO}p" "$FILE"
