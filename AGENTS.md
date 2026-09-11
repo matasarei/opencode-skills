@@ -27,7 +27,7 @@ When developing, updating, or debugging skills in this repository:
    - Skills live in `skills/<skill-name>/SKILL.md`.
    - Reusable scripts live in `lib/<script>.sh`, plugin in `lib/dev-guard.js`, templates in `skills/dev-init/templates/`.
 2. **Invariants to Check**:
-   - **Size cap**: Run `bash evals/skills/size.sh` — every `SKILL.md` must remain under 90 lines and 4,500 bytes (description under 200 chars).
+   - **Size cap**: Run `bash evals/skills/size.sh` — every `SKILL.md` must remain under 90 lines and 5,000 bytes (description under 200 chars).
    - **Lint**: Run `shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh` — 0 warnings allowed.
    - **Cycles & Frontmatter**: Run `bash evals/skills/cycle.sh` and `bash evals/skills/frontmatter.sh` to confirm skill handoffs hold.
 3. **Evals**:

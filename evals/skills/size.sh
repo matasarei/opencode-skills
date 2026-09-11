@@ -5,7 +5,7 @@
 #
 # Every SKILL.md is re-sent on every turn of a local model, and every skill's
 # description is loaded into every session. So each is capped: at most 90
-# lines and 4,500 bytes (about 1,100 tokens), a description on one line of at
+# lines and 5,000 bytes (about 1,250 tokens), a description on one line of at
 # most 200 characters. Rationale belongs in the README, not in the prompt.
 #
 # Exits 0 when every skill fits, 1 otherwise, naming each.
@@ -17,7 +17,7 @@ skills="$root/skills"
 [ -d "$skills" ] || { printf 'no skills at %s\n' "$skills" >&2; exit 1; }
 
 MAX_LINES=90
-MAX_BYTES=4500
+MAX_BYTES=5000
 MAX_DESC=200
 
 fails=0

@@ -54,7 +54,7 @@ for token in \
   'Without CI, or without GitHub' \
   'ci+container' \
   'compare-url' \
-  '4,500 bytes'
+  '5,000 bytes'
 do
   grep -qF -- "$token" "$readme" || note "README never mentions $token"
 done
