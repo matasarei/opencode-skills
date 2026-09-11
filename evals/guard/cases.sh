@@ -174,9 +174,35 @@ if (!crlfEditArgs.oldString.includes("\r\n") || !crlfEditArgs.newString.includes
 process.exit(fails ? 1 : 0)
 JS
 
+# A commit is refused while HEAD is on a base branch — a run that skipped
+# branch.sh once committed a step straight onto master — and allowed on a step
+# branch, or where there is no repository at all (the two tables above).
+cat > "$work/onbase-cases.txt" <<'TABLE'
+2|git commit -m "x"
+2|cd sub && git commit -m "x"
+2|git add . && git commit -m "step 1"
+0|git status
+0|git add application/
+0|echo "git commit later"
+TABLE
+cat > "$work/onstep-cases.txt" <<'TABLE'
+0|git commit -m "x"
+0|git add . && git commit -m "step 1"
+2|git push origin master
+TABLE
+g() { git -c user.email=t@t -c user.name=t -c init.defaultBranch=master "$@" >/dev/null 2>&1; }
+mkdir -p "$work/onbase" "$work/onstep" "$work/onrelease/.devskills"
+g -C "$work/onbase" init -q
+g -C "$work/onstep" init -q && g -C "$work/onstep" switch -c step/mytask-1
+g -C "$work/onrelease" init -q && g -C "$work/onrelease" switch -c release
+printf '{ "baseBranch": "release" }\n' > "$work/onrelease/.devskills/profile.json"
+
 fails=0
 node "$work/run.mjs" "$plugin" "$work/cases.txt" "$work" 'no-profile' || fails=$((fails + 1))
 node "$work/run.mjs" "$plugin" "$work/profile-cases.txt" "$work/withprofile" 'profile' || fails=$((fails + 1))
+node "$work/run.mjs" "$plugin" "$work/onbase-cases.txt" "$work/onbase" 'on-master' || fails=$((fails + 1))
+node "$work/run.mjs" "$plugin" "$work/onstep-cases.txt" "$work/onstep" 'on-step' || fails=$((fails + 1))
+node "$work/run.mjs" "$plugin" "$work/onbase-cases.txt" "$work/onrelease" 'on-release' || fails=$((fails + 1))
 
 if [ "$fails" -eq 0 ]; then
   printf 'guard: all cases pass\n'
