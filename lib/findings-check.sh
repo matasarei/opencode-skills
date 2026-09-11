@@ -19,7 +19,17 @@
 set -u
 
 FILE="${1:-.devskills/findings.md}"
-[ -f "$FILE" ] || { echo "no findings file at $FILE" >&2; exit 0; }
+# /dev-fix injects this with its $ARGUMENTS, which may be a sentence rather than
+# a path. Echoing the sentence as a filename put the brief into the block a
+# second time, so a non-path argument is named for what it is.
+if [ ! -f "$FILE" ]; then
+  case "$FILE" in
+    *' '*|http://*|https://*) echo "no findings file — the argument is a brief, not a path" >&2 ;;
+    */*|*.*) echo "no findings file at $FILE" >&2 ;;
+    *) echo "no findings file — the argument is a brief, not a path" >&2 ;;
+  esac
+  exit 0
+fi
 
 kept=0; dropped=0
 
