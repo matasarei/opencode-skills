@@ -305,8 +305,7 @@ merged here without its final commit because of exactly that gap.
 - **`SKILL.md` is a prompt, not documentation.** Under 90 lines and 4,500 bytes, description on
   one line under 200 characters. Rationale belongs in the README. Adding a paragraph means
   removing one — the cap is the reason a step fits in a 64k window.
-- **English** for identifiers, commit messages and titles. Bodies and user-facing strings may be
-  English.
+- **English** for everything: identifiers, commit messages, titles, bodies and the plans.
 
 ---
 
