@@ -59,15 +59,15 @@ for plan in "$plans"/*.md; do
   dir="$work/$name"; mkdir -p "$dir"; cp "$plan" "$dir/plan.md"
   any=0; grep -q '^## Steps' "$dir/plan.md" || any=1
   for n in $(awk -v mode=list -v anywhere="$any" -f "$lib/steps.awk" "$dir/plan.md" | cut -d'|' -f1); do
-    awk -v mode=paths -v n="$n" -v kinds="Modify Test" -v anywhere="$any" -f "$lib/steps.awk" "$dir/plan.md" \
-      | while IFS='|' read -r _ p sym; do
-          [ -n "$p" ] || continue
-          # A fixture is repository-controlled, but a placeholder is only ever
-          # written inside the scratch directory: a path that climbs out is a
-          # fixture author's mistake, and it is named rather than followed.
-          case "$p" in /*|../*|*/../*) note "$name: path '$p' leaves the fixture directory"; continue ;; esac
-          mkdir -p "$dir/$(dirname "$p")" && printf '%s\n' "$sym" >> "$dir/$p"
-        done
+    # Read from process substitution, not a pipe: note() counts in this shell.
+    while IFS='|' read -r _ p sym; do
+      [ -n "$p" ] || continue
+      # A fixture is repository-controlled, but a placeholder is only ever
+      # written inside the scratch directory: a path that climbs out is a
+      # fixture author's mistake, and it is named rather than followed.
+      case "$p" in /*|../*|*/../*) note "$name: path '$p' leaves the fixture directory"; continue ;; esac
+      mkdir -p "$dir/$(dirname "$p")" && printf '%s\n' "$sym" >> "$dir/$p"
+    done < <(awk -v mode=paths -v n="$n" -v kinds="Modify Test" -v anywhere="$any" -f "$lib/steps.awk" "$dir/plan.md")
   done
 
   # steps.awk: the count and the ticks.
@@ -102,6 +102,10 @@ for plan in "$plans"/*.md; do
 done
 
 [ "$count" -gt 0 ] || note 'no fixtures found under evals/fixtures/plans/'
+# A sidecar with no fixture beside it is a claim about nothing.
+for side in "$plans"/*.expect; do
+  [ -f "$plans/$(basename "$side" .expect).md" ] || note "$(basename "$side"): a sidecar with no fixture beside it"
+done
 
 if [ "$fails" -eq 0 ]; then
   printf 'fixtures: %s plan(s) a model wrote read the same by every script\n' "$count"
