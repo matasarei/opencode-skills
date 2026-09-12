@@ -59,7 +59,8 @@ grep -q 'dev-lib}/test.sh --scoped <name>' "$fix" || note 'dev-fix: Mode B does 
 
 # The same omission in three more skills: a script named without its path, or
 # a rule left out, is what a byte-cap trim removes first.
-pr="$skills/dev-pr/SKILL.md"; manual="$skills/dev-plan-manual/SKILL.md"
+pr="$skills/dev-pr/SKILL.md"
+manual="$skills/dev-plan-manual/SKILL.md"
 grep -q 'dev-lib}/verify-clean.sh' "$pr" || note 'dev-pr: verify-clean.sh is named without its invocation'
 grep -q 'dev-lib}/plan-check.sh <file>' "$manual" || note 'dev-plan-manual: plan-check.sh is named without its invocation'
 grep -q 'dev-lib}/step-budget.sh <file> <n>' "$manual" || note 'dev-plan-manual: step-budget.sh is named without its invocation'
@@ -68,7 +69,6 @@ flat "$plan" | grep -q 'never cat them' || note 'dev-plan: no rule against readi
 # The manual plan keeps the same step shape — task-step.sh, step-budget.sh and
 # plan-check.sh parse it the same way — plus the two lines that are only its:
 # the commit the developer owes, and the walkthrough that is not written yet.
-manual="$skills/dev-plan-manual/SKILL.md"
 for part in 'Create:' 'Modify:' 'Test:' 'Check:' 'Budget:' 'Commit:'; do
   grep -qE "^ +- $part" "$manual" || note "dev-plan-manual: the step template has no indented '$part' line of its own"
 done
