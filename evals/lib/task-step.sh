@@ -78,7 +78,7 @@ run plan.md --count
 run plan.md --next
 [ "$rc" -eq 0 ] || note "--next: exit $rc, want 0"
 [ "$(printf '%s\n' "$out" | head -1)" = '# Export by indicator' ] || note '--next: the title is not the first line'
-printf '%s\n' "$out" | grep -q '^\*\*Task file:\*\* .*plan\.md$' || note '--next: the task file path is not printed, so the builder has nothing to pass to the scripts'
+printf '%s\n' "$out" | grep -q '^\*\*Task file:\*\* /.*/plan\.md$' || note "--next: the task file path is not printed absolute, so a builder that cd'd elsewhere cannot pass it on: '$(printf '%s\n' "$out" | grep -m1 'Task file')'"
 printf '%s\n' "$out" | grep -q '^\*\*Type:\*\* feature$'      || note '--next: the Type line is missing'
 printf '%s\n' "$out" | grep -q '^## Acceptance criteria$'   || note '--next: acceptance criteria missing'
 printf '%s\n' "$out" | grep -q 'numbers are numbers'        || note '--next: a criterion is missing'

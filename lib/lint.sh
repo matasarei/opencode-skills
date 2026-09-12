@@ -6,7 +6,8 @@
 # a white page in production. It is also the one check that must never be reported
 # as having run when it did not.
 #
-#   lint.sh [base]
+#   lint.sh [base]          every file changed against the base branch
+#   lint.sh <file>...       the files given — what /dev-implement and /dev-fix call
 #
 # Exit 0 clean, 1 failures found, 2 no lint command available.
 

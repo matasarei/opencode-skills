@@ -73,10 +73,13 @@ grep -m1 '^\*\*Type:\*\*' "$FILE"
 # plan's output is unchanged.
 grep -m1 '^\*\*Mode:\*\*' "$FILE" || :
 echo
-# The path, resolved here (--continue with no file picks the newest), because
-# nothing else in the prompt carries it and .tasks/ is hidden from a glob: a fresh session was seen running
-# branch.sh on an invented path and then building with no branch at all.
-echo "**Task file:** $FILE"
+# The path, resolved here (--continue with no file picks the newest) and made
+# absolute, because nothing else in the prompt carries it and .tasks/ is hidden
+# from a glob: a fresh session was seen running branch.sh on an invented path
+# and then building with no branch at all. Absolute, so the builder's later
+# script calls work from whatever directory it has cd'd into.
+ABS="$(cd "$(dirname "$FILE")" && pwd)/$(basename "$FILE")"
+echo "**Task file:** $ABS"
 echo
 echo
 section 'Acceptance criteria'
