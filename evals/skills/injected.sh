@@ -85,7 +85,10 @@ for skill in "$skills"/*/SKILL.md; do
   block=""; ran=0
   while IFS= read -r line; do
     cmd="${line#\!\`}"; cmd="${cmd%\`}"
-    case "$cmd" in gh\ *|*\ gh\ *) continue ;; esac   # reaches the network
+    # An injection that starts with gh reaches the network and is skipped.
+    # pr-comments.sh calls gh too, but exits before it does in a project with
+    # no remote — which is why the throwaway project must never get one.
+    case "$cmd" in gh\ *|*\ gh\ *) continue ;; esac
     cmd="${cmd//\$ARGUMENTS/$args}"
     out="$(cd "$proj" && DEV_SKILLS_LIB="$root/lib" bash -c "$cmd" 2>&1)"
     block="$block
