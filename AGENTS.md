@@ -30,6 +30,7 @@ When developing, updating, or debugging skills in this repository:
    - **Size cap**: Run `bash evals/skills/size.sh` — every `SKILL.md` must remain under 90 lines and 5,000 bytes (description under 200 chars).
    - **Lint**: Run `shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh` — 0 warnings allowed.
    - **Cycles & Frontmatter**: Run `bash evals/skills/cycle.sh` and `bash evals/skills/frontmatter.sh` to confirm skill handoffs hold.
+   - **The assembled block**: Run `bash evals/skills/injected.sh` — it runs every skill's `!` injections in a throwaway project and asserts what the model reads: no usage line, an absolute `**Task file:**` line with the step, the project root for `/dev-plan`.
 3. **Evals**:
    - Every file under `lib/` must have test cases in `evals/lib/`: `<script>.sh` for a shell script, and `steps.sh` for `steps.awk`. The plugin has `evals/guard/cases.sh`.
    - Run the target test during iteration (`bash evals/lib/<script>.sh`), then run the full suite: `bash evals/run-all.sh` (every suite must pass; it prints the count itself).
