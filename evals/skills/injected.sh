@@ -19,6 +19,11 @@
 #   - no SKILL.md mentions $ARGUMENTS outside an injection, where it would
 #     reach the model as literal text.
 #
+# $ARGUMENTS is replaced as raw unquoted text, which is how OpenCode was seen
+# to do it on 2026-09-11 (a typed path reached plan-input.sh and task-step.sh
+# whole, a sentence reached them as words). If OpenCode changes that, this
+# substitution is the line to change.
+#
 # Injections that call gh reach the network and are skipped, named as such.
 # Needs git. Exits 0 when the blocks read as they should, 1 otherwise.
 
