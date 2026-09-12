@@ -78,7 +78,7 @@ echo
 # from a glob: a fresh session was seen running branch.sh on an invented path
 # and then building with no branch at all. Absolute, so the builder's later
 # script calls work from whatever directory it has cd'd into.
-case "$FILE" in /*) ABS="$FILE" ;; *) ABS="$PWD/$FILE" ;; esac
+ABS="$(cd "$(dirname "$FILE")" && pwd)/$(basename "$FILE")"
 echo "**Task file:** $ABS"
 echo
 echo
