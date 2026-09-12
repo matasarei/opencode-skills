@@ -1,0 +1,7 @@
+# What every reader must agree on for this fixture. Read by evals/lib/fixtures.sh.
+# origin: the shape /dev-plan is told to write — "N. [ ] title", indented
+# "- Create:" lines — with step 1 ticked the way tick.sh ticks it.
+steps=3
+done=1
+paths1=classes/export/writer/CsvWriter.php,tests/export/CsvWriterTest.php
+paths3=tests/export/CsvWriterTest.php

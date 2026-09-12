@@ -1,0 +1,7 @@
+# What every reader must agree on for this fixture. Read by evals/lib/fixtures.sh.
+# origin: the same 2026-09-11 plan after the run reshaped its headings by hand
+# to "Step N. [ ]" and ticked step 1 with python; still NO STEPS to every script.
+steps=4
+done=1
+paths1=application/lib/WidgetBundle/Entity/widget.php,application/lib/WidgetBundle/WidgetBundle.php
+paths3=application/models/widget/Widget.php,application/models/widget/WidgetMapper.php

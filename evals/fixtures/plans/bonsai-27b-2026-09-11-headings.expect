@@ -1,0 +1,8 @@
+# What every reader must agree on for this fixture. Read by evals/lib/fixtures.sh.
+# origin: a bonsai-27b /dev-plan run on 2026-09-11 15:40, paths made generic.
+# Its steps were "#### Step N. [ ]" headings with "- **Create:**" sublines, the
+# colon inside the bold. Every script reported NO STEPS on it.
+steps=4
+done=0
+paths1=application/lib/WidgetBundle/Entity/widget.php,application/lib/WidgetBundle/WidgetBundle.php
+paths3=application/models/widget/Widget.php,application/models/widget/WidgetMapper.php
