@@ -202,6 +202,10 @@ Two rules that catch most contributions:
 
 - **Every file under `lib/` needs cases in `evals/lib/`.** `<script>.sh` for a shell script,
   `steps.sh` for `steps.awk`.
+- **A plan a model wrote in a shape the parser missed goes into `evals/fixtures/plans/`**, paths
+  made generic, with a `.expect` sidecar saying what every reader must agree on;
+  `evals/lib/fixtures.sh` runs all five readers over every fixture. Never a one-off case: the
+  fixture is the regression, and the next shape a model invents lands beside it.
 - **A new test must fail without your fix.** Run it against the previous version and paste the
   failure. A case that passes both ways asserts nothing, and several have slipped in here:
 
