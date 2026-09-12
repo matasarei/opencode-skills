@@ -62,6 +62,10 @@ for plan in "$plans"/*.md; do
     awk -v mode=paths -v n="$n" -v kinds="Modify Test" -v anywhere="$any" -f "$lib/steps.awk" "$dir/plan.md" \
       | while IFS='|' read -r _ p sym; do
           [ -n "$p" ] || continue
+          # A fixture is repository-controlled, but a placeholder is only ever
+          # written inside the scratch directory: a path that climbs out is a
+          # fixture author's mistake, and it is named rather than followed.
+          case "$p" in /*|../*|*/../*) note "$name: path '$p' leaves the fixture directory"; continue ;; esac
           mkdir -p "$dir/$(dirname "$p")" && printf '%s\n' "$sym" >> "$dir/$p"
         done
   done
