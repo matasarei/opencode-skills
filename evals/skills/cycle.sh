@@ -61,7 +61,7 @@ grep -q 'REVIEW.md' "$skills/dev-review/SKILL.md" && note 'dev-review: still wri
 # Hand-written code is reviewed the same way and fixed differently: the findings
 # belong to whoever typed them, so the last line points at the list and names
 # /dev-fix as theirs to run rather than as the next step.
-has dev-review '.tasks/*.md'       'the review is told when the change was written by hand'
+has dev-review '.tasks/${s%-*}.md' 'the review is told when the change on this branch was written by hand'
 has dev-review 'Manual plan below' 'a hand-written change gets its findings back, not /dev-fix'
 has dev-review 'not (none)'       'an empty block is a fact only if the prompt says what empty means'
 grep -qi 'worktree' "$skills/dev-verify/SKILL.md" && note 'dev-verify: mentions a worktree this version never creates'

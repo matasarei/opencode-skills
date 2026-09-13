@@ -119,6 +119,23 @@ EOF
   fi
 done
 
+# dev-review names a manual plan only when it is this branch's plan. A stray
+# one elsewhere in .tasks/ used to turn every review's findings into "fix it by
+# hand". The branch step/<slug>-<n> belongs to .tasks/<slug>.md, as branch.sh
+# cuts it; run after the loop so the stray plan reaches no other skill's block.
+review_cmd="$(grep -A2 '^Manual plan:' "$skills/dev-review/SKILL.md" | grep -m1 '^!`')"
+review_cmd="${review_cmd#\!\`}"; review_cmd="${review_cmd%\`}"
+if [ -z "$review_cmd" ]; then
+  note "dev-review: no injection under 'Manual plan:'"
+else
+  printf '# Other\n\n**Mode:** manual\n' > "$proj/.tasks/manual-other.md"
+  got="$(cd "$proj" && bash -c "$review_cmd" 2>&1)"
+  [ "$got" = "(none)" ] || note "dev-review: on main it named a manual plan that belongs to another branch: $got"
+  git -C "$proj" switch -q -c step/manual-other-1 >/dev/null 2>&1
+  got="$(cd "$proj" && bash -c "$review_cmd" 2>&1)"
+  [ "$got" = ".tasks/manual-other.md" ] || note "dev-review: on step/manual-other-1 it did not name .tasks/manual-other.md: $got"
+fi
+
 if [ "$fails" -eq 0 ]; then
   printf 'injected: every skill hands the model a block it can act on\n'
 else
