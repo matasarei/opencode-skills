@@ -84,7 +84,7 @@ cat > package.json <<'JSON'
   "name": "dev-skills-testbed",
   "private": true,
   "scripts": {
-    "test": "node --test tests/",
+    "test": "node --test tests/*.test.js",
     "lint": "node --check src/slug.js"
   }
 }

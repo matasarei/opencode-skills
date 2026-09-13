@@ -137,14 +137,22 @@ receipt() {
 # there), "N failed" from pytest, Jest and cargo — but not Jest's "Test Suites:
 # 1 failed", which a file that never loaded also prints — Go's "--- FAIL:", and
 # node --test's "fail N". A build or collection failure matches none of them.
+# node --test's count is not enough on its own: a test file that never loads —
+# a syntax error, a module that does not exist yet, a top-level ReferenceError —
+# prints the same "fail 1" a failing assertion does. Node names that failing
+# entry after the file ("✖ tests/slug.test.js (26ms)") where a real failure names
+# the test ("✖ truncate cuts (1ms)"), so an entry named like a test file is a
+# load error, as are the error names that say so. Unclear, as Go's build failure is.
 failed_as_test() {
   printf '%s\n' "$out" | awk '
     /Test Suites:/ { next }
+    /SyntaxError:|Cannot find module|MODULE_NOT_FOUND/ { load = 1 }
+    /✖ [^ ]*\.[cm]?[jt]sx? \(/ { load = 1 }
     /Tests: *[1-9]/ && /(Failures|Errors): *[1-9]/ { r = 1 }
     /(^|[^0-9])[1-9][0-9]* failed/ { r = 1 }
     /^--- FAIL:/ { r = 1 }
-    NF >= 2 && $(NF-1) == "fail" && $NF ~ /^[1-9][0-9]*$/ { r = 1 }
-    END { exit !r }'
+    NF >= 2 && $(NF-1) == "fail" && $NF ~ /^[1-9][0-9]*$/ { node = 1 }
+    END { exit !(r || (node && !load)) }'
 }
 
 if [ -n "$RED" ]; then

@@ -123,6 +123,22 @@ manifest_case java Java 'mvn -q test' 'mvn -q test -Dtest={name}'
 mkdir -p "$work/rb/spec" && printf "source 'x'\n" > "$work/rb/Gemfile"
 manifest_case rb Ruby 'bundle exec rspec' 'bundle exec rspec -e {name}'
 
+# A node --test suite gets a scoped command that keeps npm test as the runner.
+# The name filter has to reach node before the test files — given after them,
+# or through `npm test --`, node --test ignores it — so it travels in
+# NODE_OPTIONS, and nothing read out of package.json reaches the command.
+mkdir -p "$work/nodetest" && printf '{"name":"w","private":true,"scripts":{"test":"node --test tests/*.test.js"}}\n' > "$work/nodetest/package.json"
+manifest_case nodetest Node 'npm test' 'env NODE_OPTIONS=--test-name-pattern={name} npm test'
+# Another runner behind npm test has no filter this toolkit has proved, so it
+# stays null rather than guess.
+mkdir -p "$work/nodejest" && printf '{"name":"w","private":true,"scripts":{"test":"jest"}}\n' > "$work/nodejest/package.json"
+manifest_case nodejest Node 'npm test' ''
+want testScoped 'null' 'a jest suite has no proven scoped form'
+# CI that runs npm test on a node --test suite gets the same scoped form.
+mkdir -p "$work/nodeci/.github/workflows" && printf '{"name":"w","private":true,"scripts":{"test":"node --test"}}\n' > "$work/nodeci/package.json"
+printf 'jobs:\n  t:\n    steps:\n      - run: npm test\n' > "$work/nodeci/.github/workflows/ci.yml"
+manifest_case nodeci Node 'npm test' 'env NODE_OPTIONS=--test-name-pattern={name} npm test'
+
 # CI is the authority over the manifest default: whatever the workflow runs is
 # what actually gates the project.
 ci="$work/goci"; mkdir -p "$ci/.github/workflows"
