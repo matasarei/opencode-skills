@@ -171,6 +171,14 @@ if (!crlfEditArgs.oldString.includes("\r\n") || !crlfEditArgs.newString.includes
   fails++
   console.log(`FAIL  ${label} edit arguments did not preserve CRLF line endings`)
 }
+// Reading a directory as a file is refused, pointing at glob or ls instead
+let readRefused = false
+try { await hook({ tool: "read" }, { args: { filePath: dir } }) }
+catch (e) { if (e.message.includes("is a directory, not a file")) readRefused = true }
+if (!readRefused) { fails++; console.log(`FAIL  ${label} reading a directory was not refused`) }
+// ...and reading a file is not: a refusal that caught every path would stop the model reading anything
+try { await hook({ tool: "read" }, { args: { filePath: globDummyFile } }) }
+catch (e) { fails++; console.log(`FAIL  ${label} reading a file was refused: ${e.message}`) }
 process.exit(fails ? 1 : 0)
 JS
 

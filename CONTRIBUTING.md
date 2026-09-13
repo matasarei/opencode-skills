@@ -126,7 +126,7 @@ or without GitHub** in the README.
 
 ```bash
 cd /path/to/opencode-skills && ./install.sh     # OpenCode runs the installed copy, not your checkout
-opencode debug skill | grep '"name": "dev-'     # all 8 skills parse and load
+opencode debug skill | grep '"name": "dev-'     # every dev-* skill parses and loads
 opencode debug skill --print-logs | grep -c ERROR   # expect 0
 ```
 
@@ -198,7 +198,7 @@ shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh   # 0 
 bash evals/skills/size.sh                                               # 90 lines / 5,000 bytes per skill
 ```
 
-Two rules that catch most contributions:
+Three rules that catch most contributions:
 
 - **Every file under `lib/` needs cases in `evals/lib/`.** `<script>.sh` for a shell script,
   `steps.sh` for `steps.awk`.

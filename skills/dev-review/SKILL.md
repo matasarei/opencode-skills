@@ -77,7 +77,7 @@ Profile:
 
 Manual plan:
 
-!`grep -l '^\*\*Mode:\*\* manual' .tasks/*.md 2>/dev/null | head -1 | grep . || echo "(none)"`
+!`b=$(git branch --show-current 2>/dev/null); case "$b" in step/*-[0-9]*) case "${b##*-}" in *[!0-9]*) ;; *) s=${b#step/}; grep -l '^\*\*Mode:\*\* manual' ".tasks/${s%-*}.md" 2>/dev/null ;; esac ;; esac | grep . || echo "(none)"`
 
 Queue — rank 1 is highest risk, top-down:
 
