@@ -65,19 +65,9 @@ done
 mkdir -p "$TARGET/plugins"
 cp "$SRC/lib/dev-guard.js" "$TARGET/plugins/dev-guard.js"
 
-# Agents are optional — only copied if the user has an agents directory or asks for one.
-if [ -d "$SRC/agents" ]; then
-  mkdir -p "$TARGET/agents"
-  for installed in "${TARGET:?}/agents"/*.md; do
-    [ -f "$installed" ] || continue
-    fname="$(basename "$installed")"
-    [ -n "$fname" ] && [ "$fname" != "." ] && [ "$fname" != ".." ] || continue
-    if [ ! -f "$SRC/agents/$fname" ]; then
-      rm -f "${TARGET:?}/agents/${fname:?}"
-    fi
-  done
-  cp "$SRC"/agents/*.md "$TARGET/agents/" 2>/dev/null || true
-fi
+# Earlier versions installed agents/dev-check.md, which no skill ever used. Remove
+# that one file so it does not linger; anything else in agents/ is not ours.
+rm -f "${TARGET:?}/agents/dev-check.md"
 
 # A version stamp: compare it with the checkout's HEAD to tell whether the installed
 # copy is stale. Nothing reads it for you — there is no marketplace here and nothing
