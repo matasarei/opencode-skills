@@ -74,6 +74,10 @@ flat "$fix" | grep -q 'Test:, Red:' || note 'dev-fix: the Mode A step lines do n
 pr="$skills/dev-pr/SKILL.md"
 manual="$skills/dev-plan-manual/SKILL.md"
 grep -q 'dev-lib}/verify-clean.sh' "$pr" || note 'dev-pr: verify-clean.sh is named without its invocation'
+# Red first reaches the pull request: a step that planned a red test and has no
+# proven receipt stops here, and the body quotes the red line beside the green.
+flat "$pr" | grep -q 'red-planned: names a test and red:' || note 'dev-pr: no stop for a planned red test with no proven receipt'
+flat "$pr" | grep -q 'the tested: verdict, and red:' || note 'dev-pr: the Testing section does not quote red:'
 grep -q 'dev-lib}/plan-check.sh <file>' "$manual" || note 'dev-plan-manual: plan-check.sh is named without its invocation'
 grep -q 'dev-lib}/step-budget.sh <file> <n>' "$manual" || note 'dev-plan-manual: step-budget.sh is named without its invocation'
 flat "$plan" | grep -q 'never cat them' || note 'dev-plan: no rule against reading the dev-lib scripts'

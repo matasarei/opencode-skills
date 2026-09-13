@@ -214,6 +214,38 @@ case "$(say_tested)" in
 esac
 rm -f "$repo/.devskills/test-result"
 
+# red: and red-planned: — whether the step's test was shown to fail before its
+# code existed. The receipt is test.sh --red's, read like tested:; the plan is
+# the step's Red: line. A red run happens before the step's commit, so a proven
+# receipt is normally one commit back.
+g switch -q step/x-2
+rm -f "$repo/.devskills/red-result"
+run
+want red 'none' 'red with no receipt'
+want red-planned 'none' 'a step with no Red: line'
+
+awk '{ print } /^   - Test: none$/ { print "   - Red: TwoTest" }' "$repo/.tasks/x.md" > "$work/x.md" && cp "$work/x.md" "$repo/.tasks/x.md"
+printf '%s TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$(g rev-parse HEAD~1)" > "$repo/.devskills/red-result"
+run
+want red-planned 'TwoTest' 'a step whose Red: names a test'
+case "$(row red)" in
+  "TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1. (at "*"1 commit(s) back)") ;;
+  *) note "red proven before the step's commit: '$(row red)'" ;;
+esac
+
+printf '%s TwoTest RED NOT PROVEN — the test passed before the change; it proves nothing yet\n' "$(g rev-parse HEAD)" > "$repo/.devskills/red-result"
+run
+case "$(row red)" in
+  "TwoTest RED NOT PROVEN"*"(this HEAD)") ;;
+  *) note "red not proven: '$(row red)'" ;;
+esac
+
+g checkout -q -- .tasks/x.md
+rm -f "$repo/.devskills/red-result"
+g switch -q main
+run
+want red-planned '(no task file or not a step branch)' 'red-planned off a step branch'
+
 # verification: and clean: — what /dev-pr refuses on when nothing else will ever
 # run the suite. The receipt is read exactly as tested: is, so the staleness
 # cases above cover both; what is asserted here is that the two lines exist and
