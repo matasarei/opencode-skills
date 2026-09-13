@@ -216,8 +216,11 @@ if [ -n "$TASK" ] && [ -f "$TASK" ] && [ -n "$STEP" ]; then
     printf '%s\n' "$PLANNED" | grep -qxF -- "$p" || printf '%s ' "$p"
   done)"
   say unplanned "${UNPLANNED:-none}"
-  # The step's Red: line, however a model bolds it — what red: above must prove.
-  RED_PLANNED="$(bash "$HERE/task-step.sh" "$TASK" "$STEP" 2>/dev/null | awk 'match($0, /^[[:space:]]*-?[[:space:]]*(\*\*)?Red(\*\*)?:(\*\*)?/) { v = substr($0, RLENGTH + 1); sub(/^[[:space:]]+/, "", v); sub(/[[:space:]]+$/, "", v); print v; exit }')"
+  # The step's Red: line, read by steps.awk exactly as plan-check.sh reads it —
+  # what red: above must prove. A plan with no ## Steps heading is scanned whole.
+  ANY=0; grep -q '^## Steps' "$TASK" || ANY=1
+  RED_PLANNED="$(awk -v mode=red -v n="$STEP" -v anywhere="$ANY" -f "$HERE/steps.awk" "$TASK" 2>/dev/null)"
+  RED_PLANNED="${RED_PLANNED#Red|}"
   say red-planned "${RED_PLANNED:-none}"
   echo "--- step"
   bash "$HERE/task-step.sh" "$TASK" "$STEP" 2>&1

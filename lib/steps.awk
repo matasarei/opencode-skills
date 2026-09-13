@@ -22,6 +22,9 @@
 #   awk -v mode=paths -v n=3 [-v kinds="Modify Test"] -f steps.awk file
 #                                                       → "Kind|path|symbol" per path in those lines
 #   awk -v mode=lineno -v n=3             -f steps.awk file → the line number of step 3's header
+#   awk -v mode=red -v n=3                -f steps.awk file → "Red|<value>" when step 3 has a Red:
+#                                                       line (plain or bold, value trimmed, maybe
+#                                                       empty), nothing when it has none
 #   awk -v mode=tick -v n=3 [-v note=…]   -f steps.awk file → the whole file, step 3's header
 #                                                       ticked ("[ ]" → "[x]", or " [x]" put after
 #                                                       the number when there is no box) and the
@@ -141,6 +144,15 @@ mode == "tick" {
 !on { next }
 
 mode == "block" { print; next }
+# The label is matched whole — "Reduce:" is not "Red:" — and bold on either side
+# of the colon, the way a model writes the other labels.
+mode == "red" {
+  if (match($0, /^[[:space:]]*-?[[:space:]]*(\*\*)?Red(\*\*)?:(\*\*)?/)) {
+    v = substr($0, RLENGTH + 1); sub(/^[[:space:]]+/, "", v); sub(/[[:space:]]+$/, "", v)
+    print "Red|" v; exit
+  }
+  next
+}
 mode == "paths" {
   line = $0
   # A label line: "- Create:", "- **Create**:", "- **Create:**", "Test:" …

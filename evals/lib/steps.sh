@@ -167,6 +167,33 @@ same "$(steps paths 2 | tr '\n' ';')" "Modify|c/d.php|;" 'shapes: paths under a 
 same "$(awk -v mode=lineno -v n=6 -f "$awkf" "$plan")" "13" 'shapes: lineno of the "## Step 6" heading'
 same "$(steps block 8 | head -1)" "STEP 8. [ ] upper case" 'shapes: block of the last step starts at its header'
 
+# Red: the one reader plan-check.sh and pr-info.sh both use. "Red|<value>" when
+# the step has the line — an empty value included, so a caller can tell "Red:"
+# with nothing after it from no line at all — and nothing when it has none.
+plan="$work/red.md"
+cat > "$plan" <<'PLAN'
+# Red lines
+
+## Steps
+
+1. [ ] plain
+   - Test: tests/CsvWriterTest.php
+   - Red: CsvWriterTest
+2. [ ] bold, with a reason
+   - **Red:** none — docs only
+3. [ ] empty
+   - Red:
+4. [ ] none at all, and a label that only starts with Red
+   - Reduce: the noise
+5. [ ] after a step without one
+   - Red: SlugTest
+PLAN
+same "$(steps red 1)" "Red|CsvWriterTest" 'red: a plain line'
+same "$(steps red 2)" "Red|none — docs only" 'red: a bold label, the reason kept'
+same "$(steps red 3)" "Red|" 'red: an empty value is still a line'
+same "$(steps red 4)" "" 'red: no line, and Reduce: is not Red:'
+same "$(steps red 5)" "Red|SlugTest" 'red: a later step reads its own line'
+
 if [ "$fails" -eq 0 ]; then
   printf 'steps: a step is a step only under ## Steps, and a path is only a path\n'
 else
