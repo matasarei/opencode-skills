@@ -8,6 +8,8 @@
 #
 #   test.sh                    the profile's `test`
 #   test.sh --scoped <name>    the profile's `testScoped`, with {name} filled in
+#   test.sh --red <name>       the same scoped run, before the code it tests exists:
+#                              the test has to fail, and fail as a test
 #
 # The first line of output is always the verdict, carrying the runner's own
 # summary so it can be quoted as evidence:
@@ -23,6 +25,19 @@
 # The verdict is also written to .devskills/test-result as "<HEAD sha> <verdict>",
 # so /dev-pr can tell whether anything was actually run for the code it is about
 # to propose, instead of taking the model's word for it.
+#
+# --red answers a different question — was this test red before the change? — so
+# it has its own verdicts, first line as always:
+#
+#   RED PROVEN | FAILURES! Tests: 1, Assertions: 1, Failures: 1.     exit 0
+#   RED NOT PROVEN — the test passed before the change; …          exit 1
+#   RED UNCLEAR | <summary>                                          exit 1
+#
+# PROVEN needs a test that ran and failed. A failure with no failing-test count —
+# a parse error, a collection error, a build failure, a runner not recognised
+# below — is UNCLEAR: something broke, but not necessarily the test. It writes
+# .devskills/red-result as "<HEAD sha> <name> <verdict>", and never
+# .devskills/test-result: a deliberate failure is not the change's test verdict.
 
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -34,18 +49,19 @@ case "$SECS" in ''|*[!0-9]*) SECS=600 ;; esac
 
 field() { sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\(.*\)\",\{0,1\}$/\1/p" .devskills/profile.json 2>/dev/null | head -1 | sed 's/",\{0,1\}$//; s/\\"/"/g'; }
 
-SCOPED=""
+SCOPED=""; RED=""
 case "${1:-}" in
-  --scoped)
+  --scoped|--red)
+    [ "$1" = --red ] && RED=1
     SCOPED="${2:-}"
     # A filter name reaches a command line. Anything but a plain test identifier
     # is refused here rather than quoted around later; see lib/lint.sh for why a
     # value spliced into a command string is not made safe by quoting it.
     case "$SCOPED" in
-      ''|*[!A-Za-z0-9_.:/-]*) echo "TEST MISSING — '--scoped $SCOPED' is not a plain test name"; exit 2 ;;
+      ''|*[!A-Za-z0-9_.:/-]*) echo "TEST MISSING — '$1 $SCOPED' is not a plain test name"; exit 2 ;;
     esac ;;
   "") ;;
-  *) echo "usage: test.sh [--scoped <name>]" >&2; exit 64 ;;
+  *) echo "usage: test.sh [--scoped <name> | --red <name>]" >&2; exit 64 ;;
 esac
 
 if [ -n "$SCOPED" ]; then
@@ -106,6 +122,40 @@ receipt() {
   mkdir -p .devskills 2>/dev/null || return 0
   printf '%s %s\n' "$sha" "$1" > .devskills/test-result 2>/dev/null || true
 }
+
+# Did at least one test run and fail? Each rule is one runner's own count:
+# PHPUnit "Tests: N … Failures|Errors: N" (a missing class is a real first red
+# there), "N failed" from pytest, Jest and cargo — but not Jest's "Test Suites:
+# 1 failed", which a file that never loaded also prints — Go's "--- FAIL:", and
+# node --test's "fail N". A build or collection failure matches none of them.
+failed_as_test() {
+  printf '%s\n' "$out" | awk '
+    /Test Suites:/ { next }
+    /Tests: *[1-9]/ && /(Failures|Errors): *[1-9]/ { r = 1 }
+    /(^|[^0-9])[1-9][0-9]* failed/ { r = 1 }
+    /^--- FAIL:/ { r = 1 }
+    NF >= 2 && $(NF-1) == "fail" && $NF ~ /^[1-9][0-9]*$/ { r = 1 }
+    END { exit !r }'
+}
+
+if [ -n "$RED" ]; then
+  if [ -n "$TIMEOUT" ] && [ "$rc" -eq 124 ]; then
+    verdict="RED UNCLEAR | no result after ${SECS}s; a hang is not a failing test"
+  elif [ "$rc" -eq 0 ]; then
+    verdict="RED NOT PROVEN — the test passed before the change; it proves nothing yet"
+  elif failed_as_test; then
+    verdict="RED PROVEN | $summary"
+  else
+    verdict="RED UNCLEAR | $summary"
+  fi
+  printf '%s\n' "$verdict"
+  sha="$(git rev-parse HEAD 2>/dev/null)"
+  if [ -n "$sha" ] && mkdir -p .devskills 2>/dev/null; then
+    printf '%s %s %s\n' "$sha" "$SCOPED" "$verdict" > .devskills/red-result 2>/dev/null || true
+  fi
+  printf '%s\n' "$out" | tail -20
+  case "$verdict" in "RED PROVEN"*) exit 0 ;; *) exit 1 ;; esac
+fi
 
 if [ -n "$TIMEOUT" ] && [ "$rc" -eq 124 ]; then
   verdict="TEST TIMEOUT — no result after ${SECS}s; a hang is a failure, not a slow pass"

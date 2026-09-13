@@ -145,8 +145,74 @@ profile '"sh ./runner.sh"' null
 run
 case "$(first)" in "TEST PASS | OK (43 tests, 118 assertions)"*) ;; *) note "non-node runner regressed: '$(first)'" ;; esac
 
+# --red: a step's test must fail before its code is written. PROVEN needs a test
+# that ran and failed; a pass proves nothing yet; a failure with no failing-test
+# count — a parse or collection error, a build failure, an unknown runner — is
+# unclear, never proven. Each stub prints what that runner prints.
+cat > "$work/red.sh" <<'SH'
+case "$1" in
+  phpunit-fail)   echo "FAILURES! Tests: 1, Assertions: 1, Failures: 1."; exit 1 ;;
+  phpunit-error)  echo "Error: Class \"Slug\" not found"; echo "ERRORS! Tests: 1, Assertions: 0, Errors: 1."; exit 2 ;;
+  php-parse)      echo "PHP Parse error: syntax error, unexpected token \"}\" in tests/SlugTest.php on line 9"; exit 255 ;;
+  pytest-fail)    echo "FAILED tests/test_slug.py::test_truncate"; echo "=========== 1 failed in 0.02s ==========="; exit 1 ;;
+  pytest-collect) echo "ERROR tests/test_slug.py"; echo "!!!!!!! Interrupted: 1 error during collection !!!!!!!"; echo "=========== 1 error in 0.05s ==========="; exit 2 ;;
+  node-fail)      echo "not ok 1 - truncate"; echo "ℹ pass 0"; echo "ℹ fail 1"; exit 1 ;;
+  jest-fail)      echo "Test Suites: 1 failed, 1 total"; echo "Tests:       1 failed, 1 total"; exit 1 ;;
+  jest-empty)     echo "Test Suites: 1 failed, 1 total"; echo "Tests:       0 total"; exit 1 ;;
+  go-fail)        echo "--- FAIL: TestTruncate (0.00s)"; echo "FAIL"; exit 1 ;;
+  go-build)       echo "./slug_test.go:9:2: undefined: Truncate"; echo "FAIL	example.com/slug [build failed]"; exit 1 ;;
+  cargo-fail)     echo "test result: FAILED. 0 passed; 1 failed; 0 ignored"; exit 101 ;;
+  pass)           echo "OK (1 test, 1 assertion)"; exit 0 ;;
+  *)              echo "boom"; exit 1 ;;
+esac
+SH
+profile '"sh ./runner.sh"' '"sh ./red.sh {name}"'
+red_case() { # red_case <name> <verdict prefix> <exit>
+  run --red "$1"
+  [ "$rc" -eq "$3" ] || note "red $1: exit $rc, want $3"
+  case "$(first)" in "$2"*) ;; *) note "red $1: '$(first)', want '$2…'" ;; esac
+}
+red_case phpunit-fail   'RED PROVEN | FAILURES! Tests: 1' 0
+red_case phpunit-error  'RED PROVEN | ERRORS! Tests: 1' 0
+red_case php-parse      'RED UNCLEAR |' 1
+red_case pytest-fail    'RED PROVEN |' 0
+red_case pytest-collect 'RED UNCLEAR |' 1
+red_case node-fail      'RED PROVEN |' 0
+red_case jest-fail      'RED PROVEN |' 0
+red_case jest-empty     'RED UNCLEAR |' 1
+red_case go-fail        'RED PROVEN |' 0
+red_case go-build       'RED UNCLEAR |' 1
+red_case cargo-fail     'RED PROVEN |' 0
+red_case pass           'RED NOT PROVEN' 1
+red_case unknown-runner 'RED UNCLEAR |' 1
+printf '%s\n' "$out" | grep -q 'boom' || note 'red unclear: the runner output is not shown below the verdict'
+
+# A red name reaches a command line exactly as a scoped one does.
+run --red 'x; touch PWNED'
+[ "$rc" -eq 2 ] || note "hostile red name: exit $rc, want 2"
+[ -f "$work/PWNED" ] && note 'hostile red name: the value executed'
+run --red
+[ "$rc" -eq 2 ] || note "red with no name: exit $rc, want 2"
+
+# The red receipt is its own file. .devskills/test-result is /dev-pr's green
+# gate, and a deliberate failure must never be recorded there.
+if [ -d "$work/.git" ]; then
+  printf 'feedface TEST PASS | kept\n' > "$work/.devskills/test-result"
+  rm -f "$work/.devskills/red-result"
+  run --red phpunit-fail
+  [ "$(cat "$work/.devskills/test-result")" = 'feedface TEST PASS | kept' ] \
+    || note "red receipt: a red run rewrote test-result: '$(cat "$work/.devskills/test-result")'"
+  [ "$(cut -d' ' -f1-2 "$work/.devskills/red-result" 2>/dev/null)" = "$head_sha phpunit-fail" ] \
+    || note "red receipt: not '<HEAD> <name> …': '$(cat "$work/.devskills/red-result" 2>/dev/null)'"
+  cut -d' ' -f3- "$work/.devskills/red-result" 2>/dev/null | grep -q '^RED PROVEN' \
+    || note 'red receipt: the verdict was not recorded'
+  rm -f "$work/.devskills/red-result"
+  run --red 'x; y'
+  [ -f "$work/.devskills/red-result" ] && note 'red receipt: a refused name wrote a receipt'
+fi
+
 if [ "$fails" -eq 0 ]; then
-  printf 'test: pass, fail, missing, scoped and timeout each get their verdict line\n'
+  printf 'test: pass, fail, missing, scoped, timeout and red each get their verdict line\n'
 else
   printf 'test: %s case(s) failed\n' "$fails" >&2
 fi
