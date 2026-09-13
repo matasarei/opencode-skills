@@ -66,6 +66,14 @@ esac
 
 if [ -n "$SCOPED" ]; then
   CMD="$(field testScoped)"
+  # A red run needs the name to reach the runner. Without a {name} in testScoped
+  # the whole suite runs, and a failure anywhere in it is not this test failing.
+  if [ -n "$RED" ]; then
+    case "$CMD" in
+      *'{name}'*) ;;
+      *) echo "RED UNCLEAR — no testScoped with {name} in the profile; the whole suite cannot show that $SCOPED failed"; exit 1 ;;
+    esac
+  fi
   [ -z "$CMD" ] || [ "$CMD" = null ] && CMD="$(field test)"
 else
   CMD="$(field test)"

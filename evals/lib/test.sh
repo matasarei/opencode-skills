@@ -187,6 +187,14 @@ red_case pass           'RED NOT PROVEN' 1
 red_case unknown-runner 'RED UNCLEAR |' 1
 printf '%s\n' "$out" | grep -q 'boom' || note 'red unclear: the runner output is not shown below the verdict'
 
+# With no testScoped the whole suite runs and the name never reaches it, so a
+# failure anywhere in the suite is not this test failing. Never PROVEN.
+profile '"sh ./red.sh phpunit-fail"' null
+run --red BrandNewTest
+[ "$rc" -eq 1 ] || note "red with no testScoped: exit $rc, want 1"
+case "$(first)" in "RED UNCLEAR"*testScoped*) ;; *) note "red with no testScoped: '$(first)'" ;; esac
+profile '"sh ./runner.sh"' '"sh ./red.sh {name}"'
+
 # A red name reaches a command line exactly as a scoped one does.
 run --red 'x; touch PWNED'
 [ "$rc" -eq 2 ] || note "hostile red name: exit $rc, want 2"
