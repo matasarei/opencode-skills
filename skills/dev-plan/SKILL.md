@@ -32,7 +32,7 @@ Ask **once in chat** (max 4 questions with recommended answers) only what code c
 ## Step 4 — Write it
 
 **One step = one PR-sized build for `/dev-implement`** (build, review, fix, PR).
-- **Step size**: Max 3–5 files per step. Never write vague summaries like "flip 20 consumers" — list every single file. Split large tasks into sequential slices (3–5 files each). For refactors, include steps updating `tests/` and `views/` callers.
+- **Step size**: Max 3–5 files per step. Never write vague summaries like "flip 20 consumers" — list every single file. Split large tasks into sequential slices (3–5 files each). For refactors, include steps updating `tests/` and `views/` callers. **Red first**: `Red:` names the scoped test that must fail before the step's code exists; docs, config or no suite → `none — <reason>`.
 - **Format**: Strictly `N. [ ] <title>`. Numbered `N. [ ]`, never `- [ ]`, never bold numbers like `1. **...**` (scripts parse it):
 
 ```markdown
@@ -40,6 +40,7 @@ Ask **once in chat** (max 4 questions with recommended answers) only what code c
    - Create: <paths this step adds>, or none
    - Modify: <path:lines (symbol)>, …, or none
    - Test: <the test this step adds or runs>, or "none — covered by step N"
+   - Red: <the scoped test that must fail first>, or none — <reason>
    - Check: `<the exact command that proves it>`
    - Budget: <the line step-budget.sh printed>
 ```
@@ -53,7 +54,7 @@ bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/plan-check.sh .tasks/<slu
 bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/step-budget.sh .tasks/<slug>.md <n>   # every step
 ```
 
-`plan-check.sh` must exit 0; fix any missing steps or bad paths. Paste each step's `Budget:` line in. OVER → split when a split exists; otherwise keep it and write `OVER — kept: <reason>` — the cap is a recommendation.
+`plan-check.sh` must exit 0; fix any missing steps, bad paths or `Red:` lines. Paste each step's `Budget:` line in. OVER → split when a split exists; otherwise keep it and write `OVER — kept: <reason>` — the cap is a recommendation.
 
 In chat: absolute path, plan-check's last line and summary verbatim, what was `[assumed]`, and `Next: /dev-implement .tasks/<slug>.md` — one step per run (resuming after `/dev-pr`: `/dev-implement <task-file> --continue`, pre-step: `/new` or `/compact`).
 

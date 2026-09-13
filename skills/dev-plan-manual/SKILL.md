@@ -28,6 +28,7 @@ Then write `<root>/.tasks/manual-<slug>.md` (root printed below; never `~`): `# 
    - Create: <paths it adds>, or none
    - Modify: <path:lines (symbol)>, or none
    - Test: <the test it adds or runs>, or "none — covered by step N"
+   - Red: <the scoped test that must fail first>, or none — <reason>
    - Check: `<the exact command that proves it>`
    - Budget: <the line step-budget.sh printed>
    - Commit: yours — commit this step before starting the next
@@ -53,7 +54,7 @@ Then write `<root>/.tasks/manual-<slug>.md` (root printed below; never `~`): `# 
 
 Never `Create:`, `Modify:` or `Test:` in a walkthrough — `steps.awk` reads those as paths — nor an unindented `<!--`, which ends the step. **No implementation**: signatures, `path:line` anchors and a pattern to follow, yes; a body you could paste, no — that is yours to write.
 
-3. Print it. Then: run the profile's test and lint, **commit this step yourself**, and tick it —
+3. Print it. Then: they write the `Red:` test first and run `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/test.sh --red <name>` — `RED PROVEN` before any code; run the profile's test and lint, **commit this step yourself**, and tick it —
    `bash ${DEV_SKILLS_LIB:-$HOME/.config/opencode/dev-lib}/tick.sh <task-file> <n> "<what landed>"`.
    Run it only when they say the step is done.
 4. Log it: a line in `## Session log` (keep 10), each new question in `## Q&A` as `- Q: … — A: … [answered|assumed] (<date>)` — what a new session reads after `/compact`.

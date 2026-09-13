@@ -17,7 +17,7 @@ When the brief is a sentence, `#<issue>`, or a bug report:
 
 1. **Find and verify**: grep 2–4 distinctive terms, read entry points and tests. Reproduce via `exec.prefix` if possible; quote output. Tag cause: `[from the code]` or `[hypothesis]`.
 2. **Write task plan** in `<root>/.tasks/fix-<slug>.md` (root as printed below, never `~`) using standard format (max 3–5 files per step):
-   - Numbered `N. [ ] <title>` with `Create:`, `Modify:`, `Test:`, `Check:`, `Budget:` lines.
+   - Numbered `N. [ ] <title>` with `Create:`, `Modify:`, `Test:`, `Red:`, `Check:`, `Budget:` lines.
    - Acceptance criteria (`- [ ]` lines), exact check commands, and what not to touch.
 3. **Check plan**:
    ```bash
