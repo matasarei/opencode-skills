@@ -126,7 +126,7 @@ or without GitHub** in the README.
 
 ```bash
 cd /path/to/opencode-skills && ./install.sh     # OpenCode runs the installed copy, not your checkout
-opencode debug skill | grep '"name": "dev-'     # all 8 skills parse and load
+opencode debug skill | grep '"name": "dev-'     # every dev-* skill parses and loads
 opencode debug skill --print-logs | grep -c ERROR   # expect 0
 ```
 
