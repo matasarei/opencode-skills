@@ -210,10 +210,18 @@ if [ -d "$work/.git" ]; then
   run --red phpunit-fail
   [ "$(cat "$work/.devskills/test-result")" = 'feedface TEST PASS | kept' ] \
     || note "red receipt: a red run rewrote test-result: '$(cat "$work/.devskills/test-result")'"
-  [ "$(cut -d' ' -f1-2 "$work/.devskills/red-result" 2>/dev/null)" = "$head_sha phpunit-fail" ] \
-    || note "red receipt: not '<HEAD> <name> …': '$(cat "$work/.devskills/red-result" 2>/dev/null)'"
-  cut -d' ' -f3- "$work/.devskills/red-result" 2>/dev/null | grep -q '^RED PROVEN' \
+  # The receipt names the branch it proves red for, so a reader can refuse one
+  # recorded on another branch or an earlier step.
+  [ "$(cut -d' ' -f1-3 "$work/.devskills/red-result" 2>/dev/null)" = "$head_sha main phpunit-fail" ] \
+    || note "red receipt: not '<HEAD> <branch> <name> …': '$(cat "$work/.devskills/red-result" 2>/dev/null)'"
+  cut -d' ' -f4- "$work/.devskills/red-result" 2>/dev/null | grep -q '^RED PROVEN' \
     || note 'red receipt: the verdict was not recorded'
+  # A detached HEAD has no branch to prove red for: "-", which matches none.
+  git -C "$work" checkout -q --detach 2>/dev/null
+  run --red phpunit-fail
+  [ "$(cut -d' ' -f2 "$work/.devskills/red-result" 2>/dev/null)" = "-" ] \
+    || note "red receipt: a detached HEAD did not record '-': '$(cat "$work/.devskills/red-result" 2>/dev/null)'"
+  git -C "$work" checkout -q main 2>/dev/null
   rm -f "$work/.devskills/red-result"
   run --red 'x; y'
   [ -f "$work/.devskills/red-result" ] && note 'red receipt: a refused name wrote a receipt'
