@@ -198,7 +198,7 @@ shellcheck --severity=warning lib/*.sh install.sh evals/*.sh evals/*/*.sh   # 0 
 bash evals/skills/size.sh                                               # 90 lines / 5,000 bytes per skill
 ```
 
-Two rules that catch most contributions:
+Three rules that catch most contributions:
 
 - **Every file under `lib/` needs cases in `evals/lib/`.** `<script>.sh` for a shell script,
   `steps.sh` for `steps.awk`.
