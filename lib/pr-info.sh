@@ -188,7 +188,16 @@ say tested "$(receipt .devskills/test-result)"
 # would pass for this one. A red receipt counts only from where this branch began.
 red_receipt() {
   r_sha="$(cut -d' ' -f1 .devskills/red-result 2>/dev/null)"
-  start="$(git merge-base "$BASE" HEAD 2>/dev/null)"
+  # Where this branch began: the parent of the oldest commit on HEAD's
+  # first-parent history that the base does not have. The merge-base will not
+  # do — merging main into the branch moves it past the red run, and a red that
+  # happened before this step's code can never be proven again once it exists.
+  first="$(git rev-list --first-parent HEAD --not "$BASE" 2>/dev/null | tail -1)"
+  if [ -n "$first" ]; then
+    start="$(git rev-parse --verify --quiet "$first^" 2>/dev/null)"
+  else
+    start="$(git merge-base "$BASE" HEAD 2>/dev/null)"
+  fi
   if [ -n "$r_sha" ] && [ -n "$start" ] && ! git merge-base --is-ancestor "$start" "$r_sha" 2>/dev/null; then
     printf 'stale — recorded before this branch, at %s\n' "$(git rev-parse --short "$r_sha" 2>/dev/null || printf '%s' "$r_sha")"
   else
@@ -216,8 +225,11 @@ if [ -n "$TASK" ] && [ -f "$TASK" ] && [ -n "$STEP" ]; then
     printf '%s\n' "$PLANNED" | grep -qxF -- "$p" || printf '%s ' "$p"
   done)"
   say unplanned "${UNPLANNED:-none}"
-  # The step's Red: line, however a model bolds it — what red: above must prove.
-  RED_PLANNED="$(bash "$HERE/task-step.sh" "$TASK" "$STEP" 2>/dev/null | awk 'match($0, /^[[:space:]]*-?[[:space:]]*(\*\*)?Red(\*\*)?:(\*\*)?/) { v = substr($0, RLENGTH + 1); sub(/^[[:space:]]+/, "", v); sub(/[[:space:]]+$/, "", v); print v; exit }')"
+  # The step's Red: line, read by steps.awk exactly as plan-check.sh reads it —
+  # what red: above must prove. A plan with no ## Steps heading is scanned whole.
+  ANY=0; grep -q '^## Steps' "$TASK" || ANY=1
+  RED_PLANNED="$(awk -v mode=red -v n="$STEP" -v anywhere="$ANY" -f "$HERE/steps.awk" "$TASK" 2>/dev/null)"
+  RED_PLANNED="${RED_PLANNED#Red|}"
   say red-planned "${RED_PLANNED:-none}"
   echo "--- step"
   bash "$HERE/task-step.sh" "$TASK" "$STEP" 2>&1

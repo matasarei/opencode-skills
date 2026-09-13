@@ -68,12 +68,12 @@ EOF
 $(steps paths "$n" Modify)
 EOF
 
-  # "Red:" however a model bolds it; the leading | tells an empty value from no line.
-  red="$(steps block "$n" | awk 'match($0, /^[[:space:]]*-?[[:space:]]*(\*\*)?Red(\*\*)?:(\*\*)?/) { print "|" substr($0, RLENGTH + 1); exit }')"
-  red_value="$(printf '%s' "${red#|}" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  # "Red:" as steps.awk reads it — "Red|<value>", or nothing when the step has none.
+  red="$(steps red "$n")"
+  red_value="${red#Red|}"
   if [ -z "$red_value" ]; then
     problem "$n" "Red:" "missing — name the test that must fail first, or none — <reason>"
-  elif printf '%s\n' "$red_value" | grep -qiE '^none([[:space:]]|—|–|-|:)*$'; then
+  elif printf '%s\n' "$red_value" | grep -qiE '^none([[:space:]]|—|–|-|:|\.)*$'; then
     problem "$n" "Red:" "none needs a reason — none — <reason>"
   fi
 done

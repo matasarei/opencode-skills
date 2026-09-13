@@ -112,16 +112,24 @@ cat > "$work/red.md" <<'EOF'
 6. [ ] Bolded, as a model writes it, and a hyphen for the dash
    - Modify: none
    - **Red:** none - config only
+7. [ ] A lowercase label is still the label
+   - Modify: none
+   - red: SlugTest
+8. [ ] None with only a full stop is still bare
+   - Modify: none
+   - Red: None.
 EOF
 run red.md
 [ "$rc" -eq 1 ] || note "red: exit $rc, want 1"
+hasnt 'STEP 7' 'red: a lowercase label'
+has 'STEP 8 | Red: | none needs a reason — none — <reason>' 'red: None. with a full stop'
 has 'STEP 2 | Red: | missing — name the test that must fail first, or none — <reason>' 'red: no line'
 has 'STEP 3 | Red: | none needs a reason — none — <reason>' 'red: bare none'
 hasnt 'STEP 1' 'red: a ticked step is not checked'
 hasnt 'STEP 4' 'red: none with a reason'
 hasnt 'STEP 5' 'red: a test name'
 hasnt 'STEP 6' 'red: a bold label and a hyphen'
-[ "$(printf '%s\n' "$out" | grep -c '^STEP')" -eq 2 ] || note "red: expected exactly 2 problem lines, got $(printf '%s\n' "$out" | grep -c '^STEP')"
+[ "$(printf '%s\n' "$out" | grep -c '^STEP')" -eq 3 ] || note "red: expected exactly 3 problem lines, got $(printf '%s\n' "$out" | grep -c '^STEP')"
 
 # Errors.
 run nope.md;            [ "$rc" -eq 66 ] || note "no such file: exit $rc, want 66"
