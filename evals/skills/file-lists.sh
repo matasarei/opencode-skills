@@ -54,6 +54,12 @@ flat "$impl" | grep -q 'NO STEPS → print Next: /dev-plan <task-file> and stop'
 flat "$impl" | grep -q 'any other answer (no such file, no step, usage:) → quote it and stop' || note 'dev-implement: no rule for a branch.sh answer other than BRANCH'
 flat "$impl" | grep -q 'test.sh --scoped <name>' || note 'dev-implement: the scoped test command is not spelled out'
 flat "$impl" | grep -q 'never cat them' || note 'dev-implement: no rule against reading the dev-lib scripts'
+# Red first: the step's Red: test runs before any production line, and a test
+# that already passes stops the build. The import sentence it replaced was
+# PHP-only; lint and /dev-review C5 still catch a broken import.
+grep -q 'dev-lib}/test.sh --red <name>' "$impl" || note 'dev-implement: the red-first command is not spelled out'
+flat "$impl" | grep -q 'RED NOT PROVEN' || note 'dev-implement: no rule for a test that passed before the change'
+flat "$impl" | grep -q 'cross-namespace references' && note 'dev-implement: the PHP-only import sentence is back, in the bytes red first needs'
 
 # /dev-fix's Mode B names its lint and scoped-test commands in full: a bare
 # "lint.sh <path>" and a bare "testScoped" sent a model to read scripts.
