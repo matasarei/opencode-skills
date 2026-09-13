@@ -134,6 +134,9 @@ else
   git -C "$proj" switch -q -c step/manual-other-1 >/dev/null 2>&1
   got="$(cd "$proj" && bash -c "$review_cmd" 2>&1)"
   [ "$got" = ".tasks/manual-other.md" ] || note "dev-review: on step/manual-other-1 it did not name .tasks/manual-other.md: $got"
+  git -C "$proj" switch -q -c step/manual-other-1a >/dev/null 2>&1
+  got="$(cd "$proj" && bash -c "$review_cmd" 2>&1)"
+  [ "$got" = "(none)" ] || note "dev-review: step/manual-other-1a is no step branch to pr-info.sh, yet it named: $got"
 fi
 
 if [ "$fails" -eq 0 ]; then
