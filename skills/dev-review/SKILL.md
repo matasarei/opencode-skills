@@ -79,7 +79,7 @@ Manual plan:
 
 Red receipt:
 
-!`cut -d' ' -f2- .devskills/red-result 2>/dev/null | grep . || echo "(none)"`
+!`set -f; b=$(git branch --show-current 2>/dev/null); set -- $(cat .devskills/red-result 2>/dev/null); [ -n "$b" ] && [ "${2:-}" = "$b" ] && git merge-base --is-ancestor "$1" HEAD 2>/dev/null && shift 2 && echo "$*" || echo "(none)"`
 
 Queue — rank 1 is highest risk, top-down:
 

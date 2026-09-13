@@ -139,19 +139,28 @@ else
   [ "$got" = "(none)" ] || note "dev-review: step/manual-other-1a is no step branch to pr-info.sh, yet it named: $got"
 fi
 
-# dev-review hands C11 the red receipt: "(none)" when no red run was recorded,
-# and the test's name and verdict — not the commit sha — when one was.
+# dev-review hands C11 the red receipt under the rule pr-info.sh uses: the
+# test's name and verdict when the receipt names this branch and its sha is
+# behind HEAD, and "(none)" for no receipt, another branch's, or a sha that is
+# not — the receipt is git-ignored and outlives branches.
 red_cmd="$(grep -A2 '^Red receipt:' "$skills/dev-review/SKILL.md" | grep -m1 '^!`')"
 red_cmd="${red_cmd#\!\`}"; red_cmd="${red_cmd%\`}"
 if [ -z "$red_cmd" ]; then
   note "dev-review: no injection under 'Red receipt:'"
 else
+  pb="$(git -C "$proj" branch --show-current)"; ph="$(git -C "$proj" rev-parse HEAD)"
   rm -f "$proj/.devskills/red-result"
   got="$(cd "$proj" && bash -c "$red_cmd" 2>&1)"
   [ "$got" = "(none)" ] || note "dev-review: with no red receipt the block says '$got', want (none)"
-  printf 'feedface TwoTest RED NOT PROVEN — the test passed before the change\n' > "$proj/.devskills/red-result"
+  printf '%s %s TwoTest RED NOT PROVEN — the test passed before the change\n' "$ph" "$pb" > "$proj/.devskills/red-result"
   got="$(cd "$proj" && bash -c "$red_cmd" 2>&1)"
-  [ "$got" = "TwoTest RED NOT PROVEN — the test passed before the change" ] || note "dev-review: the red receipt reads '$got'"
+  [ "$got" = "TwoTest RED NOT PROVEN — the test passed before the change" ] || note "dev-review: this branch's red receipt reads '$got'"
+  printf '%s main OldStepTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$ph" > "$proj/.devskills/red-result"
+  got="$(cd "$proj" && bash -c "$red_cmd" 2>&1)"
+  [ "$got" = "(none)" ] || note "dev-review: another branch's red receipt reads '$got', want (none)"
+  printf '0000000000000000000000000000000000000000 %s OldStepTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$pb" > "$proj/.devskills/red-result"
+  got="$(cd "$proj" && bash -c "$red_cmd" 2>&1)"
+  [ "$got" = "(none)" ] || note "dev-review: a red receipt for a sha not behind HEAD reads '$got', want (none)"
 fi
 
 if [ "$fails" -eq 0 ]; then
