@@ -3,9 +3,9 @@
 #
 #   bash evals/skills/file-lists.sh
 #
-# /dev-plan writes five indented lines under every step and three scripts read
+# /dev-plan writes six indented lines under every step and three scripts read
 # them: task-step.sh hands /dev-implement the step, step-budget.sh sizes it,
-# plan-check.sh checks its paths. The template in the skill has to keep the
+# plan-check.sh checks its paths and that Red: names what must fail first. The template in the skill has to keep the
 # shape the parser expects — each line its own, indented, in the same words —
 # or the lists become decoration nothing reads. Later steps add the readers.
 #
@@ -22,7 +22,7 @@ note() { printf 'FAIL  %s\n' "$1"; fails=$((fails + 1)); }
 flat() { tr '\n' ' ' < "$1" | tr -d '`' | tr -s ' '; }
 
 plan="$skills/dev-plan/SKILL.md"
-for part in 'Create:' 'Modify:' 'Test:' 'Check:' 'Budget:'; do
+for part in 'Create:' 'Modify:' 'Test:' 'Red:' 'Check:' 'Budget:'; do
   grep -qE "^ +- $part" "$plan" || note "dev-plan: the step template has no indented '$part' line of its own"
 done
 grep -qE '^[0-9]+\. \[ \] <' "$plan" || note 'dev-plan: the template step is not a numbered "N. [ ]" line'
@@ -36,6 +36,10 @@ flat "$plan" | grep -q 'OVER — kept:' || note 'dev-plan: an unsplittable OVER 
 flat "$plan" | grep -q '\[assumed\]' || note 'dev-plan: unanswered questions are not tagged [assumed]'
 flat "$plan" | grep -q 'Shell before reading' || note 'dev-plan: the CLI-first block is missing'
 grep -q -- '--review' "$plan" && note 'dev-plan: --review is back; judging a proposal is judgement work'
+# plan-check.sh refuses a step with no Red: line, so the planner has to know
+# what goes in it: the test that fails first, or none with its reason.
+flat "$plan" | grep -q 'Red first' || note 'dev-plan: no rule saying what a step names in Red:'
+flat "$plan" | grep -q 'none — <reason>' || note 'dev-plan: a step with nothing to be red has no wording for why'
 
 # /dev-implement is handed the step by task-step.sh, which prints NO STEPS when
 # the plan is not in the shape steps.awk reads. The skill has to stop on that
@@ -50,18 +54,30 @@ flat "$impl" | grep -q 'NO STEPS → print Next: /dev-plan <task-file> and stop'
 flat "$impl" | grep -q 'any other answer (no such file, no step, usage:) → quote it and stop' || note 'dev-implement: no rule for a branch.sh answer other than BRANCH'
 flat "$impl" | grep -q 'test.sh --scoped <name>' || note 'dev-implement: the scoped test command is not spelled out'
 flat "$impl" | grep -q 'never cat them' || note 'dev-implement: no rule against reading the dev-lib scripts'
+# Red first: the step's Red: test runs before any production line, and a test
+# that already passes stops the build. The import sentence it replaced was
+# PHP-only; lint and /dev-review C5 still catch a broken import.
+grep -q 'dev-lib}/test.sh --red <name>' "$impl" || note 'dev-implement: the red-first command is not spelled out'
+flat "$impl" | grep -q 'RED NOT PROVEN' || note 'dev-implement: no rule for a test that passed before the change'
+flat "$impl" | grep -q 'cross-namespace references' && note 'dev-implement: the PHP-only import sentence is back, in the bytes red first needs'
 
 # /dev-fix's Mode B names its lint and scoped-test commands in full: a bare
 # "lint.sh <path>" and a bare "testScoped" sent a model to read scripts.
 fix="$skills/dev-fix/SKILL.md"
 grep -q 'dev-lib}/lint.sh <path>' "$fix" || note 'dev-fix: Mode B does not spell the lint command'
 grep -q 'dev-lib}/test.sh --scoped <name>' "$fix" || note 'dev-fix: Mode B does not spell the scoped test command'
+# Mode A writes a plan plan-check.sh reads, so its step lines include Red:.
+flat "$fix" | grep -q 'Test:, Red:' || note 'dev-fix: the Mode A step lines do not include Red:'
 
 # The same omission in three more skills: a script named without its path, or
 # a rule left out, is what a byte-cap trim removes first.
 pr="$skills/dev-pr/SKILL.md"
 manual="$skills/dev-plan-manual/SKILL.md"
 grep -q 'dev-lib}/verify-clean.sh' "$pr" || note 'dev-pr: verify-clean.sh is named without its invocation'
+# Red first reaches the pull request: a step that planned a red test and has no
+# proven receipt stops here, and the body quotes the red line beside the green.
+flat "$pr" | grep -q 'red-planned: names a test and red:' || note 'dev-pr: no stop for a planned red test with no proven receipt'
+flat "$pr" | grep -q 'the tested: verdict, and red:' || note 'dev-pr: the Testing section does not quote red:'
 grep -q 'dev-lib}/plan-check.sh <file>' "$manual" || note 'dev-plan-manual: plan-check.sh is named without its invocation'
 grep -q 'dev-lib}/step-budget.sh <file> <n>' "$manual" || note 'dev-plan-manual: step-budget.sh is named without its invocation'
 flat "$plan" | grep -q 'never cat them' || note 'dev-plan: no rule against reading the dev-lib scripts'
@@ -69,11 +85,14 @@ flat "$plan" | grep -q 'never cat them' || note 'dev-plan: no rule against readi
 # The manual plan keeps the same step shape — task-step.sh, step-budget.sh and
 # plan-check.sh parse it the same way — plus the two lines that are only its:
 # the commit the developer owes, and the walkthrough that is not written yet.
-for part in 'Create:' 'Modify:' 'Test:' 'Check:' 'Budget:' 'Commit:'; do
+for part in 'Create:' 'Modify:' 'Test:' 'Red:' 'Check:' 'Budget:' 'Commit:'; do
   grep -qE "^ +- $part" "$manual" || note "dev-plan-manual: the step template has no indented '$part' line of its own"
 done
 grep -qE '^[0-9]+\. \[ \] <' "$manual" || note 'dev-plan-manual: the template step is not a numbered "N. [ ]" line'
 grep -qE '^ +Walkthrough:' "$manual" || note 'dev-plan-manual: no placeholder line for the walkthrough written later'
+# The developer writes the code, so the developer runs red first — spelled out,
+# or a coach session skips it the way a builder would.
+grep -q 'dev-lib}/test.sh --red <name>' "$manual" || note 'dev-plan-manual: Mode B does not spell the red-first command'
 # The walkthrough sits inside a step block, where steps.awk reads Create:,
 # Modify: and Test: as path lists wherever they appear. Its labels must not
 # collide with those three, and the skill has to say so.

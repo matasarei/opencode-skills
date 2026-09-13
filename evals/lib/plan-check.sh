@@ -45,15 +45,19 @@ cat > "$work/plan.md" <<'EOF'
    - Create: `src/new.php`
    - Modify: `src/page.php:2 (render)`, `tests/OldTest.php` (extend the fixture, see step 1)
    - Test: `tests/OldTest.php`
+   - Red: OldTest
 3. [ ] Bad step
    - Create: `src/exists.php`
    - Modify: `src/missing.php:1-5`, `src/page.php:2 (nothere)`
    - Test: none
+   - Red: none — the step only moves files
 4. [ ] Uses what step 2 creates
    - Modify: `src/new.php:1 (init)`, `src/page.php`
+   - Red: none — covered by step 2
 5. [ ] Nothing to check
    - Modify: none
    - Test: none — covered by step 2
+   - Red: none — covered by step 2
 EOF
 
 run plan.md
@@ -83,6 +87,41 @@ sed 's/^\([0-9]\)\. \[ \]/\1. [x]/' "$work/plan.md" > "$work/ticked.md"
 run ticked.md
 [ "$rc" -eq 0 ] || note "all ticked: exit $rc, want 0"
 grep -q 'no unticked step to check' "$work/err" || note "all ticked: '$(cat "$work/err")'"
+
+# Red: every unticked step names the test that must fail before its code is
+# written, or says why there is none. A missing line or a bare "none" is a
+# decision nobody made; the label is read however a model bolds it.
+cat > "$work/red.md" <<'EOF'
+# Red lines
+
+## Steps
+
+1. [x] Ticked, written before Red: existed
+   - Modify: none
+2. [ ] No Red: line at all
+   - Modify: none
+3. [ ] A bare none
+   - Modify: none
+   - Red: none
+4. [ ] None, with a reason
+   - Modify: none
+   - Red: none — docs only
+5. [ ] A test name
+   - Modify: none
+   - Red: SlugTest
+6. [ ] Bolded, as a model writes it, and a hyphen for the dash
+   - Modify: none
+   - **Red:** none - config only
+EOF
+run red.md
+[ "$rc" -eq 1 ] || note "red: exit $rc, want 1"
+has 'STEP 2 | Red: | missing — name the test that must fail first, or none — <reason>' 'red: no line'
+has 'STEP 3 | Red: | none needs a reason — none — <reason>' 'red: bare none'
+hasnt 'STEP 1' 'red: a ticked step is not checked'
+hasnt 'STEP 4' 'red: none with a reason'
+hasnt 'STEP 5' 'red: a test name'
+hasnt 'STEP 6' 'red: a bold label and a hyphen'
+[ "$(printf '%s\n' "$out" | grep -c '^STEP')" -eq 2 ] || note "red: expected exactly 2 problem lines, got $(printf '%s\n' "$out" | grep -c '^STEP')"
 
 # Errors.
 run nope.md;            [ "$rc" -eq 66 ] || note "no such file: exit $rc, want 66"

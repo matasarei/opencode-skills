@@ -180,6 +180,22 @@ receipt() { # receipt <file>
   fi
 }
 say tested "$(receipt .devskills/test-result)"
+# The third receipt: test.sh --red's, "<sha> <name> <verdict>", so the name
+# rides along with the verdict. A red run comes before the step's commit, so
+# "1 commit(s) back" is what a proven red normally reads as.
+# receipt() accepts any ancestor, which is right for a green run and wrong for a
+# red one: test names repeat across steps, so a proven red from an earlier step
+# would pass for this one. A red receipt counts only from where this branch began.
+red_receipt() {
+  r_sha="$(cut -d' ' -f1 .devskills/red-result 2>/dev/null)"
+  start="$(git merge-base "$BASE" HEAD 2>/dev/null)"
+  if [ -n "$r_sha" ] && [ -n "$start" ] && ! git merge-base --is-ancestor "$start" "$r_sha" 2>/dev/null; then
+    printf 'stale — recorded before this branch, at %s\n' "$(git rev-parse --short "$r_sha" 2>/dev/null || printf '%s' "$r_sha")"
+  else
+    receipt .devskills/red-result
+  fi
+}
+say red "$(red_receipt)"
 
 # What will ever check this change besides the developer's own machine. When it
 # is local-only there is no CI and no container, so verify-clean.sh's receipt is
@@ -200,9 +216,13 @@ if [ -n "$TASK" ] && [ -f "$TASK" ] && [ -n "$STEP" ]; then
     printf '%s\n' "$PLANNED" | grep -qxF -- "$p" || printf '%s ' "$p"
   done)"
   say unplanned "${UNPLANNED:-none}"
+  # The step's Red: line, however a model bolds it — what red: above must prove.
+  RED_PLANNED="$(bash "$HERE/task-step.sh" "$TASK" "$STEP" 2>/dev/null | awk 'match($0, /^[[:space:]]*-?[[:space:]]*(\*\*)?Red(\*\*)?:(\*\*)?/) { v = substr($0, RLENGTH + 1); sub(/^[[:space:]]+/, "", v); sub(/[[:space:]]+$/, "", v); print v; exit }')"
+  say red-planned "${RED_PLANNED:-none}"
   echo "--- step"
   bash "$HERE/task-step.sh" "$TASK" "$STEP" 2>&1
 else
   say task-file "${TASK:-none}"
   say unplanned "(no task file or not a step branch — nothing to compare against)"
+  say red-planned "(no task file or not a step branch)"
 fi

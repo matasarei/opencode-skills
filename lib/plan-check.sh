@@ -8,6 +8,10 @@
 # the file; a Create: path must not exist yet. Ticked steps are skipped: their
 # files have moved on. What counts as a step and a path is lib/steps.awk.
 #
+# Every unticked step also needs a "Red:" line: the scoped test that must fail
+# before the step's code is written (test.sh --red <name>), or "none — <reason>".
+# A missing line, or a bare "none", is a decision the plan did not make.
+#
 #   plan-check.sh <task-file> [--step <n>]
 #
 # One line per problem:  STEP <n> | <path> | <problem>
@@ -63,6 +67,15 @@ EOF
   done <<EOF
 $(steps paths "$n" Modify)
 EOF
+
+  # "Red:" however a model bolds it; the leading | tells an empty value from no line.
+  red="$(steps block "$n" | awk 'match($0, /^[[:space:]]*-?[[:space:]]*(\*\*)?Red(\*\*)?:(\*\*)?/) { print "|" substr($0, RLENGTH + 1); exit }')"
+  red_value="$(printf '%s' "${red#|}" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')"
+  if [ -z "$red_value" ]; then
+    problem "$n" "Red:" "missing — name the test that must fail first, or none — <reason>"
+  elif printf '%s\n' "$red_value" | grep -qiE '^none([[:space:]]|—|–|-|:)*$'; then
+    problem "$n" "Red:" "none needs a reason — none — <reason>"
+  fi
 done
 
 [ "$checked" -gt 0 ] || { echo "plan-check: no unticked step to check" >&2; exit 0; }

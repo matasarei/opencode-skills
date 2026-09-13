@@ -3,5 +3,6 @@
 # to "Step N. [ ]" and ticked step 1 with python; still NO STEPS to every script.
 steps=4
 done=1
+redmissing=3
 paths1=application/lib/WidgetBundle/Entity/widget.php,application/lib/WidgetBundle/WidgetBundle.php
 paths3=application/models/widget/Widget.php,application/models/widget/WidgetMapper.php
