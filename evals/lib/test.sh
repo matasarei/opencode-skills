@@ -156,9 +156,11 @@ case "$1" in
   php-parse)      echo "PHP Parse error: syntax error, unexpected token \"}\" in tests/SlugTest.php on line 9"; exit 255 ;;
   pytest-fail)    echo "FAILED tests/test_slug.py::test_truncate"; echo "=========== 1 failed in 0.02s ==========="; exit 1 ;;
   pytest-collect) echo "ERROR tests/test_slug.py"; echo "!!!!!!! Interrupted: 1 error during collection !!!!!!!"; echo "=========== 1 error in 0.05s ==========="; exit 2 ;;
-  node-fail)      echo "not ok 1 - truncate"; echo "ℹ pass 0"; echo "ℹ fail 1"; exit 1 ;;
-  node-syntax)    echo "SyntaxError: Unexpected token ';'"; echo "ℹ tests 1"; echo "ℹ pass 0"; echo "ℹ fail 1"; exit 1 ;;
-  node-missing)   echo "Error: Cannot find module '../src/truncate.js'"; echo "  code: 'MODULE_NOT_FOUND',"; echo "ℹ tests 1"; echo "ℹ pass 0"; echo "ℹ fail 1"; exit 1 ;;
+  node-fail)      echo "✖ truncate cuts (1.539125ms)"; echo "ℹ tests 1"; echo "ℹ pass 0"; echo "ℹ fail 1"; echo "✖ failing tests:"; echo "✖ truncate cuts (1.539125ms)"; exit 1 ;;
+  node-syntax)    echo "SyntaxError: Unexpected token ';'"; echo "✖ tests/slug.test.js (26.821ms)"; echo "ℹ tests 1"; echo "ℹ pass 0"; echo "ℹ fail 1"; exit 1 ;;
+  node-missing)   echo "Error: Cannot find module '../src/truncate.js'"; echo "  code: 'MODULE_NOT_FOUND',"; echo "✖ tests/slug.test.js (26.821ms)"; echo "ℹ tests 1"; echo "ℹ pass 0"; echo "ℹ fail 1"; exit 1 ;;
+  node-reference) echo "ReferenceError: notWrittenYet is not defined"; echo "✖ tests/slug.test.js (26.821ms)"; echo "ℹ tests 1"; echo "ℹ pass 0"; echo "ℹ fail 1"; echo "✖ failing tests:"; echo "✖ tests/slug.test.js (26.821ms)"; exit 1 ;;
+  node-type)      echo "TypeError: truncate is not a function"; echo "✖ tests/slug.test.mjs (26.227292ms)"; echo "ℹ tests 1"; echo "ℹ pass 0"; echo "ℹ fail 1"; exit 1 ;;
   jest-fail)      echo "Test Suites: 1 failed, 1 total"; echo "Tests:       1 failed, 1 total"; exit 1 ;;
   jest-empty)     echo "Test Suites: 1 failed, 1 total"; echo "Tests:       0 total"; exit 1 ;;
   go-fail)        echo "--- FAIL: TestTruncate (0.00s)"; echo "FAIL"; exit 1 ;;
@@ -181,9 +183,13 @@ red_case pytest-fail    'RED PROVEN |' 0
 red_case pytest-collect 'RED UNCLEAR |' 1
 red_case node-fail      'RED PROVEN |' 0
 # node --test counts a test file that never loaded as "fail 1", the same line a
-# real failing assertion prints: a syntax error or a missing module is unclear.
+# real failing assertion prints. Any error while the file loads — a syntax error,
+# a missing module, a top-level ReferenceError or TypeError — is unclear; node
+# names that failing entry after the file, where a real failure names the test.
 red_case node-syntax    'RED UNCLEAR |' 1
 red_case node-missing   'RED UNCLEAR |' 1
+red_case node-reference 'RED UNCLEAR |' 1
+red_case node-type      'RED UNCLEAR |' 1
 red_case jest-fail      'RED PROVEN |' 0
 red_case jest-empty     'RED UNCLEAR |' 1
 red_case go-fail        'RED PROVEN |' 0
