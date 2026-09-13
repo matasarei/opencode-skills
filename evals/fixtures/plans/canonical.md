@@ -17,18 +17,21 @@
    - Create: classes/export/writer/CsvWriter.php
    - Modify: none
    - Test: tests/export/CsvWriterTest.php
+   - Red: CsvWriterTest
    - Check: `vendor/bin/phpunit tests/export/CsvWriterTest.php`
 
 2. [ ] Route `?format=csv` on the roster page to the new writer
    - Create: none
    - Modify: pages/roster.php:40-58 (render_export), classes/export/Format.php
    - Test: tests/pages/RosterExportTest.php
+   - Red: RosterExportTest
    - Check: `vendor/bin/phpunit tests/pages/RosterExportTest.php`
 
 3. [ ] Cover the empty department
    - Create: none
    - Modify: tests/export/CsvWriterTest.php
    - Test: tests/export/CsvWriterTest.php
+   - Red: CsvWriterTest
    - Check: `vendor/bin/phpunit tests/export/CsvWriterTest.php`
 
 ## Do not touch

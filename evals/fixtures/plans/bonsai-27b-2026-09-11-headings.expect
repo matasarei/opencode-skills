@@ -4,5 +4,6 @@
 # colon inside the bold. Every script reported NO STEPS on it.
 steps=4
 done=0
+redmissing=4
 paths1=application/lib/WidgetBundle/Entity/widget.php,application/lib/WidgetBundle/WidgetBundle.php
 paths3=application/models/widget/Widget.php,application/models/widget/WidgetMapper.php

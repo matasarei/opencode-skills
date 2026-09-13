@@ -17,6 +17,10 @@
 #   done=<k>                 how many are ticked
 #   paths1=<a>,<b>           task-step.sh --paths 1, sorted as it prints them, comma-joined
 #   paths<n>=<...>           the same for any other step worth pinning
+#   redmissing=<k>           plan-check's "Red: | missing" problems, for a plan a
+#                            model wrote before steps carried Red: lines; the
+#                            fixture stays as written, and these are the only
+#                            problems allowed. Absent: plan-check must exit 0.
 #
 # A plan that a model wrote in a shape the parser missed goes here, never into
 # a one-off case: the fixture is the regression, and the sidecar is its claim.
@@ -75,9 +79,17 @@ for plan in "$plans"/*.md; do
   same "$(printf '%s\n' "$list" | grep -c '^[0-9]')" "$steps" "$name: steps.awk step count"
   same "$(printf '%s\n' "$list" | grep -c '^[0-9]*|x|')" "$done_" "$name: steps.awk ticked count"
 
-  # plan-check.sh: reads the same steps, and the paths above satisfy it.
+  # plan-check.sh: reads the same steps, and the paths above satisfy it. A plan
+  # written before Red: lines existed is missing them, and only them.
   out="$(cd "$dir" && bash "$lib/plan-check.sh" plan.md 2>&1)"; rc=$?
-  [ "$rc" -eq 0 ] || note "$name: plan-check exit $rc: $out"
+  redmissing="$(expect "$side" redmissing)"
+  if [ -n "$redmissing" ]; then
+    [ "$rc" -eq 1 ] || note "$name: plan-check exit $rc, want 1 for $redmissing missing Red: line(s): $out"
+    same "$(printf '%s\n' "$out" | grep -c '^STEP [0-9]* | Red: | missing')" "$redmissing" "$name: plan-check missing Red: lines"
+    same "$(printf '%s\n' "$out" | grep '^STEP' | grep -vc '^STEP [0-9]* | Red: | missing')" 0 "$name: plan-check problems other than a missing Red:"
+  else
+    [ "$rc" -eq 0 ] || note "$name: plan-check exit $rc: $out"
+  fi
   printf '%s\n' "$out" | grep -q "^plan-check: $((steps - done_)) step(s) checked" \
     || note "$name: plan-check checked the wrong number of steps: '$(printf '%s\n' "$out" | tail -1)'"
 
