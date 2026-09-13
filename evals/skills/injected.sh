@@ -139,6 +139,21 @@ else
   [ "$got" = "(none)" ] || note "dev-review: step/manual-other-1a is no step branch to pr-info.sh, yet it named: $got"
 fi
 
+# dev-review hands C11 the red receipt: "(none)" when no red run was recorded,
+# and the test's name and verdict — not the commit sha — when one was.
+red_cmd="$(grep -A2 '^Red receipt:' "$skills/dev-review/SKILL.md" | grep -m1 '^!`')"
+red_cmd="${red_cmd#\!\`}"; red_cmd="${red_cmd%\`}"
+if [ -z "$red_cmd" ]; then
+  note "dev-review: no injection under 'Red receipt:'"
+else
+  rm -f "$proj/.devskills/red-result"
+  got="$(cd "$proj" && bash -c "$red_cmd" 2>&1)"
+  [ "$got" = "(none)" ] || note "dev-review: with no red receipt the block says '$got', want (none)"
+  printf 'feedface TwoTest RED NOT PROVEN — the test passed before the change\n' > "$proj/.devskills/red-result"
+  got="$(cd "$proj" && bash -c "$red_cmd" 2>&1)"
+  [ "$got" = "TwoTest RED NOT PROVEN — the test passed before the change" ] || note "dev-review: the red receipt reads '$got'"
+fi
+
 if [ "$fails" -eq 0 ]; then
   printf 'injected: every skill hands the model a block it can act on\n'
 else
