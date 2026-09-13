@@ -188,7 +188,16 @@ say tested "$(receipt .devskills/test-result)"
 # would pass for this one. A red receipt counts only from where this branch began.
 red_receipt() {
   r_sha="$(cut -d' ' -f1 .devskills/red-result 2>/dev/null)"
-  start="$(git merge-base "$BASE" HEAD 2>/dev/null)"
+  # Where this branch began: the parent of the oldest commit on HEAD's
+  # first-parent history that the base does not have. The merge-base will not
+  # do — merging main into the branch moves it past the red run, and a red that
+  # happened before this step's code can never be proven again once it exists.
+  first="$(git rev-list --first-parent HEAD --not "$BASE" 2>/dev/null | tail -1)"
+  if [ -n "$first" ]; then
+    start="$(git rev-parse --verify --quiet "$first^" 2>/dev/null)"
+  else
+    start="$(git merge-base "$BASE" HEAD 2>/dev/null)"
+  fi
   if [ -n "$r_sha" ] && [ -n "$start" ] && ! git merge-base --is-ancestor "$start" "$r_sha" 2>/dev/null; then
     printf 'stale — recorded before this branch, at %s\n' "$(git rev-parse --short "$r_sha" 2>/dev/null || printf '%s' "$r_sha")"
   else

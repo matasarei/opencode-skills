@@ -249,6 +249,18 @@ case "$(row red)" in
   *) note "red from before this branch: '$(row red)'" ;;
 esac
 
+# Merging main into the step branch after the red run moves the merge-base past
+# the commit red was recorded at. The red still came before this step's code,
+# so it still counts: the branch begins where its first-parent history leaves
+# the base, and a merge from main does not move that.
+printf '%s TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$(g rev-parse HEAD~1)" > "$repo/.devskills/red-result"
+g merge -q --no-edit main >/dev/null 2>&1 || note 'red after merging main: the fixture could not merge main into step/x-2'
+run
+case "$(row red)" in
+  "TwoTest RED PROVEN"*) ;;
+  *) note "red after merging main into the step branch: '$(row red)'" ;;
+esac
+
 g checkout -q -- .tasks/x.md
 rm -f "$repo/.devskills/red-result"
 g switch -q main
