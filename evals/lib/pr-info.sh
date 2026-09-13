@@ -240,6 +240,15 @@ case "$(row red)" in
   *) note "red not proven: '$(row red)'" ;;
 esac
 
+# A proven receipt from before this branch began is another step's red, even
+# under the same test name — names repeat across steps. Stale, never proven.
+printf '%s TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$(g rev-list --max-parents=0 HEAD)" > "$repo/.devskills/red-result"
+run
+case "$(row red)" in
+  "stale — recorded before this branch"*) ;;
+  *) note "red from before this branch: '$(row red)'" ;;
+esac
+
 g checkout -q -- .tasks/x.md
 rm -f "$repo/.devskills/red-result"
 g switch -q main
