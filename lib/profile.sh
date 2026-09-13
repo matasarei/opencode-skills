@@ -292,6 +292,14 @@ fi
 # package.json scripts
 if [ -f package.json ]; then
   grep -qs '"test"[[:space:]]*:' package.json && [ "$TEST" = "null" ] && TEST="$(wrap "npm test")"
+  # A scoped run for a node --test suite, with npm test still the runner. node
+  # --test ignores a name filter given after its test files, which is where
+  # `npm test --` appends one, so the filter travels in NODE_OPTIONS instead and
+  # nothing read out of package.json reaches the command. Only node --test: no
+  # other runner's filter behind npm test has been proved here, so it stays null.
+  if [ "$TEST" = "$(wrap "npm test")" ] && grep -qsE '"test"[[:space:]]*:[[:space:]]*"node --test' package.json; then
+    TEST_SCOPED="$(wrap "env NODE_OPTIONS=--test-name-pattern={name} npm test")"
+  fi
   grep -qs '"build"[[:space:]]*:' package.json && BUILD="$(wrap "npm run build")"
   grep -qs '"lint"[[:space:]]*:' package.json && LINT="$(wrap "npm run lint")"
 fi
@@ -435,6 +443,9 @@ if [ -n "$CI_TEST" ]; then
     *pytest*)    TEST_SCOPED="$(wrap "$CI_TEST -k {name}")" ;;
     *cargo\ test*) TEST_SCOPED="$(wrap "$CI_TEST {name}")" ;;  # before *go test*: "cargo test" contains it
     *go\ test*)   TEST_SCOPED="$(wrap "$CI_TEST -run {name}")" ;;
+    npm\ test*|npm\ run\ test*)
+      grep -qsE '"test"[[:space:]]*:[[:space:]]*"node --test' package.json \
+        && TEST_SCOPED="$(wrap "env NODE_OPTIONS=--test-name-pattern={name} $CI_TEST")" ;;
   esac
 fi
 
