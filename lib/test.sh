@@ -36,8 +36,9 @@
 # PROVEN needs a test that ran and failed. A failure with no failing-test count —
 # a parse error, a collection error, a build failure, a runner not recognised
 # below — is UNCLEAR: something broke, but not necessarily the test. It writes
-# .devskills/red-result as "<HEAD sha> <name> <verdict>", and never
-# .devskills/test-result: a deliberate failure is not the change's test verdict.
+# .devskills/red-result as "<HEAD sha> <branch> <name> <verdict>" — "-" for the
+# branch on a detached HEAD — and never .devskills/test-result: a deliberate
+# failure is not the change's test verdict.
 
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -158,8 +159,12 @@ if [ -n "$RED" ]; then
   fi
   printf '%s\n' "$verdict"
   sha="$(git rev-parse HEAD 2>/dev/null)"
+  # The branch this proves red for. The receipt is git-ignored and outlives
+  # branches, so a reader refuses one recorded anywhere else; a detached HEAD
+  # proves it for no branch at all.
+  branch="$(git branch --show-current 2>/dev/null)"
   if [ -n "$sha" ] && mkdir -p .devskills 2>/dev/null; then
-    printf '%s %s %s\n' "$sha" "$SCOPED" "$verdict" > .devskills/red-result 2>/dev/null || true
+    printf '%s %s %s %s\n' "$sha" "${branch:--}" "$SCOPED" "$verdict" > .devskills/red-result 2>/dev/null || true
   fi
   printf '%s\n' "$out" | tail -20
   case "$verdict" in "RED PROVEN"*) exit 0 ;; *) exit 1 ;; esac

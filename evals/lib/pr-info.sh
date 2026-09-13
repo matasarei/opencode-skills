@@ -215,7 +215,8 @@ esac
 rm -f "$repo/.devskills/test-result"
 
 # red: and red-planned: — whether the step's test was shown to fail before its
-# code existed. The receipt is test.sh --red's, read like tested:; the plan is
+# code existed. The receipt is test.sh --red's, "<sha> <branch> <name> <verdict>";
+# it counts only for the branch it names, with its sha behind HEAD. The plan is
 # the step's Red: line. A red run happens before the step's commit, so a proven
 # receipt is normally one commit back.
 g switch -q step/x-2
@@ -225,7 +226,7 @@ want red 'none' 'red with no receipt'
 want red-planned 'none' 'a step with no Red: line'
 
 awk '{ print } /^   - Test: none$/ { print "   - Red: TwoTest" }' "$repo/.tasks/x.md" > "$work/x.md" && cp "$work/x.md" "$repo/.tasks/x.md"
-printf '%s TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$(g rev-parse HEAD~1)" > "$repo/.devskills/red-result"
+printf '%s step/x-2 TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$(g rev-parse HEAD~1)" > "$repo/.devskills/red-result"
 run
 want red-planned 'TwoTest' 'a step whose Red: names a test'
 case "$(row red)" in
@@ -233,27 +234,48 @@ case "$(row red)" in
   *) note "red proven before the step's commit: '$(row red)'" ;;
 esac
 
-printf '%s TwoTest RED NOT PROVEN — the test passed before the change; it proves nothing yet\n' "$(g rev-parse HEAD)" > "$repo/.devskills/red-result"
+printf '%s step/x-2 TwoTest RED NOT PROVEN — the test passed before the change; it proves nothing yet\n' "$(g rev-parse HEAD)" > "$repo/.devskills/red-result"
 run
 case "$(row red)" in
   "TwoTest RED NOT PROVEN"*"(this HEAD)") ;;
   *) note "red not proven: '$(row red)'" ;;
 esac
 
-# A proven receipt from before this branch began is another step's red, even
-# under the same test name — names repeat across steps. Stale, never proven.
-printf '%s TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$(g rev-list --max-parents=0 HEAD)" > "$repo/.devskills/red-result"
+# An earlier step's proven receipt names that step's branch, even under the same
+# test name — names repeat across steps. Stale, never proven.
+printf '%s step/x-1 TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$(g rev-parse HEAD~1)" > "$repo/.devskills/red-result"
 run
 case "$(row red)" in
-  "stale — recorded before this branch"*) ;;
-  *) note "red from before this branch: '$(row red)'" ;;
+  "stale — recorded on step/x-1, not this branch"*) ;;
+  *) note "red recorded on an earlier step's branch: '$(row red)'" ;;
 esac
 
-# Merging main into the step branch after the red run moves the merge-base past
-# the commit red was recorded at. The red still came before this step's code,
-# so it still counts: the branch begins where its first-parent history leaves
-# the base, and a merge from main does not move that.
+# A receipt written before receipts named their branch has the test's name where
+# the branch belongs. It is stale, and the line says why rather than calling a
+# test name a branch.
 printf '%s TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$(g rev-parse HEAD~1)" > "$repo/.devskills/red-result"
+run
+case "$(row red)" in
+  "stale — recorded before red receipts named their branch"*) ;;
+  *) note "red from a receipt with no branch field: '$(row red)'" ;;
+esac
+
+# An empty receipt file records nothing, as a missing one does.
+: > "$repo/.devskills/red-result"
+run
+want red 'none' 'red with an empty receipt file'
+
+# This branch's name on a sha that is not behind HEAD is still not this branch's red.
+printf '0000000000000000000000000000000000000000 step/x-2 TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' > "$repo/.devskills/red-result"
+run
+case "$(row red)" in
+  stale*) ;;
+  *) note "red for a sha not behind HEAD: '$(row red)'" ;;
+esac
+
+# Merging main into the step branch after the red run does not rename the
+# branch, so the red still came before this step's code and still counts.
+printf '%s step/x-2 TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$(g rev-parse HEAD~1)" > "$repo/.devskills/red-result"
 g merge -q --no-edit main >/dev/null 2>&1 || note 'red after merging main: the fixture could not merge main into step/x-2'
 run
 case "$(row red)" in
