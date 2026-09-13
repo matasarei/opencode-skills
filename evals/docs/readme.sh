@@ -43,6 +43,7 @@ for token in \
   'TEST PASS' \
   'test.sh --red' \
   'RED PROVEN' \
+  'only on the branch it was recorded on' \
   'tick.sh' \
   'branch.sh' \
   'DEV_SKILLS_QUEUE_CAP' \
