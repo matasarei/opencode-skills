@@ -189,7 +189,14 @@ say tested "$(receipt .devskills/test-result)"
 # branch, so a red run before this step's code still counts after one. A red
 # run comes before the step's commit, so "1 commit(s) back" is its usual reading.
 red_receipt() {
-  [ -r .devskills/red-result ] || { printf 'none\n'; return; }
+  [ -s .devskills/red-result ] || { printf 'none\n'; return; }
+  # The verdict starts at field 4. A receipt written before receipts named their
+  # branch has it at field 3, and its test name where the branch belongs — say
+  # that, rather than call the test name a branch.
+  if [ "$(cut -d' ' -f4 .devskills/red-result 2>/dev/null)" != RED ]; then
+    printf 'stale — recorded before red receipts named their branch\n'
+    return
+  fi
   r_branch="$(cut -d' ' -f2 .devskills/red-result 2>/dev/null)"
   if [ -z "$BRANCH" ] || [ "$r_branch" != "$BRANCH" ]; then
     printf 'stale — recorded on %s, not this branch\n' "${r_branch:-no branch}"

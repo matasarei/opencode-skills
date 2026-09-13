@@ -251,13 +251,19 @@ case "$(row red)" in
 esac
 
 # A receipt written before receipts named their branch has the test's name where
-# the branch belongs, so it names no branch at all: stale.
+# the branch belongs. It is stale, and the line says why rather than calling a
+# test name a branch.
 printf '%s TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' "$(g rev-parse HEAD~1)" > "$repo/.devskills/red-result"
 run
 case "$(row red)" in
-  stale*) ;;
+  "stale — recorded before red receipts named their branch"*) ;;
   *) note "red from a receipt with no branch field: '$(row red)'" ;;
 esac
+
+# An empty receipt file records nothing, as a missing one does.
+: > "$repo/.devskills/red-result"
+run
+want red 'none' 'red with an empty receipt file'
 
 # This branch's name on a sha that is not behind HEAD is still not this branch's red.
 printf '0000000000000000000000000000000000000000 step/x-2 TwoTest RED PROVEN | FAILURES! Tests: 1, Failures: 1.\n' > "$repo/.devskills/red-result"
