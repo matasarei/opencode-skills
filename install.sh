@@ -79,8 +79,9 @@ if [ -d "$SRC/agents" ]; then
   cp "$SRC"/agents/*.md "$TARGET/agents/" 2>/dev/null || true
 fi
 
-# A version stamp, so a skill can tell you it is stale. There is no marketplace here
-# and nothing will pull updates for you.
+# A version stamp: compare it with the checkout's HEAD to tell whether the installed
+# copy is stale. Nothing reads it for you — there is no marketplace here and nothing
+# will pull updates for you.
 (cd "$SRC" && git rev-parse --short HEAD 2>/dev/null || echo "unknown") > "$LIB/.version"
 
 echo
