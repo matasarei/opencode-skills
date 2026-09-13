@@ -163,10 +163,8 @@ say uncommitted "$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
 # how "tests pass" ends up in a body with nothing behind it.
 # Two receipts, read the same way: test.sh's, and verify-clean.sh's. The second
 # matters when nothing else will ever run the suite — see verification: below.
-receipt() { # receipt <file>
-  [ -r "$1" ] || { printf 'none\n'; return; }
-  r_sha="$(cut -d' ' -f1 "$1" 2>/dev/null)"
-  r_verdict="$(cut -d' ' -f2- "$1" 2>/dev/null)"
+receipt_for() { # receipt_for <sha> <verdict>
+  r_sha="$1"; r_verdict="$2"
   [ -n "$r_sha" ] || { printf 'none\n'; return; }
   if [ "$r_sha" = "$(git rev-parse HEAD 2>/dev/null)" ]; then
     printf '%s (this HEAD)\n' "$r_verdict"
@@ -179,30 +177,25 @@ receipt() { # receipt <file>
       "$(git rev-parse --short "$r_sha" 2>/dev/null)"
   fi
 }
+receipt() { # receipt <file> — "<sha> <verdict>"
+  [ -r "$1" ] || { printf 'none\n'; return; }
+  receipt_for "$(cut -d' ' -f1 "$1" 2>/dev/null)" "$(cut -d' ' -f2- "$1" 2>/dev/null)"
+}
 say tested "$(receipt .devskills/test-result)"
-# The third receipt: test.sh --red's, "<sha> <name> <verdict>", so the name
-# rides along with the verdict. A red run comes before the step's commit, so
-# "1 commit(s) back" is what a proven red normally reads as.
-# receipt() accepts any ancestor, which is right for a green run and wrong for a
-# red one: test names repeat across steps, so a proven red from an earlier step
-# would pass for this one. A red receipt counts only from where this branch began.
+# The third receipt: test.sh --red's, "<sha> <branch> <name> <verdict>". It is
+# git-ignored and outlives branches, and test names repeat across steps, so an
+# ancestor sha alone would let an earlier step's red pass for this one. It
+# counts only for the branch it names; a merge from main does not rename the
+# branch, so a red run before this step's code still counts after one. A red
+# run comes before the step's commit, so "1 commit(s) back" is its usual reading.
 red_receipt() {
-  r_sha="$(cut -d' ' -f1 .devskills/red-result 2>/dev/null)"
-  # Where this branch began: the parent of the oldest commit on HEAD's
-  # first-parent history that the base does not have. The merge-base will not
-  # do — merging main into the branch moves it past the red run, and a red that
-  # happened before this step's code can never be proven again once it exists.
-  first="$(git rev-list --first-parent HEAD --not "$BASE" 2>/dev/null | tail -1)"
-  if [ -n "$first" ]; then
-    start="$(git rev-parse --verify --quiet "$first^" 2>/dev/null)"
-  else
-    start="$(git merge-base "$BASE" HEAD 2>/dev/null)"
+  [ -r .devskills/red-result ] || { printf 'none\n'; return; }
+  r_branch="$(cut -d' ' -f2 .devskills/red-result 2>/dev/null)"
+  if [ -z "$BRANCH" ] || [ "$r_branch" != "$BRANCH" ]; then
+    printf 'stale — recorded on %s, not this branch\n' "${r_branch:-no branch}"
+    return
   fi
-  if [ -n "$r_sha" ] && [ -n "$start" ] && ! git merge-base --is-ancestor "$start" "$r_sha" 2>/dev/null; then
-    printf 'stale — recorded before this branch, at %s\n' "$(git rev-parse --short "$r_sha" 2>/dev/null || printf '%s' "$r_sha")"
-  else
-    receipt .devskills/red-result
-  fi
+  receipt_for "$(cut -d' ' -f1 .devskills/red-result 2>/dev/null)" "$(cut -d' ' -f3- .devskills/red-result 2>/dev/null)"
 }
 say red "$(red_receipt)"
 
