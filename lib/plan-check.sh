@@ -73,7 +73,7 @@ EOF
   red_value="${red#Red|}"
   if [ -z "$red_value" ]; then
     problem "$n" "Red:" "missing — name the test that must fail first, or none — <reason>"
-  elif printf '%s\n' "$red_value" | grep -qiE '^none([[:space:]]|—|–|-|:)*$'; then
+  elif printf '%s\n' "$red_value" | grep -qiE '^none([[:space:]]|—|–|-|:|\.)*$'; then
     problem "$n" "Red:" "none needs a reason — none — <reason>"
   fi
 done

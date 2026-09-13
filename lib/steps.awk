@@ -144,10 +144,11 @@ mode == "tick" {
 !on { next }
 
 mode == "block" { print; next }
-# The label is matched whole — "Reduce:" is not "Red:" — and bold on either side
-# of the colon, the way a model writes the other labels.
+# The label is matched whole — "Reduce:" is not "Red:" — in any case, and bold on
+# either side of the colon, the way a model writes the other labels. The value
+# comes from the line as written; only the match is lowercased.
 mode == "red" {
-  if (match($0, /^[[:space:]]*-?[[:space:]]*(\*\*)?Red(\*\*)?:(\*\*)?/)) {
+  if (match(tolower($0), /^[[:space:]]*-?[[:space:]]*(\*\*)?red(\*\*)?:(\*\*)?/)) {
     v = substr($0, RLENGTH + 1); sub(/^[[:space:]]+/, "", v); sub(/[[:space:]]+$/, "", v)
     print "Red|" v; exit
   }
