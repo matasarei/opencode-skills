@@ -41,6 +41,8 @@ for token in \
   'http-check.sh' \
   'test.sh' \
   'TEST PASS' \
+  'test.sh --red' \
+  'RED PROVEN' \
   'tick.sh' \
   'branch.sh' \
   'DEV_SKILLS_QUEUE_CAP' \
