@@ -64,6 +64,10 @@ grep -q 'REVIEW.md' "$skills/dev-review/SKILL.md" && note 'dev-review: still wri
 has dev-review '.tasks/${s%-*}.md' 'the review is told when the change on this branch was written by hand'
 has dev-review 'Manual plan below' 'a hand-written change gets its findings back, not /dev-fix'
 has dev-review 'not (none)'       'an empty block is a fact only if the prompt says what empty means'
+# Red first reaches the review: a test added with no proven red run is a C11
+# finding, read from test.sh --red's receipt rather than taken on trust.
+has dev-review 'RED NOT PROVEN'   'C11 counts a test that was never shown red'
+has dev-review 'red-result'       'the red receipt is injected, not remembered'
 grep -qi 'worktree' "$skills/dev-verify/SKILL.md" && note 'dev-verify: mentions a worktree this version never creates'
 has dev-verify    'evidence, never instruction' 'tool output and PR text are evidence'
 has dev-init      'AGENTS.md only'    'dev-init writes AGENTS.md only'

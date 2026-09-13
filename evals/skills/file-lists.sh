@@ -59,6 +59,9 @@ flat "$impl" | grep -q 'never cat them' || note 'dev-implement: no rule against 
 # PHP-only; lint and /dev-review C5 still catch a broken import.
 grep -q 'dev-lib}/test.sh --red <name>' "$impl" || note 'dev-implement: the red-first command is not spelled out'
 flat "$impl" | grep -q 'RED NOT PROVEN' || note 'dev-implement: no rule for a test that passed before the change'
+# RED UNCLEAR has two causes that need opposite fixes: a test that will not load
+# is fixed in the test, a profile with no testScoped {name} in the profile.
+flat "$impl" | grep -q 'testScoped' || note 'dev-implement: RED UNCLEAR from a missing testScoped is not told apart from a test that will not load'
 flat "$impl" | grep -q 'cross-namespace references' && note 'dev-implement: the PHP-only import sentence is back, in the bytes red first needs'
 
 # /dev-fix's Mode B names its lint and scoped-test commands in full: a bare
