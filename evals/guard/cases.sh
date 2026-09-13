@@ -176,6 +176,9 @@ let readRefused = false
 try { await hook({ tool: "read" }, { args: { filePath: dir } }) }
 catch (e) { if (e.message.includes("is a directory, not a file")) readRefused = true }
 if (!readRefused) { fails++; console.log(`FAIL  ${label} reading a directory was not refused`) }
+// ...and reading a file is not: a refusal that caught every path would stop the model reading anything
+try { await hook({ tool: "read" }, { args: { filePath: globDummyFile } }) }
+catch (e) { fails++; console.log(`FAIL  ${label} reading a file was refused: ${e.message}`) }
 process.exit(fails ? 1 : 0)
 JS
 
