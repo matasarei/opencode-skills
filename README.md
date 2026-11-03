@@ -8,6 +8,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-3DA639?style=for-the-badge" alt="License: MIT" /></a>
 </p>
 
+> **Successor:** development continues in [**pi-dev-skills**](https://github.com/matasarei/pi-dev-skills), built on [Pi Coding Agent](https://pi.dev), whose extensions let code rather than the model drive the process. This repository is frozen as the OpenCode baseline.
+
 Development skills for [OpenCode](https://opencode.ai) engineered specifically for **local ~30B models** (such as **Qwen3 Coder 30B**, **Prism Bonsai 27B**, and **Qwen3.8 27B**).
 
 Instead of relying on fragile multi-variable reasoning and prompt guesswork, these skills compute facts before prompts run, replace subjective scoring with binary yes/no checks, verify code quotes mechanically, and advance work one discrete step at a time.
